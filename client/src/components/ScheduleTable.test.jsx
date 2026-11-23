@@ -56,6 +56,38 @@ describe('ScheduleTable', () => {
     expect(onChangeScene).toHaveBeenCalledWith(0, { summary: '争执' });
   });
 
+  it('展示在场人物、道具、舞台说明三列表头', () => {
+    render(<ScheduleTable scriptData={data} />);
+    expect(screen.getByText('在场人物')).toBeInTheDocument();
+    expect(screen.getByText('道具')).toBeInTheDocument();
+    expect(screen.getByText('舞台说明')).toBeInTheDocument();
+  });
+
+  it('在场的道具与舞台说明以顿号连接展示', () => {
+    const withDirections = {
+      summary: '',
+      scenes: [
+        {
+          sceneNumber: 1,
+          title: '第一场',
+          location: '门口',
+          characters: ['阿岚'],
+          presentCharacters: ['阿岚', '老周'],
+          props: ['伞', '钥匙'],
+          stageDirections: ['（阿岚站在门边）', '（雨声渐起）'],
+          summary: '',
+          estimatedMinutes: 3,
+        },
+      ],
+      characters: [],
+      relationships: [],
+    };
+    render(<ScheduleTable scriptData={withDirections} />);
+    expect(screen.getByText('阿岚、老周')).toBeInTheDocument();
+    expect(screen.getByText('伞、钥匙')).toBeInTheDocument();
+    expect(screen.getByText('（阿岚站在门边）、（雨声渐起）')).toBeInTheDocument();
+  });
+
   it('可编辑模式下字段缺失不会崩溃', () => {
     render(
       <ScheduleTable

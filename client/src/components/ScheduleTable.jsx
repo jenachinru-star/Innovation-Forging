@@ -17,7 +17,9 @@ export default function ScheduleTable({ scriptData, onChangeScene }) {
                 <th className="p-2">场次</th>
                 <th className="p-2">地点</th>
                 <th className="p-2">出场人物</th>
+                <th className="p-2">在场人物</th>
                 <th className="p-2">道具</th>
+                <th className="p-2">舞台说明</th>
                 <th className="p-2">时长</th>
                 <th className="p-2">剧情摘要</th>
               </tr>
@@ -38,7 +40,9 @@ export default function ScheduleTable({ scriptData, onChangeScene }) {
                     )}
                   </td>
                   <td className="p-2">{(s.characters ?? []).join('、')}</td>
+                  <td className="p-2">{(s.presentCharacters ?? []).join('、')}</td>
                   <td className="p-2">{(s.props ?? []).join('、')}</td>
+                  <td className="p-2">{(s.stageDirections ?? []).join('、')}</td>
                   <td className="p-2 whitespace-nowrap">
                     {onChangeScene ? (
                       <input

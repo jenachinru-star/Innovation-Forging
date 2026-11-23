@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ScheduleTable from './ScheduleTable.jsx';
+import CadencePanel from './CadencePanel.jsx';
 import RelationGraph from './RelationGraph.jsx';
 import CharacterGallery from './CharacterGallery.jsx';
 import StageBlocking from './StageBlocking.jsx';
@@ -17,7 +18,7 @@ function sourceLabel(source) {
   return getSourceMode() === 'local' ? `${base} · 仅本地处理` : base;
 }
 
-export default function ResultTabs({ scriptData, onBackToEdit, onChangeScene, source }) {
+export default function ResultTabs({ scriptData, onBackToEdit, onChangeScene, source, briefs = [] }) {
   const [tab, setTab] = useState('schedule'); // schedule | relations | gallery
 
   const tabBtn = (id, label) => (
@@ -49,6 +50,13 @@ export default function ResultTabs({ scriptData, onBackToEdit, onChangeScene, so
         {tab === 'schedule' && (
           <>
             <ScheduleTable scriptData={scriptData} onChangeScene={onChangeScene} />
+            <div className="mt-8">
+              <CadencePanel
+                scenes={scriptData?.scenes || []}
+                briefs={briefs}
+                onChange={onChangeScene}
+              />
+            </div>
             <div className="mt-8">
               <h3 className="mb-3 text-sm font-medium text-stone-300">走位示意</h3>
               <StageBlocking characters={scriptData?.scenes?.[0]?.characters || []} />
