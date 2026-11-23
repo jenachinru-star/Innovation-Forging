@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { generateScript, extractUpload } from '../api.js';
+import { generateScript, extractUpload } from '../engine/index.js';
 
 const SAMPLE_MATERIAL = [
   '一对多年未见的老朋友在医院病房重逢。',

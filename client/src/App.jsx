@@ -3,7 +3,7 @@ import InputStep from './components/InputStep.jsx';
 import ConfirmStep from './components/ConfirmStep.jsx';
 import ResultTabs from './components/ResultTabs.jsx';
 import VersionCompare from './components/VersionCompare.jsx';
-import { generateScript, parseScript } from './api.js';
+import { generateScript, parseScript } from './engine/index.js';
 
 export default function App() {
   const [step, setStep] = useState('input'); // input | confirm | result | compare
