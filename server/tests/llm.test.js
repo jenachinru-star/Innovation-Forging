@@ -76,4 +76,13 @@ describe('parseScript', () => {
     const r = await parseScript('剧本文本', { chat });
     expect(r.summary).toBe('可解析');
   });
+
+  it('jsonMode 抛错时回退纯文本解析', async () => {
+    const chat = async (msgs, opts) => {
+      if (opts?.jsonMode) throw new Error('jsonMode unsupported');
+      return '{"summary":"回退成功","scenes":[],"characters":[],"relationships":[]}';
+    };
+    const r = await parseScript('剧本文本', { chat });
+    expect(r.summary).toBe('回退成功');
+  });
 });

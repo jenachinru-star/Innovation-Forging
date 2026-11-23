@@ -92,7 +92,11 @@ export async function parseScript(scriptText, { chat = chatComplete } = {}) {
     { role: 'system', content: `${PARSE_SYSTEM}\n只输出纯 JSON，不要任何解释文字，不要代码块标记。` },
     { role: 'user', content: String(scriptText || '') },
   ];
-  content = await withRetry(() => chat(strongMessages, { jsonMode: true }), 1);
+  try {
+    content = await withRetry(() => chat(strongMessages, { jsonMode: true }), 1);
+  } catch {
+    content = await withRetry(() => chat(strongMessages), 1);
+  }
   const second = safeParseScriptData(content);
   if (!second) throw new Error('解析失败：AI 输出无法解析为结构化数据');
   return second;
