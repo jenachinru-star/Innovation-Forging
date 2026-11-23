@@ -21,6 +21,52 @@ describe('RehearsalPanel', () => {
     expect(checkbox).toBeChecked();
   });
 
+  it('整理后派发 setRehearsalNotes，payload 含三类条目', () => {
+    const dispatch = vi.fn();
+    render(<RehearsalPanel plan={{ impacts: [] }} dispatch={dispatch} />);
+
+    fireEvent.change(screen.getByLabelText('排练笔记'), {
+      target: { value: '开场先暗场\n灯什么时候亮？\n#确认钥匙位置' },
+    });
+    fireEvent.click(screen.getByText('整理'));
+
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'setRehearsalNotes',
+        payload: expect.objectContaining({
+          notes: '开场先暗场\n灯什么时候亮？\n#确认钥匙位置',
+          decisions: ['开场先暗场'],
+          openQuestions: ['灯什么时候亮？'],
+          todos: [{ text: '确认钥匙位置', done: false }],
+        }),
+      })
+    );
+  });
+
+  it('从 plan.rehearsals[0] 读取已保存的整理结果', () => {
+    const plan = {
+      impacts: [],
+      rehearsals: [
+        {
+          id: 'reh-1',
+          notes: '开场先暗场\n灯什么时候亮？\n#确认钥匙位置',
+          decisions: ['开场先暗场'],
+          openQuestions: ['灯什么时候亮？'],
+          todos: [{ text: '确认钥匙位置', done: false }],
+        },
+      ],
+    };
+
+    render(<RehearsalPanel plan={plan} dispatch={() => {}} />);
+
+    expect(screen.getByLabelText('排练笔记').value).toBe(
+      '开场先暗场\n灯什么时候亮？\n#确认钥匙位置'
+    );
+    expect(screen.getByText('开场先暗场')).toBeInTheDocument();
+    expect(screen.getByText('灯什么时候亮？')).toBeInTheDocument();
+    expect(screen.getByText('确认钥匙位置')).toBeInTheDocument();
+  });
+
   it('点击影响条目的「保留旧版」派发 resolveImpact(keptOld)', () => {
     const dispatch = vi.fn();
     const plan = {

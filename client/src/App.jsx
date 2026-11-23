@@ -6,6 +6,7 @@ import VersionCompare from './components/VersionCompare.jsx';
 import { generateScript, parseScript } from './engine/index.js';
 import { createPlan, planReducer } from './store/plan.js';
 import { loadProject, saveProject } from './store/project.js';
+import { findImpacts } from '@director/shared/rules/impact.js';
 
 function appPlanReducer(state, action) {
   if (action?.type === 'replacePlan') {
@@ -26,7 +27,7 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [restored, setRestored] = useState(false);
-  const skipSaveRef = useRef(true);
+  const restoredRef = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -43,7 +44,7 @@ export default function App() {
       })
       .catch(() => {})
       .finally(() => {
-        skipSaveRef.current = false;
+        restoredRef.current = true;
       });
     return () => {
       active = false;
@@ -51,7 +52,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (skipSaveRef.current) return;
+    if (!restoredRef.current) return;
     saveProject({
       step,
       scriptText,
@@ -59,7 +60,7 @@ export default function App() {
       plan,
       savedAt: new Date().toISOString(),
     }).catch(() => {});
-  }, [scriptData, plan]);
+  }, [step, scriptText, scriptData, plan]);
 
   function handleReady({ scriptText: text, material: mat, mode }) {
     setScriptText(text);
@@ -88,7 +89,19 @@ export default function App() {
     setError('');
     try {
       const data = await parseScript(scriptText, { aliasMap });
-      setScriptData(data.scriptData);
+      const nextScriptData = data.scriptData;
+      if (Array.isArray(plan?.cues) && plan.cues.length > 0) {
+        const impacts = findImpacts({
+          prevData: scriptData,
+          nextData: nextScriptData,
+          cues: plan.cues,
+          briefs: plan.briefs,
+        });
+        for (const impact of impacts) {
+          dispatch({ type: 'addImpact', impact });
+        }
+      }
+      setScriptData(nextScriptData);
       setStep('result');
     } catch (e) {
       setError(String(e.message || e));
@@ -155,6 +168,7 @@ export default function App() {
           onBackToEdit={() => setStep('confirm')}
           onChangeScene={handleChangeScene}
           source={entryMode}
+          briefs={plan?.briefs ?? []}
           plan={plan}
           dispatch={dispatch}
         />

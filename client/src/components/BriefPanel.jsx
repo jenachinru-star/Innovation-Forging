@@ -21,6 +21,7 @@ function sceneLabel(scene) {
 export default function BriefPanel({ scenes = [], plan, dispatch }) {
   const list = Array.isArray(scenes) ? scenes : [];
   const briefs = Array.isArray(plan?.briefs) ? plan.briefs : [];
+  const cues = Array.isArray(plan?.cues) ? plan.cues : [];
   const [sceneId, setSceneId] = useState(list[0]?.id || '');
   const [original, setOriginal] = useState('');
   const [lastOriginal, setLastOriginal] = useState('');
@@ -39,7 +40,11 @@ export default function BriefPanel({ scenes = [], plan, dispatch }) {
   function handleSplit() {
     const text = original.trim();
     if (!text) return;
-    const parts = splitBrief(text, { sceneId });
+    const scene = list.find((item) => (item.id || '') === sceneId) || list[0];
+    const parts = splitBrief(text, {
+      sceneId,
+      sceneNumber: scene?.sceneNumber ?? null,
+    });
     for (const brief of parts) {
       dispatch?.({ type: 'addBrief', brief });
     }
@@ -111,7 +116,11 @@ export default function BriefPanel({ scenes = [], plan, dispatch }) {
                 {items.map((brief) => {
                   const statusId = `brief-status-${brief.id}`;
                   const dueId = `brief-due-${brief.id}`;
+                  const cueId = `brief-cue-${brief.id}`;
                   const done = brief.status === 'confirmed' || brief.status === 'implemented';
+                  const sceneCues = cues.filter(
+                    (cue) => cue && Number(cue.sceneNumber) === Number(brief.sceneNumber)
+                  );
                   return (
                     <li
                       key={brief.id}
@@ -165,6 +174,28 @@ export default function BriefPanel({ scenes = [], plan, dispatch }) {
                           }
                           className="field px-1 py-0.5 text-xs"
                         />
+                      </div>
+                      <div className="muted mt-2 flex flex-wrap items-center gap-2 text-xs">
+                        <label htmlFor={cueId}>关联提示</label>
+                        <select
+                          id={cueId}
+                          value={brief.cueId || ''}
+                          onChange={(e) =>
+                            dispatch?.({
+                              type: 'updateBrief',
+                              id: brief.id,
+                              patch: { cueId: e.target.value || null },
+                            })
+                          }
+                          className="field px-1 py-0.5 text-xs"
+                        >
+                          <option value="">不关联</option>
+                          {sceneCues.map((cue) => (
+                            <option key={cue.id} value={cue.id}>
+                              [{DEPARTMENT_LABELS[cue.department] || cue.department}] {cue.content}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </li>
                   );

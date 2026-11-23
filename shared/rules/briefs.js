@@ -31,8 +31,12 @@ function classify(segment) {
   return bestScore > 0 ? bestDepartment : 'uncertain';
 }
 
-export function splitBrief(original, { sceneId = '' } = {}) {
+export function splitBrief(original, { sceneId = '', sceneNumber = null } = {}) {
   const text = typeof original === 'string' ? original : original == null ? '' : String(original);
+  const normalizedSceneNumber =
+    sceneNumber != null && sceneNumber !== '' && Number.isFinite(Number(sceneNumber))
+      ? Number(sceneNumber)
+      : null;
   const segments = text
     .split(/[；。，、]/)
     .map((segment) => segment.trim())
@@ -45,6 +49,7 @@ export function splitBrief(original, { sceneId = '' } = {}) {
       id: '',
       department,
       sceneId,
+      sceneNumber: normalizedSceneNumber,
       cueId: null,
       original: segment,
       items: uncertain ? [] : [segment],

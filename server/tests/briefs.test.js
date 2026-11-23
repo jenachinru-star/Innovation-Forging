@@ -14,4 +14,11 @@ describe('splitBrief', () => {
   it('无法归类进待确认', () => {
     expect(splitBrief('就是那种说不清的感觉').some((b) => b.uncertain.length > 0)).toBe(true);
   });
+
+  it('保留入参的 sceneId 与 sceneNumber', () => {
+    const out = splitBrief('加个定点', { sceneId: 'sc-2', sceneNumber: 2 });
+    expect(out).toHaveLength(1);
+    expect(out[0].sceneId).toBe('sc-2');
+    expect(out[0].sceneNumber).toBe(2);
+  });
 });

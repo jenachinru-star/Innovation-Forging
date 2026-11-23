@@ -64,4 +64,35 @@ describe('ResultTabs', () => {
     fireEvent.click(screen.getByText('需求转译'));
     expect(screen.getByLabelText('场次')).toBeInTheDocument();
   });
+
+  it('走位示意默认第一场且可切换场次', () => {
+    const withScenes = {
+      summary: '简介',
+      scenes: [
+        { id: 'sc-1', sceneNumber: 1, title: '第一场', presentCharacters: ['老陈'] },
+        { id: 'sc-2', sceneNumber: 2, title: '第二场', presentCharacters: ['阿岚'] },
+      ],
+      characters: [
+        { id: 'ch-老陈', name: '老陈' },
+        { id: 'ch-阿岚', name: '阿岚' },
+      ],
+      relationships: [],
+    };
+    render(
+      <ResultTabs
+        scriptData={withScenes}
+        onBackToEdit={() => {}}
+        plan={{ cues: [], staging: null }}
+        dispatch={() => {}}
+      />
+    );
+
+    expect(screen.getByTestId('actor-老陈')).toBeInTheDocument();
+    expect(screen.queryByTestId('actor-阿岚')).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('走位场次'), { target: { value: '2' } });
+
+    expect(screen.getByTestId('actor-阿岚')).toBeInTheDocument();
+    expect(screen.queryByTestId('actor-老陈')).not.toBeInTheDocument();
+  });
 });

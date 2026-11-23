@@ -112,14 +112,9 @@ export default function StageBlocking({
   const actors = actorsFor(characters, plan?.cast);
   const placements = plan?.staging?.placements;
   const lines = sceneLines(scenes, sceneNumber);
-  const currentScene = getScene(scenes, sceneNumber);
-  const sceneCues = (Array.isArray(plan?.cues) ? plan.cues : []).filter((cue) => {
-    if (!cue) return false;
-    if (cue.sceneNumber != null) {
-      return Number(cue.sceneNumber) === Number(sceneNumber);
-    }
-    return Boolean(currentScene?.id) && cue.sceneId === currentScene.id;
-  });
+  const sceneCues = (Array.isArray(plan?.cues) ? plan.cues : []).filter(
+    (cue) => cue && Number(cue.sceneNumber) === Number(sceneNumber)
+  );
 
   function positionFor(actor, index) {
     const local = positions[actor.characterId];
@@ -168,11 +163,14 @@ export default function StageBlocking({
     const text = content.trim();
     if (!text) return;
 
+    const quoteText = quote.trim();
     const cue = {
       id: nextId('cue', plan?.cues),
       department,
       sceneNumber,
-      trigger: { type: 'line', quote },
+      trigger: quoteText
+        ? { type: 'line', quote: quoteText }
+        : { type: 'free', quote: '' },
       content: text,
       status: 'draft',
       note: '',

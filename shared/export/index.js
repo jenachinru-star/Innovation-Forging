@@ -105,10 +105,13 @@ function briefSection(briefs) {
               const detail = asArray(brief.items).length > 0
                 ? ` <span class="muted">（${esc(joinList(brief.items))}）</span>`
                 : '';
+              const scene = brief.sceneNumber != null
+                ? `第 ${esc(brief.sceneNumber)} 场 · `
+                : '';
               const uncertain = asArray(brief.uncertain).length > 0
                 ? ` <span class="warn">待确认：${esc(joinList(brief.uncertain))}</span>`
                 : '';
-              return `<li>${esc(brief.original)}${detail}${uncertain}</li>`;
+              return `<li>${scene}${esc(brief.original)}${detail}${uncertain}</li>`;
             })
             .join('')}</ul>`;
     return `<div class="dept"><h3>${esc(label)}</h3>${body}</div>`;
@@ -259,5 +262,5 @@ export function toCsv(rows, headers) {
     const record = row && typeof row === 'object' ? row : {};
     lines.push(columns.map((column) => csvCell(record[column])).join(','));
   }
-  return lines.join('\n');
+  return `\uFEFF${lines.join('\n')}`;
 }

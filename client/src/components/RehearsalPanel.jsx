@@ -28,8 +28,6 @@ export function organizeNotes(text) {
   return { decisions, openQuestions, todos };
 }
 
-const EMPTY_ORGANIZED = { decisions: [], openQuestions: [], todos: [] };
-
 function ListSection({ title, testId, items, emptyText }) {
   return (
     <section data-testid={testId} className="card rounded p-3">
@@ -52,26 +50,45 @@ function ListSection({ title, testId, items, emptyText }) {
   );
 }
 
-export default function RehearsalPanel({ plan, dispatch, scenes, onChange }) {
+export default function RehearsalPanel({ plan, dispatch, scenes }) {
   void scenes;
-  const [notes, setNotes] = useState('');
-  const [organized, setOrganized] = useState(EMPTY_ORGANIZED);
+  const saved = Array.isArray(plan?.rehearsals) && plan.rehearsals[0] ? plan.rehearsals[0] : null;
+  const [notes, setNotes] = useState(typeof saved?.notes === 'string' ? saved.notes : '');
+  const [organized, setOrganized] = useState(() => ({
+    decisions: Array.isArray(saved?.decisions) ? saved.decisions : [],
+    openQuestions: Array.isArray(saved?.openQuestions) ? saved.openQuestions : [],
+    todos: Array.isArray(saved?.todos) ? saved.todos : [],
+  }));
 
   const impacts = Array.isArray(plan?.impacts) ? plan.impacts : [];
+
+  function persist(next, nextNotes = notes) {
+    dispatch?.({
+      type: 'setRehearsalNotes',
+      payload: {
+        notes: nextNotes,
+        decisions: next.decisions,
+        openQuestions: next.openQuestions,
+        todos: next.todos,
+      },
+    });
+  }
 
   function handleOrganize() {
     const next = organizeNotes(notes);
     setOrganized(next);
-    onChange?.(next);
+    persist(next);
   }
 
   function toggleTodo(index) {
-    setOrganized((prev) => ({
-      ...prev,
-      todos: prev.todos.map((todo, i) =>
+    const next = {
+      ...organized,
+      todos: organized.todos.map((todo, i) =>
         i === index ? { ...todo, done: !todo.done } : todo
       ),
-    }));
+    };
+    setOrganized(next);
+    persist(next);
   }
 
   return (

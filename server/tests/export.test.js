@@ -86,6 +86,12 @@ describe('toHtml', () => {
     expect(html).toContain('老陈');
     expect(html).toContain('雨夜重逢方案');
   });
+
+  it('部门需求单显示所属场次', () => {
+    const html = toHtml({ scriptData, plan, now: '2026-11-23 10:30' });
+
+    expect(html).toContain('第 1 场 · 音乐渐入');
+  });
 });
 
 describe('toCsv', () => {
@@ -98,11 +104,12 @@ describe('toCsv', () => {
       ['a', 'b']
     );
 
-    expect(csv.split('\n')[0]).toBe('a,b');
-    expect(csv).toBe('a,b\n1,"换\n行"\n"他说""好""",2');
+    expect(csv[0]).toBe('\uFEFF');
+    expect(csv.split('\n')[0]).toBe('\uFEFFa,b');
+    expect(csv).toBe('\uFEFFa,b\n1,"换\n行"\n"他说""好""",2');
   });
 
   it('缺失字段输出为空字符串', () => {
-    expect(toCsv([{ a: 'x' }], ['a', 'b'])).toBe('a,b\nx,');
+    expect(toCsv([{ a: 'x' }], ['a', 'b'])).toBe('\uFEFFa,b\nx,');
   });
 });

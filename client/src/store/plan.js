@@ -29,6 +29,14 @@ function patchById(list, id, patch) {
   return asArray(list).map((item) => (item && item.id === id ? { ...item, ...asObject(patch) } : item));
 }
 
+function toSceneNumber(value, fallbackId) {
+  if (value != null && value !== '' && Number.isFinite(Number(value))) {
+    return Number(value);
+  }
+  const match = fallbackId == null ? null : String(fallbackId).match(/(\d+)/);
+  return match ? Number(match[1]) : null;
+}
+
 function normalizeStaging(staging) {
   const base = asObject(staging);
   return {
@@ -69,6 +77,7 @@ export function planReducer(state, action) {
     case 'addCue': {
       const cues = asArray(current.cues);
       const cue = asObject(action.cue);
+      const sceneId = cue.sceneId || '';
       return {
         ...current,
         cues: [
@@ -76,7 +85,8 @@ export function planReducer(state, action) {
           {
             id: cue.id || nextId('cue', cues),
             department: cue.department || 'lighting',
-            sceneId: cue.sceneId || '',
+            sceneId,
+            sceneNumber: toSceneNumber(cue.sceneNumber, sceneId),
             trigger: cue.trigger || { type: 'free', quote: '', offset: null },
             content: cue.content || '',
             status: cue.status || 'draft',
@@ -100,6 +110,7 @@ export function planReducer(state, action) {
     case 'addBrief': {
       const briefs = asArray(current.briefs);
       const brief = asObject(action.brief);
+      const sceneId = brief.sceneId || '';
       return {
         ...current,
         briefs: [
@@ -107,7 +118,8 @@ export function planReducer(state, action) {
           {
             id: brief.id || nextId('brief', briefs),
             department: brief.department || 'lighting',
-            sceneId: brief.sceneId || '',
+            sceneId,
+            sceneNumber: toSceneNumber(brief.sceneNumber, sceneId),
             cueId: brief.cueId ?? null,
             original: brief.original || '',
             items: asArray(brief.items),
@@ -182,9 +194,44 @@ export function planReducer(state, action) {
         rehearsals: patchById(current.rehearsals, action.id, action.patch),
       };
 
+    case 'setRehearsalNotes': {
+      const rehearsals = asArray(current.rehearsals);
+      const payload = asObject(action.payload);
+      const base = rehearsals.length > 0 && rehearsals[0] ? rehearsals[0] : {};
+      return {
+        ...current,
+        rehearsals: [
+          {
+            id: base.id || 'reh-1',
+            segmentId: base.segmentId || '',
+            date: base.date || '',
+            location: base.location || '',
+            castIds: asArray(base.castIds),
+            notes: payload.notes ?? base.notes ?? '',
+            decisions: asArray(payload.decisions),
+            openQuestions: asArray(payload.openQuestions),
+            todos: asArray(payload.todos),
+          },
+          ...rehearsals.slice(1),
+        ],
+      };
+    }
+
     case 'addImpact': {
       const impacts = asArray(current.impacts);
       const impact = asObject(action.impact);
+      const target = impact.target || null;
+      if (target && typeof target === 'object') {
+        const duplicate = impacts.some(
+          (item) =>
+            item &&
+            item.status === 'open' &&
+            item.target &&
+            item.target.kind === target.kind &&
+            item.target.refId === target.refId
+        );
+        if (duplicate) return current;
+      }
       return {
         ...current,
         impacts: [
@@ -192,7 +239,7 @@ export function planReducer(state, action) {
           {
             id: impact.id || nextId('impact', impacts),
             change: impact.change || null,
-            target: impact.target || null,
+            target,
             reason: impact.reason || '',
             suggestion: impact.suggestion || '',
             status: impact.status || 'open',

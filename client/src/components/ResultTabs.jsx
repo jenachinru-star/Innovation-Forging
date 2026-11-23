@@ -31,10 +31,12 @@ export default function ResultTabs({
   dispatch,
 }) {
   const [tab, setTab] = useState('schedule'); // schedule | relations | gallery | briefs | rehearsal | export
-
   const scenes = scriptData?.scenes || [];
-  const stageScene = scenes[0] || null;
-  const stageSceneNumber = stageScene?.sceneNumber ?? 1;
+  const [stageSceneNumber, setStageSceneNumber] = useState(scenes[0]?.sceneNumber ?? 1);
+  const stageScene =
+    scenes.find((scene) => Number(scene?.sceneNumber) === Number(stageSceneNumber)) ||
+    scenes[0] ||
+    null;
   const scriptCharacters = Array.isArray(scriptData?.characters) ? scriptData.characters : [];
   const sceneNames =
     (Array.isArray(stageScene?.presentCharacters) && stageScene.presentCharacters.length > 0
@@ -88,7 +90,28 @@ export default function ResultTabs({
               />
             </div>
             <div className="mt-8">
-              <h3 className="mb-3 text-sm font-medium">走位示意</h3>
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <h3 className="text-sm font-medium">走位示意</h3>
+                {scenes.length > 0 && (
+                  <>
+                    <label htmlFor="stage-scene" className="muted text-xs">
+                      走位场次
+                    </label>
+                    <select
+                      id="stage-scene"
+                      value={stageSceneNumber}
+                      onChange={(e) => setStageSceneNumber(Number(e.target.value))}
+                      className="field px-2 py-0.5 text-xs"
+                    >
+                      {scenes.map((scene) => (
+                        <option key={scene.id || scene.sceneNumber} value={scene.sceneNumber}>
+                          {scene.title || `第 ${scene.sceneNumber} 场`}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                )}
+              </div>
               <StageBlocking
                 characters={stageCharacters}
                 scenes={scenes}
@@ -109,7 +132,6 @@ export default function ResultTabs({
             scenes={scenes}
             plan={plan}
             dispatch={dispatch}
-            onChange={onChangeScene}
           />
         )}
         {tab === 'export' && (

@@ -95,4 +95,46 @@ describe('ExportPanel', () => {
 
     expect(createObjectURL).toHaveBeenCalledTimes(4);
   });
+
+  it('部门需求单导出内容带「第 N 场」', async () => {
+    render(<ExportPanel title="雨夜重逢方案" scriptData={scriptData} plan={plan} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '部门需求单' }));
+
+    const blob = createObjectURL.mock.calls[0][0];
+    const content = await blob.text();
+    expect(content).toContain('第 1 场');
+    expect(content).toContain('音乐渐入');
+  });
+
+  it('环境不支持 createObjectURL 时提示改用打印且不抛错', () => {
+    URL.createObjectURL = undefined;
+
+    render(<ExportPanel title="雨夜重逢方案" scriptData={scriptData} plan={plan} />);
+
+    expect(() =>
+      fireEvent.click(screen.getByRole('button', { name: '部门需求单' }))
+    ).not.toThrow();
+    expect(screen.getByRole('status')).toHaveTextContent('当前环境不支持下载，可改用浏览器打印（Ctrl+P）');
+  });
+
+  it('下载前把链接挂到页面，并延迟释放对象 URL', () => {
+    vi.useFakeTimers();
+    const appendSpy = vi.spyOn(document.body, 'appendChild');
+    try {
+      render(<ExportPanel title="雨夜重逢方案" scriptData={scriptData} plan={plan} />);
+      fireEvent.click(screen.getByRole('button', { name: '部门需求单' }));
+
+      expect(appendSpy).toHaveBeenCalled();
+      const appended = appendSpy.mock.calls[appendSpy.mock.calls.length - 1][0];
+      expect(appended.tagName).toBe('A');
+      expect(revokeObjectURL).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(0);
+      expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock');
+    } finally {
+      appendSpy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { useReducer } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import BriefPanel from './BriefPanel.jsx';
@@ -37,5 +37,68 @@ describe('BriefPanel', () => {
     expect(screen.getByText('这里想更暖一点')).toBeInTheDocument();
     expect(screen.getByText('加个定点')).toBeInTheDocument();
     expect(screen.getByText('音乐渐入')).toBeInTheDocument();
+  });
+
+  it('拆分时把当前场次的 sceneNumber 传给 splitBrief', () => {
+    const dispatch = vi.fn();
+    render(<BriefPanel scenes={scenes} plan={{ briefs: [], cues: [] }} dispatch={dispatch} />);
+
+    fireEvent.change(screen.getByLabelText('导演原话'), {
+      target: { value: '加个定点' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '拆分' }));
+
+    const call = dispatch.mock.calls.find(([action]) => action.type === 'addBrief');
+    expect(call).toBeTruthy();
+    expect(call[0].brief.sceneNumber).toBe(1);
+  });
+
+  it('每条需求可通过「关联提示」选择本场提示并写入 cueId', () => {
+    const dispatch = vi.fn();
+    const plan = {
+      cues: [
+        {
+          id: 'cue-1',
+          department: 'lighting',
+          sceneNumber: 1,
+          content: '加定点',
+          trigger: { type: 'free', quote: '' },
+        },
+        {
+          id: 'cue-2',
+          department: 'music',
+          sceneNumber: 2,
+          content: '音乐渐入',
+          trigger: { type: 'free', quote: '' },
+        },
+      ],
+      briefs: [
+        {
+          id: 'brief-1',
+          department: 'lighting',
+          sceneNumber: 1,
+          original: '加个定点',
+          items: ['加个定点'],
+          uncertain: [],
+          status: 'draft',
+          cueId: null,
+        },
+      ],
+    };
+
+    render(<BriefPanel scenes={scenes} plan={plan} dispatch={dispatch} />);
+
+    const select = screen.getByLabelText('关联提示');
+    const options = Array.from(select.querySelectorAll('option')).map((o) => o.textContent);
+    expect(options.join(' ')).toContain('加定点');
+    expect(options.join(' ')).not.toContain('音乐渐入');
+
+    fireEvent.change(select, { target: { value: 'cue-1' } });
+
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'updateBrief',
+      id: 'brief-1',
+      patch: { cueId: 'cue-1' },
+    });
   });
 });

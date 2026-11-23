@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { toCsv, toHtml } from '@director/shared/export/index.js';
 import { DEPARTMENT_LABELS } from '@director/shared/rules/briefs.js';
+
+const UNSUPPORTED_MESSAGE = '当前环境不支持下载，可改用浏览器打印（Ctrl+P）';
 
 function pad2(value) {
   return String(value).padStart(2, '0');
@@ -21,15 +24,21 @@ function joinList(value) {
 }
 
 function download(filename, content, type) {
+  if (typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') {
+    return false;
+  }
   const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = filename;
+  document.body.appendChild(anchor);
   anchor.click?.();
+  document.body.removeChild(anchor);
   if (typeof URL.revokeObjectURL === 'function') {
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   }
+  return true;
 }
 
 function scheduleCsv(scriptData) {
@@ -51,7 +60,7 @@ function briefCsv(plan) {
   const briefs = Array.isArray(plan?.briefs) ? plan.briefs : [];
   const rows = briefs.map((brief) => ({
     部门: DEPARTMENT_LABELS[brief.department] || '待确认',
-    场次: brief.sceneNumber ?? '',
+    场次: brief.sceneNumber != null ? `第 ${brief.sceneNumber} 场` : '',
     原话: brief.original || '',
     条目: joinList(brief.items),
     待确认: joinList(brief.uncertain),
@@ -83,14 +92,29 @@ function stagingCsv(plan) {
 
 export default function ExportPanel({ title, scriptData, plan }) {
   const planName = title || plan?.name || '舞台方案';
+  const [notice, setNotice] = useState('');
+
+  function announce(ok) {
+    setNotice(ok ? '' : UNSUPPORTED_MESSAGE);
+  }
 
   function exportCsv(label, content) {
-    download(`${safeName(planName)}-${label}-${timestamp()}.csv`, content, 'text/csv;charset=utf-8');
+    const ok = download(
+      `${safeName(planName)}-${label}-${timestamp()}.csv`,
+      content,
+      'text/csv;charset=utf-8'
+    );
+    announce(ok);
   }
 
   function exportAll() {
     const html = toHtml({ title: planName, scriptData, plan, now: new Date() });
-    download(`${safeName(planName)}-排演材料-${timestamp()}.html`, html, 'text/html;charset=utf-8');
+    const ok = download(
+      `${safeName(planName)}-排演材料-${timestamp()}.html`,
+      html,
+      'text/html;charset=utf-8'
+    );
+    announce(ok);
   }
 
   return (
@@ -98,6 +122,11 @@ export default function ExportPanel({ title, scriptData, plan }) {
       <p className="muted mb-4 text-sm">
         导出当前方案的排演材料，文件名包含方案名与生成时间。
       </p>
+      {notice && (
+        <p role="status" className="alert-note mb-4 p-3 text-sm">
+          {notice}
+        </p>
+      )}
       <div className="flex flex-wrap gap-3">
         <button
           type="button"

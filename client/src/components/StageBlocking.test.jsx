@@ -1,11 +1,30 @@
 import { describe, it, expect, vi } from 'vitest';
+import { useReducer } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import StageBlocking from './StageBlocking.jsx';
+import { createPlan, planReducer } from '../store/plan.js';
 
 const characters = [
   { id: 'ch-老陈', name: '老陈' },
   { id: 'ch-阿岚', name: '阿岚' },
 ];
+
+const scenes = [{ id: 'sc-1', sceneNumber: 1, lines: [] }];
+
+function Harness() {
+  const [plan, dispatch] = useReducer(planReducer, undefined, () =>
+    createPlan('stage', '测试方案')
+  );
+  return (
+    <StageBlocking
+      characters={characters}
+      scenes={scenes}
+      sceneNumber={1}
+      plan={plan}
+      dispatch={dispatch}
+    />
+  );
+}
 
 function rect() {
   return { left: 0, top: 0, width: 800, height: 480, right: 800, bottom: 480 };
@@ -51,6 +70,30 @@ describe('StageBlocking', () => {
     expect(call).toBeTruthy();
     expect(call[0].cue.department).toBe('lighting');
     expect(call[0].cue.content).toBe('加定点');
+  });
+
+  it('未绑定台词时 trigger 为 free', () => {
+    const dispatch = vi.fn();
+    render(<StageBlocking characters={characters} scenes={scenes} sceneNumber={1} dispatch={dispatch} />);
+
+    fireEvent.click(screen.getByText('添加提示'));
+    fireEvent.change(screen.getByLabelText('内容'), { target: { value: '加定点' } });
+    fireEvent.click(screen.getByText('确认添加'));
+
+    const call = dispatch.mock.calls.find(([action]) => action.type === 'addCue');
+    expect(call[0].cue.trigger).toEqual({ type: 'free', quote: '' });
+  });
+
+  it('添加提示后组件内列表立即出现该提示内容', () => {
+    render(<Harness />);
+
+    fireEvent.click(screen.getByText('添加提示'));
+    fireEvent.change(screen.getByLabelText('内容'), { target: { value: '加定点' } });
+    fireEvent.click(screen.getByText('确认添加'));
+
+    expect(screen.getByTestId('cue-cue-1')).toBeInTheDocument();
+    expect(screen.getByText('加定点')).toBeInTheDocument();
+    expect(screen.getByText('删除')).toBeInTheDocument();
   });
 
   it('绑定台词下拉读取场景 lines，选项文本为 speaker：text、value 为 text', () => {
