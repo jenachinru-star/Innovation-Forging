@@ -30,6 +30,22 @@ export default function ResultTabs({
 }) {
   const [tab, setTab] = useState('schedule'); // schedule | relations | gallery | briefs
 
+  const scenes = scriptData?.scenes || [];
+  const stageScene = scenes[0] || null;
+  const stageSceneNumber = stageScene?.sceneNumber ?? 1;
+  const scriptCharacters = Array.isArray(scriptData?.characters) ? scriptData.characters : [];
+  const sceneNames =
+    (Array.isArray(stageScene?.presentCharacters) && stageScene.presentCharacters.length > 0
+      ? stageScene.presentCharacters
+      : stageScene?.characters) || [];
+  const characterByName = new Map(
+    scriptCharacters.filter((character) => character && character.name).map((character) => [character.name, character])
+  );
+  const stageCharacters =
+    sceneNames.length > 0
+      ? sceneNames.map((name) => characterByName.get(name) || { id: `ch-${name}`, name })
+      : scriptCharacters;
+
   const tabBtn = (id, label) => (
     <button
       onClick={() => setTab(id)}
@@ -69,7 +85,13 @@ export default function ResultTabs({
             </div>
             <div className="mt-8">
               <h3 className="mb-3 text-sm font-medium text-stone-300">走位示意</h3>
-              <StageBlocking characters={scriptData?.scenes?.[0]?.characters || []} />
+              <StageBlocking
+                characters={stageCharacters}
+                scenes={scenes}
+                sceneNumber={stageSceneNumber}
+                plan={plan}
+                dispatch={dispatch}
+              />
             </div>
           </>
         )}
