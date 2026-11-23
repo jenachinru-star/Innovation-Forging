@@ -29,7 +29,7 @@ export default function ScheduleTable({ scriptData, onChangeScene }) {
                   <td className="p-2">
                     {onChangeScene ? (
                       <input
-                        value={s.location}
+                        value={s.location ?? ''}
                         onChange={(e) => onChangeScene(idx, { location: e.target.value })}
                         className="w-full bg-transparent outline-none"
                       />
@@ -54,7 +54,7 @@ export default function ScheduleTable({ scriptData, onChangeScene }) {
                   <td className="p-2">
                     {onChangeScene ? (
                       <input
-                        value={s.summary}
+                        value={s.summary ?? ''}
                         onChange={(e) => onChangeScene(idx, { summary: e.target.value })}
                         className="w-full bg-transparent outline-none"
                       />

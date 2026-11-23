@@ -39,4 +39,30 @@ describe('ScheduleTable', () => {
     fireEvent.change(cell, { target: { value: '客厅' } });
     expect(onChangeScene).toHaveBeenCalledWith(0, { location: '客厅' });
   });
+
+  it('传入 onChangeScene 时，编辑时长触发数值回写', () => {
+    const onChangeScene = vi.fn();
+    render(<ScheduleTable scriptData={data} onChangeScene={onChangeScene} />);
+    const cell = screen.getByDisplayValue('6');
+    fireEvent.change(cell, { target: { value: '9' } });
+    expect(onChangeScene).toHaveBeenCalledWith(0, { estimatedMinutes: 9 });
+  });
+
+  it('传入 onChangeScene 时，编辑摘要会回调', () => {
+    const onChangeScene = vi.fn();
+    render(<ScheduleTable scriptData={data} onChangeScene={onChangeScene} />);
+    const cell = screen.getByDisplayValue('重逢');
+    fireEvent.change(cell, { target: { value: '争执' } });
+    expect(onChangeScene).toHaveBeenCalledWith(0, { summary: '争执' });
+  });
+
+  it('可编辑模式下字段缺失不会崩溃', () => {
+    render(
+      <ScheduleTable
+        scriptData={{ summary: '', scenes: [{ sceneNumber: 1, title: '第一场' }], characters: [], relationships: [] }}
+        onChangeScene={() => {}}
+      />,
+    );
+    expect(screen.getByText('第一场')).toBeInTheDocument();
+  });
 });
