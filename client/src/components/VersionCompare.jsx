@@ -12,6 +12,7 @@ export default function VersionCompare({ onBack }) {
   async function load(file, setter) {
     setBusy(true);
     setError('');
+    setDiff(null);
     try {
       const { scriptText } = await extractUpload(file);
       const { scriptData } = await parseScript(scriptText);
