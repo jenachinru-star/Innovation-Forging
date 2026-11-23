@@ -63,6 +63,7 @@ export function normalizeScene(raw) {
     estimatedMinutes: toNum(r.estimatedMinutes),
     rawRange: normalizeRawRange(r.rawRange),
     actId: toStr(r.actId) || null,
+    structure: toStr(r.structure),
   };
 }
 

@@ -33,4 +33,22 @@ describe('ResultTabs', () => {
     render(<ResultTabs scriptData={data} onBackToEdit={() => {}} source="sample" />);
     expect(screen.getByText('来源：样例剧本')).toBeInTheDocument();
   });
+  it('切换到需求转译标签显示场次下拉', () => {
+    const withScenes = {
+      summary: '简介',
+      scenes: [{ id: 'sc-1', sceneNumber: 1, title: '第一场' }],
+      characters: [],
+      relationships: [],
+    };
+    render(
+      <ResultTabs
+        scriptData={withScenes}
+        onBackToEdit={() => {}}
+        plan={{ briefs: [] }}
+        dispatch={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByText('需求转译'));
+    expect(screen.getByLabelText('场次')).toBeInTheDocument();
+  });
 });

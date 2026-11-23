@@ -1,0 +1,166 @@
+import { useMemo, useState } from 'react';
+import { splitBrief, DEPARTMENTS, DEPARTMENT_LABELS } from '@director/shared/rules/briefs.js';
+
+const STATUS_OPTIONS = [
+  ['draft', '草稿'],
+  ['submitted', '已提交'],
+  ['confirmed', '已确认'],
+  ['implemented', '已实施'],
+  ['needsReview', '待确认'],
+];
+
+const GROUP_ORDER = [...DEPARTMENTS, 'uncertain'];
+const GROUP_LABELS = { ...DEPARTMENT_LABELS, uncertain: '待确认' };
+
+function sceneLabel(scene) {
+  if (!scene) return '未命名场次';
+  const title = scene.title || scene.location || '未命名';
+  return `第 ${scene.sceneNumber} 场 · ${title}`;
+}
+
+export default function BriefPanel({ scenes = [], plan, dispatch }) {
+  const list = Array.isArray(scenes) ? scenes : [];
+  const briefs = Array.isArray(plan?.briefs) ? plan.briefs : [];
+  const [sceneId, setSceneId] = useState(list[0]?.id || '');
+  const [original, setOriginal] = useState('');
+  const [lastOriginal, setLastOriginal] = useState('');
+
+  const grouped = useMemo(() => {
+    const map = new Map();
+    for (const brief of briefs) {
+      if (!brief) continue;
+      const key = GROUP_LABELS[brief.department] ? brief.department : 'uncertain';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(brief);
+    }
+    return GROUP_ORDER.filter((key) => map.has(key)).map((key) => [key, map.get(key)]);
+  }, [briefs]);
+
+  function handleSplit() {
+    const text = original.trim();
+    if (!text) return;
+    const parts = splitBrief(text, { sceneId });
+    for (const brief of parts) {
+      dispatch?.({ type: 'addBrief', brief });
+    }
+    setLastOriginal(text);
+  }
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-start gap-3">
+        <div>
+          <label htmlFor="brief-scene" className="mb-1 block text-xs text-stone-400">
+            场次
+          </label>
+          <select
+            id="brief-scene"
+            value={sceneId}
+            onChange={(e) => setSceneId(e.target.value)}
+            className="rounded border border-stone-600 bg-stone-900 px-2 py-1 text-sm text-stone-200"
+          >
+            {list.length === 0 && <option value="">暂无场次</option>}
+            {list.map((scene) => (
+              <option key={scene.id || scene.sceneNumber} value={scene.id || ''}>
+                {sceneLabel(scene)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="min-w-[16rem] flex-1">
+          <label htmlFor="brief-original" className="mb-1 block text-xs text-stone-400">
+            导演原话
+          </label>
+          <textarea
+            id="brief-original"
+            rows={3}
+            value={original}
+            onChange={(e) => setOriginal(e.target.value)}
+            placeholder="例如：这里想更暖一点，加个定点；音乐渐入"
+            className="w-full rounded border border-stone-600 bg-stone-900 px-2 py-1 text-sm text-stone-200"
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleSplit}
+          className="mt-5 rounded-md bg-amber-200 px-3 py-1.5 text-sm text-stone-900"
+        >
+          拆分
+        </button>
+      </div>
+
+      {lastOriginal && (
+        <p className="mt-2 text-xs text-stone-500">原话：{lastOriginal}</p>
+      )}
+
+      {grouped.length === 0 ? (
+        <p className="mt-4 text-sm text-stone-400">暂无需求条目，先输入导演原话并拆分。</p>
+      ) : (
+        <div className="mt-4 space-y-5">
+          {grouped.map(([department, items]) => (
+            <section key={department} data-testid={`brief-group-${department}`}>
+              <h4 className="mb-2 text-sm font-medium text-stone-300">
+                {GROUP_LABELS[department] || department}
+              </h4>
+              <ul className="space-y-2">
+                {items.map((brief) => {
+                  const statusId = `brief-status-${brief.id}`;
+                  const dueId = `brief-due-${brief.id}`;
+                  return (
+                    <li key={brief.id} className="rounded border border-stone-700 p-3">
+                      <p className="text-sm text-stone-200">{brief.original}</p>
+                      {Array.isArray(brief.items) && brief.items.length > 0 && (
+                        <p className="mt-1 text-xs text-stone-400">条目：{brief.items.join('；')}</p>
+                      )}
+                      {Array.isArray(brief.uncertain) && brief.uncertain.length > 0 && (
+                        <p className="mt-1 text-xs text-amber-200">待确认：{brief.uncertain.join('；')}</p>
+                      )}
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-stone-400">
+                        <label htmlFor={statusId}>状态</label>
+                        <select
+                          id={statusId}
+                          value={brief.status || 'draft'}
+                          onChange={(e) =>
+                            dispatch?.({
+                              type: 'updateBrief',
+                              id: brief.id,
+                              patch: { status: e.target.value },
+                            })
+                          }
+                          className="rounded border border-stone-600 bg-stone-900 px-1 py-0.5 text-xs text-stone-200"
+                        >
+                          {STATUS_OPTIONS.map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+
+                        <label htmlFor={dueId}>截止</label>
+                        <input
+                          id={dueId}
+                          type="date"
+                          value={brief.dueDate || ''}
+                          onChange={(e) =>
+                            dispatch?.({
+                              type: 'updateBrief',
+                              id: brief.id,
+                              patch: { dueDate: e.target.value || null },
+                            })
+                          }
+                          className="rounded border border-stone-600 bg-stone-900 px-1 py-0.5 text-xs text-stone-200"
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

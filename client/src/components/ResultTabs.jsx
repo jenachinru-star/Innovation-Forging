@@ -4,6 +4,7 @@ import CadencePanel from './CadencePanel.jsx';
 import RelationGraph from './RelationGraph.jsx';
 import CharacterGallery from './CharacterGallery.jsx';
 import StageBlocking from './StageBlocking.jsx';
+import BriefPanel from './BriefPanel.jsx';
 import { getSourceMode } from '../engine/index.js';
 
 const SOURCE_LABELS = {
@@ -18,8 +19,16 @@ function sourceLabel(source) {
   return getSourceMode() === 'local' ? `${base} · 仅本地处理` : base;
 }
 
-export default function ResultTabs({ scriptData, onBackToEdit, onChangeScene, source, briefs = [] }) {
-  const [tab, setTab] = useState('schedule'); // schedule | relations | gallery
+export default function ResultTabs({
+  scriptData,
+  onBackToEdit,
+  onChangeScene,
+  source,
+  briefs = [],
+  plan,
+  dispatch,
+}) {
+  const [tab, setTab] = useState('schedule'); // schedule | relations | gallery | briefs
 
   const tabBtn = (id, label) => (
     <button
@@ -40,6 +49,7 @@ export default function ResultTabs({ scriptData, onBackToEdit, onChangeScene, so
           {tabBtn('schedule', '排演准备表')}
           {tabBtn('relations', '人物关系图')}
           {tabBtn('gallery', '角色海报')}
+          {tabBtn('briefs', '需求转译')}
         </div>
         <button onClick={onBackToEdit} className="text-sm text-stone-400 underline">
           返回编辑剧本
@@ -65,6 +75,9 @@ export default function ResultTabs({ scriptData, onBackToEdit, onChangeScene, so
         )}
         {tab === 'relations' && <RelationGraph scriptData={scriptData} />}
         {tab === 'gallery' && <CharacterGallery characters={scriptData.characters} />}
+        {tab === 'briefs' && (
+          <BriefPanel scenes={scriptData?.scenes || []} plan={plan} dispatch={dispatch} />
+        )}
       </div>
     </div>
   );

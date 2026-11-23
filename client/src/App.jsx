@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useReducer, useState } from 'react';
 import InputStep from './components/InputStep.jsx';
 import ConfirmStep from './components/ConfirmStep.jsx';
 import ResultTabs from './components/ResultTabs.jsx';
 import VersionCompare from './components/VersionCompare.jsx';
 import { generateScript, parseScript } from './engine/index.js';
+import { createPlan, planReducer } from './store/plan.js';
 
 export default function App() {
   const [step, setStep] = useState('input'); // input | confirm | result | compare
@@ -11,6 +12,9 @@ export default function App() {
   const [scriptText, setScriptText] = useState('');
   const [entryMode, setEntryMode] = useState('generate'); // generate | upload
   const [scriptData, setScriptData] = useState(null);
+  const [plan, dispatch] = useReducer(planReducer, undefined, () =>
+    createPlan('stage', '我的舞台方案')
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -81,7 +85,14 @@ export default function App() {
         />
       )}
       {step === 'result' && (
-        <ResultTabs scriptData={scriptData} onBackToEdit={() => setStep('confirm')} onChangeScene={handleChangeScene} source={entryMode} />
+        <ResultTabs
+          scriptData={scriptData}
+          onBackToEdit={() => setStep('confirm')}
+          onChangeScene={handleChangeScene}
+          source={entryMode}
+          plan={plan}
+          dispatch={dispatch}
+        />
       )}
       {step === 'compare' && <VersionCompare onBack={() => setStep('input')} />}
     </div>

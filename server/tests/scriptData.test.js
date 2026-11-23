@@ -86,6 +86,11 @@ describe('ScriptData v2 缺省字段', () => {
 });
 
 describe('normalizeScene', () => {
+  it('保留节奏视图写入的 structure 结构标签', () => {
+    expect(normalizeScene({ sceneNumber: 1, structure: '高潮' }).structure).toBe('高潮');
+    expect(normalizeScene({ sceneNumber: 1 }).structure).toBe('');
+  });
+
   it('归一化 presentCharacters、stageDirections、rawRange、actId', () => {
     const out = normalizeScene({
       sceneNumber: '3',
