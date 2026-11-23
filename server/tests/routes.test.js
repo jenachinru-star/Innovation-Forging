@@ -56,3 +56,25 @@ describe('POST /api/script/extract', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('错误路径', () => {
+  it('generate 服务异常 → 502', async () => {
+    const app = makeApp({ generateScript: async () => { throw new Error('boom'); } });
+    const res = await request(app).post('/api/script/generate').send({ material: 'x' });
+    expect(res.status).toBe(502);
+  });
+  it('parse 服务异常 → 502', async () => {
+    const app = makeApp({ parseScript: async () => { throw new Error('boom'); } });
+    const res = await request(app).post('/api/script/parse').send({ scriptText: 'x' });
+    expect(res.status).toBe(502);
+  });
+  it('extract 不支持类型 → 400', async () => {
+    const app = makeApp({
+      extractText: async () => { throw new Error('不支持的文件类型：.pdf'); },
+    });
+    const res = await request(app)
+      .post('/api/script/extract')
+      .attach('file', Buffer.from('x'), 'a.pdf');
+    expect(res.status).toBe(400);
+  });
+});

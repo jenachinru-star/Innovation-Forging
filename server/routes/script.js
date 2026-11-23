@@ -29,15 +29,22 @@ export function createScriptRouter(deps = {}) {
     }
   });
 
-  router.post('/extract', upload.single('file'), async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: '未收到文件' });
-    try {
-      const scriptText = await extractText(req.file.buffer, req.file.originalname);
-      if (!scriptText) return res.status(400).json({ error: '文件内容为空' });
-      return res.json({ scriptText });
-    } catch (e) {
-      return res.status(400).json({ error: String(e?.message || e) });
-    }
+  router.post('/extract', (req, res) => {
+    upload.single('file')(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({ error: '文件过大或上传失败' });
+      }
+      if (!req.file) return res.status(400).json({ error: '未收到文件' });
+      try {
+        const scriptText = await extractText(req.file.buffer, req.file.originalname);
+        if (!scriptText) return res.status(400).json({ error: '文件内容为空' });
+        return res.json({ scriptText });
+      } catch (e) {
+        const msg = String(e?.message || e);
+        const status = msg.includes('不支持的文件类型') ? 400 : 502;
+        return res.status(status).json({ error: msg });
+      }
+    });
   });
 
   router.post('/parse', async (req, res) => {
