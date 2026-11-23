@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ScheduleTable from './ScheduleTable.jsx';
 import RelationGraph from './RelationGraph.jsx';
 import CharacterGallery from './CharacterGallery.jsx';
+import StageBlocking from './StageBlocking.jsx';
 
 export default function ResultTabs({ scriptData, onBackToEdit, onChangeScene }) {
   const [tab, setTab] = useState('schedule'); // schedule | relations | gallery
@@ -29,7 +30,15 @@ export default function ResultTabs({ scriptData, onBackToEdit, onChangeScene }) 
       </div>
 
       <div className="mt-6">
-        {tab === 'schedule' && <ScheduleTable scriptData={scriptData} onChangeScene={onChangeScene} />}
+        {tab === 'schedule' && (
+          <>
+            <ScheduleTable scriptData={scriptData} onChangeScene={onChangeScene} />
+            <div className="mt-8">
+              <h3 className="mb-3 text-sm font-medium text-stone-300">走位示意</h3>
+              <StageBlocking characters={scriptData?.scenes?.[0]?.characters || []} />
+            </div>
+          </>
+        )}
         {tab === 'relations' && <RelationGraph scriptData={scriptData} />}
         {tab === 'gallery' && <CharacterGallery characters={scriptData.characters} />}
       </div>
