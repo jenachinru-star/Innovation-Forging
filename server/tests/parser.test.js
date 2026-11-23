@@ -26,6 +26,14 @@ describe('parseScriptOffline', () => {
     expect(scriptData.scenes[0].characters).toEqual(['老陈', '阿岚']);
   });
 
+  it('把台词结构化进当前场 lines', () => {
+    const { scriptData } = parseScriptOffline(TEXT);
+    expect(scriptData.scenes[0].lines).toEqual(
+      expect.arrayContaining([expect.objectContaining({ speaker: '老陈', text: '你终于回来了。' })])
+    );
+    expect(scriptData.scenes[0].lines[0].offset).toBeGreaterThanOrEqual(0);
+  });
+
   it('提取舞台说明与道具', () => {
     const { scriptData } = parseScriptOffline(TEXT);
     expect(scriptData.scenes[0].stageDirections.join('')).toContain('灯亮');

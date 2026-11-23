@@ -191,6 +191,7 @@ export function parseScriptOffline(text) {
         presentCharacters: [],
         props: [],
         stageDirections: [],
+        lines: [],
         summary: '',
         estimatedMinutes: 0,
         rawRange: { start: line.contentStart, end: rawText.length },
@@ -225,6 +226,12 @@ export function parseScriptOffline(text) {
         currentScene._speakerSet.add(name);
         currentScene._speakers.push(name);
       }
+      currentScene.lines.push({
+        id: `ln-${currentScene.lines.length + 1}`,
+        speaker: name,
+        text: dialogue,
+        offset: line.start,
+      });
       currentScene._dialogueChars += dialogue.length;
       scanProps(dialogue);
       continue;

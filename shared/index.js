@@ -47,6 +47,16 @@ export function createEmptyScriptData() {
   };
 }
 
+export function normalizeLine(raw, index = 0) {
+  const r = raw && typeof raw === 'object' ? raw : {};
+  return {
+    id: toStr(r.id) || `ln-${index + 1}`,
+    speaker: toStr(r.speaker),
+    text: toStr(r.text),
+    offset: Number.isFinite(r.offset) ? r.offset : null,
+  };
+}
+
 export function normalizeScene(raw) {
   const r = raw && typeof raw === 'object' ? raw : {};
   const sceneNumber = toNum(r.sceneNumber);
@@ -59,6 +69,7 @@ export function normalizeScene(raw) {
     presentCharacters: toStrArray(r.presentCharacters),
     props: toStrArray(r.props),
     stageDirections: toStrArray(r.stageDirections),
+    lines: Array.isArray(r.lines) ? r.lines.map((line, index) => normalizeLine(line, index)) : [],
     summary: toStr(r.summary),
     estimatedMinutes: toNum(r.estimatedMinutes),
     rawRange: normalizeRawRange(r.rawRange),

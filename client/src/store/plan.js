@@ -132,7 +132,7 @@ export function planReducer(state, action) {
         (item) =>
           !(
             item &&
-            item.segmentId === placement.segmentId &&
+            item.sceneNumber === placement.sceneNumber &&
             item.characterId === placement.characterId
           )
       );

@@ -5,6 +5,7 @@ import RelationGraph from './RelationGraph.jsx';
 import CharacterGallery from './CharacterGallery.jsx';
 import StageBlocking from './StageBlocking.jsx';
 import BriefPanel from './BriefPanel.jsx';
+import RehearsalPanel from './RehearsalPanel.jsx';
 import { getSourceMode } from '../engine/index.js';
 
 const SOURCE_LABELS = {
@@ -66,6 +67,7 @@ export default function ResultTabs({
           {tabBtn('relations', '人物关系图')}
           {tabBtn('gallery', '角色海报')}
           {tabBtn('briefs', '需求转译')}
+          {tabBtn('rehearsal', '排练与影响')}
         </div>
         <button onClick={onBackToEdit} className="text-sm text-stone-400 underline">
           返回编辑剧本
@@ -99,6 +101,14 @@ export default function ResultTabs({
         {tab === 'gallery' && <CharacterGallery characters={scriptData.characters} />}
         {tab === 'briefs' && (
           <BriefPanel scenes={scriptData?.scenes || []} plan={plan} dispatch={dispatch} />
+        )}
+        {tab === 'rehearsal' && (
+          <RehearsalPanel
+            scenes={scenes}
+            plan={plan}
+            dispatch={dispatch}
+            onChange={onChangeScene}
+          />
         )}
       </div>
     </div>

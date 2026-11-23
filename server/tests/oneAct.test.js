@@ -44,6 +44,11 @@ describe('oneAct sample', () => {
     expect(all).toMatch(/钥匙/);
   });
 
+  it('第二场 lines 含台词「我把伞落在楼下了。」', () => {
+    const second = SAMPLE_SCRIPT_DATA.scenes[1];
+    expect(second.lines.some((line) => line.text === '我把伞落在楼下了。')).toBe(true);
+  });
+
   it('第二场含雨声音效提示', () => {
     const second = SAMPLE_SCRIPT_DATA.scenes[1];
     expect(asText(second)).toContain('雨声');

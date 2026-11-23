@@ -49,6 +49,32 @@ describe('planReducer', () => {
     expect(state.briefs[0].cueId).toBe('cue-1');
   });
 
+  it('setPlacement 按 sceneNumber + characterId 覆盖而不重复新增', () => {
+    let state = createPlan('stage', '方案');
+    state = planReducer(state, {
+      type: 'setPlacement',
+      placement: { sceneNumber: 1, characterId: '老陈', x: 10, y: 20 },
+    });
+    state = planReducer(state, {
+      type: 'setPlacement',
+      placement: { sceneNumber: 1, characterId: '老陈', x: 30, y: 40 },
+    });
+
+    expect(state.staging.placements).toHaveLength(1);
+    expect(state.staging.placements[0]).toMatchObject({
+      sceneNumber: 1,
+      characterId: '老陈',
+      x: 30,
+      y: 40,
+    });
+
+    state = planReducer(state, {
+      type: 'setPlacement',
+      placement: { sceneNumber: 2, characterId: '老陈', x: 50, y: 60 },
+    });
+    expect(state.staging.placements).toHaveLength(2);
+  });
+
   it('resolveImpact 按状态更新影响记录', () => {
     const state = {
       ...createPlan('stage', '方案'),

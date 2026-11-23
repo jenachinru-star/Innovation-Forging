@@ -34,15 +34,18 @@ function sceneLines(scenes, sceneNumber) {
   const scene = getScene(scenes, sceneNumber);
   const raw = scene?.lines ?? scene?.dialogue ?? scene?.quotes ?? [];
   const list = Array.isArray(raw) ? raw : [];
-  const texts = list
-    .map((item) => {
-      if (typeof item === 'string') return item;
-      if (!item) return '';
-      return item.quote ?? item.text ?? item.content ?? '';
-    })
-    .map((text) => String(text).trim())
-    .filter(Boolean);
-  return [...new Set(texts)];
+  const seen = new Set();
+  const lines = [];
+  for (const item of list) {
+    const speaker = typeof item === 'object' && item ? String(item.speaker ?? '').trim() : '';
+    const text = String(
+      typeof item === 'string' ? item : (item?.text ?? item?.quote ?? item?.content ?? '')
+    ).trim();
+    if (!text || seen.has(text)) continue;
+    seen.add(text);
+    lines.push({ speaker, text });
+  }
+  return lines;
 }
 
 function actorsFor(characters, cast) {
@@ -309,8 +312,8 @@ export default function StageBlocking({
               >
                 <option value="">不绑定</option>
                 {lines.map((line) => (
-                  <option key={line} value={line}>
-                    {line}
+                  <option key={line.text} value={line.text}>
+                    {line.speaker ? `${line.speaker}：${line.text}` : line.text}
                   </option>
                 ))}
               </select>

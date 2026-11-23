@@ -116,6 +116,27 @@ describe('normalizeScene', () => {
     expect(normalizeScene({ rawRange: { start: 5 } }).rawRange).toBeNull();
     expect(normalizeScene({ rawRange: null }).rawRange).toBeNull();
   });
+
+  it('lines 归一化为 { id, speaker, text, offset }', () => {
+    const out = normalizeScene({
+      sceneNumber: 1,
+      lines: [
+        { speaker: '老陈', text: '你终于回来了。' },
+        { speaker: '阿岚', text: '爸，我回来了。', offset: 42 },
+        { speaker: '阿岚', text: '无偏移', offset: 'x' },
+      ],
+    });
+    expect(out.lines).toEqual([
+      { id: 'ln-1', speaker: '老陈', text: '你终于回来了。', offset: null },
+      { id: 'ln-2', speaker: '阿岚', text: '爸，我回来了。', offset: 42 },
+      { id: 'ln-3', speaker: '阿岚', text: '无偏移', offset: null },
+    ]);
+  });
+
+  it('lines 缺省为空数组，不抛错', () => {
+    expect(normalizeScene({ sceneNumber: 1 }).lines).toEqual([]);
+    expect(normalizeScene({ sceneNumber: 1, lines: null }).lines).toEqual([]);
+  });
 });
 
 describe('normalizeCharacter', () => {

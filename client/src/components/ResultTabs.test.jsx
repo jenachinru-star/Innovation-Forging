@@ -33,6 +33,19 @@ describe('ResultTabs', () => {
     render(<ResultTabs scriptData={data} onBackToEdit={() => {}} source="sample" />);
     expect(screen.getByText('来源：样例剧本')).toBeInTheDocument();
   });
+  it('切换到排练与影响标签显示排练笔记面板', () => {
+    render(
+      <ResultTabs
+        scriptData={data}
+        onBackToEdit={() => {}}
+        plan={{ impacts: [] }}
+        dispatch={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByText('排练与影响'));
+    expect(screen.getByLabelText('排练笔记')).toBeInTheDocument();
+  });
+
   it('切换到需求转译标签显示场次下拉', () => {
     const withScenes = {
       summary: '简介',

@@ -53,6 +53,37 @@ describe('StageBlocking', () => {
     expect(call[0].cue.content).toBe('加定点');
   });
 
+  it('绑定台词下拉读取场景 lines，选项文本为 speaker：text、value 为 text', () => {
+    const scenes = [
+      {
+        id: 'sc-1',
+        sceneNumber: 1,
+        lines: [
+          { id: 'ln-1', speaker: '老陈', text: '你终于回来了。' },
+          { id: 'ln-2', speaker: '阿岚', text: '爸，我回来了。' },
+        ],
+      },
+    ];
+
+    render(
+      <StageBlocking
+        characters={characters}
+        scenes={scenes}
+        sceneNumber={1}
+        dispatch={() => {}}
+      />
+    );
+
+    fireEvent.click(screen.getByText('添加提示'));
+    const select = screen.getByLabelText('绑定台词');
+    const options = Array.from(select.querySelectorAll('option'));
+    const match = options.find((option) => option.textContent.includes('你终于回来了'));
+
+    expect(match).toBeTruthy();
+    expect(match.value).toBe('你终于回来了。');
+    expect(match.textContent).toBe('老陈：你终于回来了。');
+  });
+
   it('同时挂多名演员的 AB 角渲染独立标记', () => {
     render(
       <StageBlocking
