@@ -95,35 +95,35 @@ export default function ExportPanel({ title, scriptData, plan }) {
 
   return (
     <div>
-      <p className="mb-4 text-sm text-stone-400">
+      <p className="muted mb-4 text-sm">
         导出当前方案的排演材料，文件名包含方案名与生成时间。
       </p>
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
           onClick={() => exportCsv('排演准备表', scheduleCsv(scriptData))}
-          className="rounded-md bg-amber-200 px-4 py-2 text-sm text-stone-900"
+          className="btn-seal px-4 py-2 text-sm"
         >
           排演准备表
         </button>
         <button
           type="button"
           onClick={() => exportCsv('部门需求单', briefCsv(plan))}
-          className="rounded-md bg-amber-200 px-4 py-2 text-sm text-stone-900"
+          className="btn-seal px-4 py-2 text-sm"
         >
           部门需求单
         </button>
         <button
           type="button"
           onClick={() => exportCsv('走位与提示', stagingCsv(plan))}
-          className="rounded-md bg-amber-200 px-4 py-2 text-sm text-stone-900"
+          className="btn-seal px-4 py-2 text-sm"
         >
           走位与提示
         </button>
         <button
           type="button"
           onClick={exportAll}
-          className="rounded-md border border-amber-200 px-4 py-2 text-sm text-amber-200"
+          className="btn-primary px-4 py-2 text-sm"
         >
           全部
         </button>

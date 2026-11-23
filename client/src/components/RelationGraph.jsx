@@ -15,7 +15,7 @@ function buildOption(scriptData) {
     value: r.relation,
     label: { show: true, formatter: r.relation },
     lineStyle: {
-      color: r.needsReview ? '#f59e0b' : '#a8a29e',
+      color: r.needsReview ? '#a3231f' : '#7d7266',
       width: r.needsReview ? 3 : 1.5,
       type: r.needsReview ? 'dashed' : 'solid',
     },
@@ -27,12 +27,12 @@ function buildOption(scriptData) {
       type: 'graph',
       layout: 'force',
       roam: true,
-      label: { show: true, position: 'right', color: '#f5ece0' },
+      label: { show: true, position: 'right', color: '#f2ece1' },
       force: { repulsion: 220, edgeLength: 120 },
       data: nodes,
       links,
-      lineStyle: { color: '#a8a29e' },
-      itemStyle: { color: '#d4a373' },
+      lineStyle: { color: '#7d7266' },
+      itemStyle: { color: '#d8b48c' },
     }],
   };
 }
@@ -59,15 +59,15 @@ export default function RelationGraph({ scriptData }) {
   }, [scriptData, relationships.length]);
 
   if (relationships.length === 0) {
-    return <p className="text-sm text-stone-400">暂无足够的人物关系信息。</p>;
+    return <p className="muted text-sm">暂无足够的人物关系信息。</p>;
   }
 
   return (
     <div>
-      <p className="mb-2 text-xs text-stone-500">
-        <span className="text-amber-400">橙色虚线</span> 表示 AI 判断把握不足，建议核实。
+      <p className="muted mb-2 text-xs">
+        <span className="seal-text">朱红虚线</span> 表示 AI 判断把握不足，建议核实。
       </p>
-      <div ref={ref} className="h-[420px] w-full rounded-lg border border-stone-800 bg-stone-900/40" />
+      <div ref={ref} className="media-area h-[420px] w-full rounded-lg" />
     </div>
   );
 }

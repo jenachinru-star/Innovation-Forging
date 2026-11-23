@@ -60,21 +60,21 @@ export default function InputStep({ onReady, busy, setBusy, error, setError, onO
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-12">
-      <h1 className="font-serif text-3xl text-amber-200">编导 AI 工作台</h1>
-      <p className="mt-2 text-sm text-stone-400">
+      <h1 className="font-serif text-3xl">编导 AI 工作台</h1>
+      <p className="muted mt-2 text-sm">
         从零散素材生成剧本，或直接上传你已有的剧本。
       </p>
 
-      <div className="mt-6 inline-flex rounded-lg border border-stone-700 p-1">
+      <div className="hairline mt-6 inline-flex rounded-lg p-1">
         <button
           onClick={() => setMode('generate')}
-          className={`px-4 py-1.5 text-sm rounded-md ${mode === 'generate' ? 'bg-amber-200 text-stone-900' : 'text-stone-300'}`}
+          className={`rounded-md px-4 py-1.5 text-sm ${mode === 'generate' ? 'btn-primary' : 'muted'}`}
         >
           素材生成
         </button>
         <button
           onClick={() => setMode('upload')}
-          className={`px-4 py-1.5 text-sm rounded-md ${mode === 'upload' ? 'bg-amber-200 text-stone-900' : 'text-stone-300'}`}
+          className={`rounded-md px-4 py-1.5 text-sm ${mode === 'upload' ? 'btn-primary' : 'muted'}`}
         >
           上传剧本
         </button>
@@ -86,31 +86,31 @@ export default function InputStep({ onReady, busy, setBusy, error, setError, onO
             value={material}
             onChange={(e) => setMaterial(e.target.value)}
             placeholder="输入你的想法、对话片段或人物设定（可混合）……"
-            className="h-56 w-full rounded-lg border border-stone-700 bg-stone-900 p-4 text-sm text-stone-100 outline-none focus:border-amber-300"
+            className="field h-56 w-full p-4 text-sm"
           />
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <button
               onClick={() => setMaterial(SAMPLE_MATERIAL)}
-              className="text-sm text-stone-400 underline"
+              className="muted text-sm underline"
             >
               填入示例素材
             </button>
             <button
               onClick={handleUseSample}
-              className="text-sm text-stone-400 underline"
+              className="muted text-sm underline"
             >
               使用样例剧本
             </button>
             <button
               onClick={handleGenerate}
               disabled={busy || offline}
-              className="rounded-md bg-amber-200 px-5 py-2 text-sm font-medium text-stone-900 disabled:opacity-50"
+              className="btn-primary px-5 py-2 text-sm font-medium"
             >
               {busy ? '生成中…' : '生成剧本'}
             </button>
           </div>
           {offline && (
-            <p className="mt-2 text-sm text-amber-200">
+            <p className="state-doing mt-2 text-sm">
               离线状态不可用，请使用导入剧本或样例
             </p>
           )}
@@ -118,24 +118,27 @@ export default function InputStep({ onReady, busy, setBusy, error, setError, onO
       )}
 
       {mode === 'upload' && (
-        <div className="mt-6 rounded-lg border border-dashed border-stone-700 p-8 text-center">
-          <p className="text-sm text-stone-400">支持 .txt / .md / .docx</p>
+        <div
+          className="mt-6 rounded-lg border border-dashed p-8 text-center"
+          style={{ borderColor: 'var(--line)' }}
+        >
+          <p className="muted text-sm">支持 .txt / .md / .docx</p>
           <input
             type="file"
             accept=".txt,.md,.docx"
             onChange={handleUpload}
             disabled={busy}
-            className="mt-4 text-sm text-stone-300"
+            className="mt-4 text-sm"
           />
-          {busy && <p className="mt-3 text-sm text-amber-200">解析文件中…</p>}
+          {busy && <p className="state-doing mt-3 text-sm">解析文件中…</p>}
         </div>
       )}
 
-      {info && <p className="mt-4 rounded-md bg-amber-900/40 p-3 text-sm text-amber-100">AI：{info}</p>}
-      {error && <p className="mt-4 rounded-md bg-red-900/40 p-3 text-sm text-red-200">{error}</p>}
+      {info && <p className="alert-note mt-4 p-3 text-sm">AI：{info}</p>}
+      {error && <p className="alert-error mt-4 p-3 text-sm">{error}</p>}
 
       {onOpenCompare && (
-        <button onClick={onOpenCompare} className="mt-8 text-sm text-stone-400 underline">
+        <button onClick={onOpenCompare} className="muted mt-8 text-sm underline">
           剧本版本对照
         </button>
       )}

@@ -32,14 +32,17 @@ const EMPTY_ORGANIZED = { decisions: [], openQuestions: [], todos: [] };
 
 function ListSection({ title, testId, items, emptyText }) {
   return (
-    <section data-testid={testId} className="rounded border border-stone-700 p-3">
-      <h4 className="mb-2 text-sm font-medium text-stone-300">{title}</h4>
+    <section data-testid={testId} className="card rounded p-3">
+      <h4 className="mb-2 text-sm font-medium">{title}</h4>
       {items.length === 0 ? (
-        <p className="text-xs text-stone-500">{emptyText}</p>
+        <p className="muted text-xs">{emptyText}</p>
       ) : (
-        <ul className="space-y-1">
+        <ul
+          className="zebra overflow-hidden rounded border"
+          style={{ borderColor: 'var(--line)' }}
+        >
           {items.map((item, index) => (
-            <li key={`${title}-${index}`} className="text-sm text-stone-200">
+            <li key={`${title}-${index}`} className="border-b px-2 py-1 text-sm" style={{ borderColor: 'var(--line)' }}>
               {item}
             </li>
           ))}
@@ -74,7 +77,7 @@ export default function RehearsalPanel({ plan, dispatch, scenes, onChange }) {
   return (
     <div data-testid="rehearsal-panel">
       <div>
-        <label htmlFor="rehearsal-notes" className="mb-1 block text-xs text-stone-400">
+        <label htmlFor="rehearsal-notes" className="muted mb-1 block text-xs">
           排练笔记
         </label>
         <textarea
@@ -83,12 +86,12 @@ export default function RehearsalPanel({ plan, dispatch, scenes, onChange }) {
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
           placeholder="每行一条；以？结尾为待确认问题，以 # 开头为待办"
-          className="w-full rounded border border-stone-600 bg-stone-900 px-2 py-1 text-sm text-stone-200"
+          className="field w-full px-2 py-1 text-sm"
         />
         <button
           type="button"
           onClick={handleOrganize}
-          className="mt-2 rounded-md bg-amber-200 px-3 py-1.5 text-sm text-stone-900"
+          className="btn-primary mt-2 px-3 py-1.5 text-sm"
         >
           整理
         </button>
@@ -107,21 +110,28 @@ export default function RehearsalPanel({ plan, dispatch, scenes, onChange }) {
           items={organized.openQuestions}
           emptyText="暂无待确认问题"
         />
-        <section data-testid="rehearsal-todos" className="rounded border border-stone-700 p-3">
-          <h4 className="mb-2 text-sm font-medium text-stone-300">待办</h4>
+        <section data-testid="rehearsal-todos" className="card rounded p-3">
+          <h4 className="mb-2 text-sm font-medium">待办</h4>
           {organized.todos.length === 0 ? (
-            <p className="text-xs text-stone-500">暂无待办</p>
+            <p className="muted text-xs">暂无待办</p>
           ) : (
-            <ul className="space-y-1">
+            <ul
+              className="zebra overflow-hidden rounded border"
+              style={{ borderColor: 'var(--line)' }}
+            >
               {organized.todos.map((todo, index) => (
-                <li key={`todo-${index}`} className="text-sm text-stone-200">
+                <li
+                  key={`todo-${index}`}
+                  className="border-b px-2 py-1 text-sm"
+                  style={{ borderColor: 'var(--line)' }}
+                >
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
                       checked={todo.done}
                       onChange={() => toggleTodo(index)}
                     />
-                    <span className={todo.done ? 'text-stone-500 line-through' : ''}>
+                    <span className={todo.done ? 'muted line-through' : ''}>
                       {todo.text}
                     </span>
                   </label>
@@ -133,37 +143,45 @@ export default function RehearsalPanel({ plan, dispatch, scenes, onChange }) {
       </div>
 
       <div className="mt-6">
-        <h3 className="mb-2 text-sm font-medium text-stone-300">影响提示</h3>
+        <h3 className="mb-2 text-sm font-medium">影响提示</h3>
         {impacts.length === 0 ? (
-          <p className="text-xs text-stone-500">暂无影响记录。</p>
+          <p className="muted text-xs">暂无影响记录。</p>
         ) : (
           <ul className="space-y-2">
-            {impacts.map((impact) => (
-              <li
-                key={impact.id}
-                data-testid={`impact-${impact.id}`}
-                className="rounded border border-stone-700 p-3 text-sm text-stone-200"
-              >
-                <p>{impact.reason}</p>
-                {impact.suggestion && (
-                  <p className="mt-1 text-xs text-stone-400">建议：{impact.suggestion}</p>
-                )}
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {IMPACT_ACTIONS.map(([status, label]) => (
-                    <button
-                      key={status}
-                      type="button"
-                      onClick={() =>
-                        dispatch?.({ type: 'resolveImpact', id: impact.id, status })
-                      }
-                      className="rounded border border-stone-600 px-2 py-0.5 text-xs text-stone-200"
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </li>
-            ))}
+            {impacts.map((impact) => {
+              const settled = impact.status && impact.status !== 'open';
+              return (
+                <li
+                  key={impact.id}
+                  data-testid={`impact-${impact.id}`}
+                  className="card rounded p-3 text-sm"
+                >
+                  <p className="flex items-start gap-2">
+                    <span
+                      className={`state-dot mt-1.5 ${settled ? 'state-done' : 'state-open'}`}
+                    />
+                    <span>{impact.reason}</span>
+                  </p>
+                  {impact.suggestion && (
+                    <p className="muted mt-1 text-xs">建议：{impact.suggestion}</p>
+                  )}
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {IMPACT_ACTIONS.map(([status, label]) => (
+                      <button
+                        key={status}
+                        type="button"
+                        onClick={() =>
+                          dispatch?.({ type: 'resolveImpact', id: impact.id, status })
+                        }
+                        className="btn-ghost px-2 py-0.5 text-xs"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

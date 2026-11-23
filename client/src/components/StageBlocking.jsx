@@ -186,7 +186,7 @@ export default function StageBlocking({
 
   return (
     <div>
-      <div className="overflow-hidden rounded-lg border border-stone-700 bg-stone-900">
+      <div className="media-area overflow-hidden rounded-lg">
         <svg
           ref={svgRef}
           data-testid="stage-canvas"
@@ -195,9 +195,21 @@ export default function StageBlocking({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
         >
-          <rect x="0" y="0" width={VIEW_W} height={VIEW_H} fill="#1c1917" />
+          <rect
+            x="0"
+            y="0"
+            width={VIEW_W}
+            height={VIEW_H}
+            style={{ fill: 'var(--media-bg)' }}
+          />
 
-          <text x={VIEW_W / 2} y="24" textAnchor="middle" fill="#d6cbb8" fontSize="15">
+          <text
+            x={VIEW_W / 2}
+            y="24"
+            textAnchor="middle"
+            fontSize="15"
+            style={{ fill: 'var(--media-muted)' }}
+          >
             观众方向
           </text>
 
@@ -207,18 +219,43 @@ export default function StageBlocking({
             width="680"
             height="400"
             rx="10"
-            fill="#292524"
-            stroke="#57534e"
             strokeWidth="2"
+            style={{ fill: 'var(--media-raised)', stroke: 'var(--media-muted)' }}
           />
 
-          <rect x="18" y="200" width="34" height="88" rx="4" fill="#44403c" stroke="#78716c" />
-          <text x="35" y="250" textAnchor="middle" fill="#e7e5e4" fontSize="12">
+          <rect
+            x="18"
+            y="200"
+            width="34"
+            height="88"
+            rx="4"
+            style={{ fill: 'var(--media-raised)', stroke: 'var(--media-muted)' }}
+          />
+          <text
+            x="35"
+            y="250"
+            textAnchor="middle"
+            fontSize="12"
+            style={{ fill: 'var(--media-ink)' }}
+          >
             上场口
           </text>
 
-          <rect x="748" y="200" width="34" height="88" rx="4" fill="#44403c" stroke="#78716c" />
-          <text x="765" y="250" textAnchor="middle" fill="#e7e5e4" fontSize="12">
+          <rect
+            x="748"
+            y="200"
+            width="34"
+            height="88"
+            rx="4"
+            style={{ fill: 'var(--media-raised)', stroke: 'var(--media-muted)' }}
+          />
+          <text
+            x="765"
+            y="250"
+            textAnchor="middle"
+            fontSize="12"
+            style={{ fill: 'var(--media-ink)' }}
+          >
             下场口
           </text>
 
@@ -236,16 +273,18 @@ export default function StageBlocking({
                   cx={position.x}
                   cy={position.y}
                   r="26"
-                  fill={dragging ? '#fcd34d' : '#fde68a'}
-                  stroke={dragging ? '#f59e0b' : '#b45309'}
                   strokeWidth="2"
+                  style={{
+                    fill: dragging ? 'var(--paper-raised)' : 'var(--media-ink)',
+                    stroke: dragging ? 'var(--accent-seal)' : 'var(--ink-muted)',
+                  }}
                 />
                 <text
                   x={position.x}
                   y={position.y + 5}
                   textAnchor="middle"
-                  fill="#292524"
                   fontSize="13"
+                  style={{ fill: 'var(--ink)' }}
                 >
                   {actor.label}
                 </text>
@@ -257,11 +296,11 @@ export default function StageBlocking({
 
       <div className="mt-4">
         <div className="flex items-center justify-between">
-          <h4 className="text-sm font-medium text-stone-300">技术提示</h4>
+          <h4 className="text-sm font-medium">技术提示</h4>
           <button
             type="button"
             onClick={() => setShowForm((value) => !value)}
-            className="rounded border border-stone-600 px-3 py-1 text-xs text-stone-200"
+            className="btn-seal px-3 py-1 text-xs"
           >
             添加提示
           </button>
@@ -270,14 +309,14 @@ export default function StageBlocking({
         {showForm && (
           <div className="mt-3 flex flex-wrap items-end gap-3">
             <div>
-              <label htmlFor="cue-department" className="mb-1 block text-xs text-stone-400">
+              <label htmlFor="cue-department" className="muted mb-1 block text-xs">
                 部门
               </label>
               <select
                 id="cue-department"
                 value={department}
                 onChange={(event) => setDepartment(event.target.value)}
-                className="rounded border border-stone-600 bg-stone-900 px-2 py-1 text-sm text-stone-200"
+                className="field px-2 py-1 text-sm"
               >
                 {DEPARTMENTS.map((value) => (
                   <option key={value} value={value}>
@@ -288,7 +327,7 @@ export default function StageBlocking({
             </div>
 
             <div>
-              <label htmlFor="cue-content" className="mb-1 block text-xs text-stone-400">
+              <label htmlFor="cue-content" className="muted mb-1 block text-xs">
                 内容
               </label>
               <input
@@ -296,19 +335,19 @@ export default function StageBlocking({
                 value={content}
                 onChange={(event) => setContent(event.target.value)}
                 placeholder="例如：加定点"
-                className="rounded border border-stone-600 bg-stone-900 px-2 py-1 text-sm text-stone-200"
+                className="field px-2 py-1 text-sm"
               />
             </div>
 
             <div>
-              <label htmlFor="cue-quote" className="mb-1 block text-xs text-stone-400">
+              <label htmlFor="cue-quote" className="muted mb-1 block text-xs">
                 绑定台词
               </label>
               <select
                 id="cue-quote"
                 value={quote}
                 onChange={(event) => setQuote(event.target.value)}
-                className="rounded border border-stone-600 bg-stone-900 px-2 py-1 text-sm text-stone-200"
+                className="field px-2 py-1 text-sm"
               >
                 <option value="">不绑定</option>
                 {lines.map((line) => (
@@ -322,7 +361,7 @@ export default function StageBlocking({
             <button
               type="button"
               onClick={handleAddCue}
-              className="rounded-md bg-amber-200 px-3 py-1.5 text-sm text-stone-900"
+              className="btn-seal px-3 py-1.5 text-sm"
             >
               确认添加
             </button>
@@ -330,26 +369,30 @@ export default function StageBlocking({
         )}
 
         {sceneCues.length === 0 ? (
-          <p className="mt-3 text-xs text-stone-500">本场暂无提示。</p>
+          <p className="muted mt-3 text-xs">本场暂无提示。</p>
         ) : (
-          <ul className="mt-3 space-y-2">
+          <ul
+            className="zebra mt-3 overflow-hidden rounded-md border"
+            style={{ borderColor: 'var(--line)' }}
+          >
             {sceneCues.map((cue) => (
               <li
                 key={cue.id}
                 data-testid={`cue-${cue.id}`}
-                className="flex flex-wrap items-center gap-2 rounded border border-stone-700 px-3 py-2 text-xs text-stone-200"
+                className="flex flex-wrap items-center gap-2 border-b px-3 py-2 text-xs"
+                style={{ borderColor: 'var(--line)' }}
               >
-                <span className="rounded bg-stone-700 px-2 py-0.5 text-amber-200">
+                <span className="tag px-2 py-0.5">
                   {DEPARTMENT_LABELS[cue.department] || cue.department}
                 </span>
                 <span className="flex-1">{cue.content}</span>
                 {cue.trigger?.quote && (
-                  <span className="text-stone-400">绑定：{cue.trigger.quote}</span>
+                  <span className="muted">绑定：{cue.trigger.quote}</span>
                 )}
                 <button
                   type="button"
                   onClick={() => dispatch?.({ type: 'removeCue', id: cue.id })}
-                  className="text-stone-400 underline"
+                  className="muted underline"
                 >
                   删除
                 </button>

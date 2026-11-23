@@ -13,4 +13,9 @@ describe('App', () => {
     fireEvent.click(screen.getByText('剧本版本对照'));
     expect(screen.getByText('旧版本（上传）')).toBeInTheDocument();
   });
+
+  it('根容器使用剧场主题', () => {
+    const { container } = render(<App />);
+    expect(container.firstChild).toHaveAttribute('data-theme', 'theatre');
+  });
 });

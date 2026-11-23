@@ -105,15 +105,23 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#141010] text-[#f5ece0]">
+    <div data-theme="theatre" className="surface min-h-screen">
       {restored && (
         <div className="mx-auto max-w-5xl px-6 pt-6">
-          <div className="flex items-center justify-between rounded-md border border-amber-200/40 bg-amber-200/10 px-4 py-2 text-sm text-amber-100">
+          <div
+            className="flex items-center justify-between rounded-md px-4 py-2 text-sm"
+            style={{
+              backgroundColor: 'var(--paper-raised)',
+              border: '1px solid var(--line)',
+              borderLeft: '3px solid var(--accent-seal)',
+              color: 'var(--ink)',
+            }}
+          >
             <span>已恢复上次进度</span>
             <button
               type="button"
               onClick={() => setRestored(false)}
-              className="text-xs underline"
+              className="seal-text text-xs underline"
             >
               知道了
             </button>

@@ -50,14 +50,14 @@ export default function BriefPanel({ scenes = [], plan, dispatch }) {
     <div>
       <div className="flex flex-wrap items-start gap-3">
         <div>
-          <label htmlFor="brief-scene" className="mb-1 block text-xs text-stone-400">
+          <label htmlFor="brief-scene" className="muted mb-1 block text-xs">
             场次
           </label>
           <select
             id="brief-scene"
             value={sceneId}
             onChange={(e) => setSceneId(e.target.value)}
-            className="rounded border border-stone-600 bg-stone-900 px-2 py-1 text-sm text-stone-200"
+            className="field px-2 py-1 text-sm"
           >
             {list.length === 0 && <option value="">暂无场次</option>}
             {list.map((scene) => (
@@ -69,7 +69,7 @@ export default function BriefPanel({ scenes = [], plan, dispatch }) {
         </div>
 
         <div className="min-w-[16rem] flex-1">
-          <label htmlFor="brief-original" className="mb-1 block text-xs text-stone-400">
+          <label htmlFor="brief-original" className="muted mb-1 block text-xs">
             导演原话
           </label>
           <textarea
@@ -78,46 +78,59 @@ export default function BriefPanel({ scenes = [], plan, dispatch }) {
             value={original}
             onChange={(e) => setOriginal(e.target.value)}
             placeholder="例如：这里想更暖一点，加个定点；音乐渐入"
-            className="w-full rounded border border-stone-600 bg-stone-900 px-2 py-1 text-sm text-stone-200"
+            className="field w-full px-2 py-1 text-sm"
           />
         </div>
 
         <button
           type="button"
           onClick={handleSplit}
-          className="mt-5 rounded-md bg-amber-200 px-3 py-1.5 text-sm text-stone-900"
+          className="btn-seal mt-5 px-3 py-1.5 text-sm"
         >
           拆分
         </button>
       </div>
 
       {lastOriginal && (
-        <p className="mt-2 text-xs text-stone-500">原话：{lastOriginal}</p>
+        <p className="muted mt-2 text-xs">原话：{lastOriginal}</p>
       )}
 
       {grouped.length === 0 ? (
-        <p className="mt-4 text-sm text-stone-400">暂无需求条目，先输入导演原话并拆分。</p>
+        <p className="muted mt-4 text-sm">暂无需求条目，先输入导演原话并拆分。</p>
       ) : (
         <div className="mt-4 space-y-5">
           {grouped.map(([department, items]) => (
             <section key={department} data-testid={`brief-group-${department}`}>
-              <h4 className="mb-2 text-sm font-medium text-stone-300">
+              <h4 className="mb-2 text-sm font-medium">
                 {GROUP_LABELS[department] || department}
               </h4>
-              <ul className="space-y-2">
+              <ul
+                className="zebra overflow-hidden rounded-md border"
+                style={{ borderColor: 'var(--line)' }}
+              >
                 {items.map((brief) => {
                   const statusId = `brief-status-${brief.id}`;
                   const dueId = `brief-due-${brief.id}`;
+                  const done = brief.status === 'confirmed' || brief.status === 'implemented';
                   return (
-                    <li key={brief.id} className="rounded border border-stone-700 p-3">
-                      <p className="text-sm text-stone-200">{brief.original}</p>
+                    <li
+                      key={brief.id}
+                      className="border-b px-3 py-2"
+                      style={{ borderColor: 'var(--line)' }}
+                    >
+                      <p className="flex items-start gap-2 text-sm">
+                        <span
+                          className={`state-dot mt-1.5 ${done ? 'state-done' : 'state-open'}`}
+                        />
+                        <span>{brief.original}</span>
+                      </p>
                       {Array.isArray(brief.items) && brief.items.length > 0 && (
-                        <p className="mt-1 text-xs text-stone-400">条目：{brief.items.join('；')}</p>
+                        <p className="muted mt-1 text-xs">条目：{brief.items.join('；')}</p>
                       )}
                       {Array.isArray(brief.uncertain) && brief.uncertain.length > 0 && (
-                        <p className="mt-1 text-xs text-amber-200">待确认：{brief.uncertain.join('；')}</p>
+                        <p className="state-open mt-1 text-xs">待确认：{brief.uncertain.join('；')}</p>
                       )}
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-stone-400">
+                      <div className="muted mt-2 flex flex-wrap items-center gap-2 text-xs">
                         <label htmlFor={statusId}>状态</label>
                         <select
                           id={statusId}
@@ -129,7 +142,7 @@ export default function BriefPanel({ scenes = [], plan, dispatch }) {
                               patch: { status: e.target.value },
                             })
                           }
-                          className="rounded border border-stone-600 bg-stone-900 px-1 py-0.5 text-xs text-stone-200"
+                          className="field px-1 py-0.5 text-xs"
                         >
                           {STATUS_OPTIONS.map(([value, label]) => (
                             <option key={value} value={value}>
@@ -150,7 +163,7 @@ export default function BriefPanel({ scenes = [], plan, dispatch }) {
                               patch: { dueDate: e.target.value || null },
                             })
                           }
-                          className="rounded border border-stone-600 bg-stone-900 px-1 py-0.5 text-xs text-stone-200"
+                          className="field px-1 py-0.5 text-xs"
                         />
                       </div>
                     </li>

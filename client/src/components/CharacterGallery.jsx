@@ -26,20 +26,23 @@ export default function CharacterGallery({ characters }) {
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
       {(characters || []).map((c) => (
-        <div key={c.name} className="rounded-lg border border-stone-800 bg-stone-900/60 p-3">
-          <div className="flex h-40 items-center justify-center overflow-hidden rounded bg-stone-800">
+        <div key={c.name} className="media-area rounded-lg p-3">
+          <div
+            className="flex h-40 items-center justify-center overflow-hidden rounded"
+            style={{ backgroundColor: 'var(--media-raised)' }}
+          >
             {images[c.name] ? (
               <img src={images[c.name]} alt={c.name} className="h-full w-full object-cover" />
             ) : (
-              <span className="text-xs text-stone-500">暂无形象</span>
+              <span className="media-muted text-xs">暂无形象</span>
             )}
           </div>
-          <p className="mt-2 font-serif text-amber-200">{c.name}</p>
-          <p className="text-xs text-stone-400 line-clamp-2">{c.description}</p>
+          <p className="font-serif mt-2">{c.name}</p>
+          <p className="media-muted line-clamp-2 text-xs">{c.description}</p>
           <button
             onClick={() => generate(c)}
             disabled={busyName === c.name}
-            className="mt-2 w-full rounded bg-amber-200/90 py-1 text-xs text-stone-900 disabled:opacity-50"
+            className="btn-media mt-2 w-full py-1 text-xs"
           >
             {busyName === c.name ? '生成中…' : '生成形象'}
           </button>
