@@ -73,31 +73,36 @@ const PARSE_SYSTEM = [
 ].join('\n');
 
 export async function parseScript(scriptText, { chat = chatComplete } = {}) {
-  const messages = [
+  const baseMessages = [
     { role: 'system', content: PARSE_SYSTEM },
     { role: 'user', content: String(scriptText || '') },
   ];
-
-  let content;
-  try {
-    content = await withRetry(() => chat(messages, { jsonMode: true }), 1);
-  } catch {
-    content = await withRetry(() => chat(messages), 1);
-  }
-
-  const first = safeParseScriptData(content);
-  if (first) return first;
-
   const strongMessages = [
     { role: 'system', content: `${PARSE_SYSTEM}\n只输出纯 JSON，不要任何解释文字，不要代码块标记。` },
     { role: 'user', content: String(scriptText || '') },
   ];
-  try {
-    content = await withRetry(() => chat(strongMessages, { jsonMode: true }), 1);
-  } catch {
-    content = await withRetry(() => chat(strongMessages), 1);
+
+  // 有界尝试：最多 4 次上游调用（正常情况第 1 次即成功）
+  const attempts = [
+    () => chat(baseMessages, { jsonMode: true }),
+    () => chat(baseMessages),
+    () => chat(strongMessages, { jsonMode: true }),
+    () => chat(strongMessages),
+  ];
+
+  let lastErr;
+  for (const attempt of attempts) {
+    let content;
+    try {
+      content = await attempt();
+    } catch (e) {
+      lastErr = e;
+      continue;
+    }
+    const parsed = safeParseScriptData(content);
+    if (parsed) return parsed;
   }
-  const second = safeParseScriptData(content);
-  if (!second) throw new Error('解析失败：AI 输出无法解析为结构化数据');
-  return second;
+
+  const suffix = lastErr ? `（${lastErr.message}）` : '';
+  throw new Error(`解析失败：AI 输出无法解析为结构化数据${suffix}`);
 }
