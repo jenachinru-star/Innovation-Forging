@@ -36,8 +36,24 @@ function applyAliasMap(scriptData, aliasMap) {
 
   if (Array.isArray(scriptData.scenes)) {
     scriptData.scenes = scriptData.scenes.map((scene) => {
-      if (!scene || !Array.isArray(scene.characters)) return scene;
-      return { ...scene, characters: scene.characters.map(rename) };
+      if (!scene || typeof scene !== 'object') return scene;
+      const next = { ...scene };
+      if (Array.isArray(scene.characters)) {
+        next.characters = scene.characters.map(rename);
+      }
+      if (Array.isArray(scene.presentCharacters)) {
+        const present = [];
+        const seen = new Set();
+        for (const name of scene.presentCharacters) {
+          const renamed = rename(name);
+          if (!seen.has(renamed)) {
+            seen.add(renamed);
+            present.push(renamed);
+          }
+        }
+        next.presentCharacters = present;
+      }
+      return next;
     });
   }
 

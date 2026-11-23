@@ -57,6 +57,21 @@ describe('engine', () => {
     expect(engine.getSourceMode()).toBe('local');
   });
 
+  it('本地兜底时 aliasMap 会覆盖 scenes[].presentCharacters', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    const engine = await loadEngine();
+
+    const { scriptData } = await engine.parseScript(SAMPLE_TEXT, {
+      aliasMap: { 阿岚: '阿兰' },
+    });
+
+    expect(
+      scriptData.scenes.some((s) => s.presentCharacters.includes('阿兰'))
+    ).toBe(true);
+    const presentNames = scriptData.scenes.flatMap((s) => s.presentCharacters);
+    expect(presentNames).not.toContain('阿岚');
+  });
+
   it('离线时 generateScript 抛出中文错误', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
     const engine = await loadEngine();
