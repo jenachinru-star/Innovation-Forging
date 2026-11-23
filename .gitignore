@@ -18,3 +18,6 @@ coverage/
 .arena-skill-backup-*
 arena-skill/
 arena-skill.zip
+
+# SDD scratch/progress
+.superpowers/
