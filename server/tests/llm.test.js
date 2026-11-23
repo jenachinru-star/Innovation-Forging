@@ -37,3 +37,43 @@ describe('generateScript', () => {
     expect(r.scriptText).toBe('第一场\n老陈：你好。');
   });
 });
+
+import { safeParseScriptData, parseScript } from '../services/llm.js';
+
+describe('safeParseScriptData', () => {
+  it('解析干净 JSON', () => {
+    const r = safeParseScriptData('{"summary":"s","scenes":[],"characters":[],"relationships":[]}');
+    expect(r.summary).toBe('s');
+  });
+
+  it('从夹带文字/代码块中提取 JSON', () => {
+    const r = safeParseScriptData('好的，结果如下：\n```json\n{"summary":"s2"}\n```\n希望有帮助');
+    expect(r.summary).toBe('s2');
+  });
+
+  it('完全无 JSON 返回 null', () => {
+    expect(safeParseScriptData('完全不是JSON')).toBe(null);
+  });
+});
+
+describe('parseScript', () => {
+  it('返回归一化后的 ScriptData', async () => {
+    const chat = async () =>
+      '{"summary":"s","scenes":[{"sceneNumber":1,"characters":["甲"],"estimatedMinutes":3}],"characters":[{"name":"甲"}],"relationships":[]}';
+    const r = await parseScript('剧本文本', { chat });
+    expect(r.summary).toBe('s');
+    expect(r.scenes[0].sceneNumber).toBe(1);
+    expect(r.relationships).toEqual([]);
+  });
+
+  it('首次输出非法 JSON 时会重试并最终成功', async () => {
+    let n = 0;
+    const chat = async () => {
+      n += 1;
+      if (n === 1) return '这不是JSON';
+      return '{"summary":"可解析","scenes":[],"characters":[],"relationships":[]}';
+    };
+    const r = await parseScript('剧本文本', { chat });
+    expect(r.summary).toBe('可解析');
+  });
+});

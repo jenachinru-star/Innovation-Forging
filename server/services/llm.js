@@ -54,3 +54,46 @@ export function safeParseScriptData(text) {
   }
   return null;
 }
+
+const PARSE_SYSTEM = [
+  '你是戏剧结构分析助手。请把用户提供的剧本解析为严格 JSON，且只输出 JSON。',
+  'JSON 结构（字段名必须完全一致）：',
+  '{',
+  '  "summary": "整部剧本一句话简介",',
+  '  "scenes": [{ "sceneNumber": 1, "title": "第一场", "location": "地点",',
+  '              "characters": ["出场人物"], "props": ["道具"],',
+  '              "summary": "本场剧情摘要", "estimatedMinutes": 5 }],',
+  '  "characters": [{ "name": "人物名", "description": "人物简介" }],',
+  '  "relationships": [{ "from": "人物A", "to": "人物B",',
+  '                     "relation": "关系描述", "needsReview": false }]',
+  '}',
+  '要求：estimatedMinutes 为估算的演出分钟数（整数）。',
+  'relationships 尽量覆盖主要人物关系；若对某条关系判断把握不足，把其 needsReview 设为 true。',
+  '无法判断的关系不要编造；没有任何关系时返回空数组。',
+].join('\n');
+
+export async function parseScript(scriptText, { chat = chatComplete } = {}) {
+  const messages = [
+    { role: 'system', content: PARSE_SYSTEM },
+    { role: 'user', content: String(scriptText || '') },
+  ];
+
+  let content;
+  try {
+    content = await withRetry(() => chat(messages, { jsonMode: true }), 1);
+  } catch {
+    content = await withRetry(() => chat(messages), 1);
+  }
+
+  const first = safeParseScriptData(content);
+  if (first) return first;
+
+  const strongMessages = [
+    { role: 'system', content: `${PARSE_SYSTEM}\n只输出纯 JSON，不要任何解释文字，不要代码块标记。` },
+    { role: 'user', content: String(scriptText || '') },
+  ];
+  content = await withRetry(() => chat(strongMessages, { jsonMode: true }), 1);
+  const second = safeParseScriptData(content);
+  if (!second) throw new Error('解析失败：AI 输出无法解析为结构化数据');
+  return second;
+}
