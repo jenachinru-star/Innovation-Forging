@@ -1,0 +1,14 @@
+{
+  "name": "director-workbench",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": ["client", "server", "shared"],
+  "scripts": {
+    "dev:server": "npm --workspace server run dev",
+    "dev:client": "npm --workspace client run dev",
+    "build": "npm --workspace client run build",
+    "start": "npm --workspace server run start",
+    "test": "npm --workspace server run test && npm --workspace client run test"
+  }
+}

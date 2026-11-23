@@ -21,3 +21,6 @@ arena-skill.zip
 
 # SDD scratch/progress
 .superpowers/
+
+dist/
+!.env.example
