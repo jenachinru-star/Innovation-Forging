@@ -30,6 +30,11 @@ function getScene(scenes, sceneNumber) {
   return list.find((scene) => Number(scene?.sceneNumber) === Number(sceneNumber)) || list[0];
 }
 
+function hasScene(scenes, sceneNumber) {
+  const list = Array.isArray(scenes) ? scenes : [];
+  return list.some((scene) => Number(scene?.sceneNumber) === Number(sceneNumber));
+}
+
 function sceneLines(scenes, sceneNumber) {
   const scene = getScene(scenes, sceneNumber);
   const raw = scene?.lines ?? scene?.dialogue ?? scene?.quotes ?? [];
@@ -112,12 +117,13 @@ export default function StageBlocking({
   const actors = actorsFor(characters, plan?.cast);
   const placements = plan?.staging?.placements;
   const lines = sceneLines(scenes, sceneNumber);
+  const noScene = !hasScene(scenes, sceneNumber);
   const sceneCues = (Array.isArray(plan?.cues) ? plan.cues : []).filter(
     (cue) => cue && Number(cue.sceneNumber) === Number(sceneNumber)
   );
 
   function positionFor(actor, index) {
-    const local = positions[actor.characterId];
+    const local = positions[sceneNumber]?.[actor.characterId];
     if (local) return local;
     return storedPosition(placements, sceneNumber, actor.characterId) || defaultPosition(index, actors.length);
   }
@@ -142,7 +148,13 @@ export default function StageBlocking({
     const y = clamp((clientY - (box.top || 0)) * (VIEW_H / height), 0, VIEW_H);
 
     dragRef.current = { ...dragRef.current, x, y };
-    setPositions((prev) => ({ ...prev, [dragRef.current.characterId]: { x, y } }));
+    setPositions((prev) => {
+      const forScene = prev[sceneNumber] && typeof prev[sceneNumber] === 'object' ? prev[sceneNumber] : {};
+      return {
+        ...prev,
+        [sceneNumber]: { ...forScene, [dragRef.current.characterId]: { x, y } },
+      };
+    });
   }
 
   function handlePointerUp() {
@@ -264,6 +276,8 @@ export default function StageBlocking({
               <g
                 key={actor.characterId}
                 data-testid={`actor-${actor.characterId}`}
+                data-x={position.x}
+                data-y={position.y}
                 onPointerDown={(event) => handlePointerDown(event, actor, position)}
                 style={{ cursor: dragging ? 'grabbing' : 'grab' }}
               >
@@ -367,7 +381,9 @@ export default function StageBlocking({
         )}
 
         {sceneCues.length === 0 ? (
-          <p className="muted mt-3 text-xs">本场暂无提示。</p>
+          <p className="muted mt-3 text-xs">
+            {noScene ? '当前场次无提示' : '本场暂无提示。'}
+          </p>
         ) : (
           <ul
             className="zebra mt-3 overflow-hidden rounded-md border"

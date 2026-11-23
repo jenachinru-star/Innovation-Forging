@@ -54,6 +54,7 @@ describe('ExportPanel', () => {
   let revokeObjectURL;
   let click;
   let createElementSpy;
+  const nativeCreateElement = document.createElement.bind(document);
 
   beforeEach(() => {
     createObjectURL = vi.fn(() => 'blob:mock');
@@ -62,9 +63,8 @@ describe('ExportPanel', () => {
     URL.createObjectURL = createObjectURL;
     URL.revokeObjectURL = revokeObjectURL;
 
-    const original = document.createElement.bind(document);
     createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tag) => {
-      const element = original(tag);
+      const element = nativeCreateElement(tag);
       if (String(tag).toLowerCase() === 'a') {
         element.click = click;
       }
@@ -136,5 +136,24 @@ describe('ExportPanel', () => {
       appendSpy.mockRestore();
       vi.useRealTimers();
     }
+  });
+
+  it('链接不支持 click 时提示改用打印且不误报成功', () => {
+    createElementSpy.mockImplementation((tag) => {
+      const element = nativeCreateElement(tag);
+      if (String(tag).toLowerCase() === 'a') {
+        element.click = undefined;
+      }
+      return element;
+    });
+
+    render(<ExportPanel title="雨夜重逢方案" scriptData={scriptData} plan={plan} />);
+
+    expect(() =>
+      fireEvent.click(screen.getByRole('button', { name: '部门需求单' }))
+    ).not.toThrow();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      '当前环境不支持下载，可改用浏览器打印（Ctrl+P）'
+    );
   });
 });

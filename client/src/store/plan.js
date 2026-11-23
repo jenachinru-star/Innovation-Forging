@@ -232,12 +232,17 @@ export function planReducer(state, action) {
         );
         if (duplicate) return current;
       }
+      const usedIds = new Set(impacts.map((item) => item && item.id).filter(Boolean));
+      let id = impact.id || nextId('impact', impacts);
+      if (usedIds.has(id)) {
+        id = nextId('imp', impacts);
+      }
       return {
         ...current,
         impacts: [
           ...impacts,
           {
-            id: impact.id || nextId('impact', impacts),
+            id,
             change: impact.change || null,
             target,
             reason: impact.reason || '',

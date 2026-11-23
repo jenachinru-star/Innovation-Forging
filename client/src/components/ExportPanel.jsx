@@ -32,8 +32,14 @@ function download(filename, content, type) {
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = filename;
+  if (typeof anchor.click !== 'function') {
+    if (typeof URL.revokeObjectURL === 'function') {
+      URL.revokeObjectURL(url);
+    }
+    return false;
+  }
   document.body.appendChild(anchor);
-  anchor.click?.();
+  anchor.click();
   document.body.removeChild(anchor);
   if (typeof URL.revokeObjectURL === 'function') {
     setTimeout(() => URL.revokeObjectURL(url), 0);

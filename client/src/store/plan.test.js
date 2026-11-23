@@ -171,6 +171,50 @@ describe('planReducer', () => {
     expect(next.impacts).toHaveLength(2);
   });
 
+  it('addImpact 在 id 与已存在记录冲突时重新分配，resolve 只影响目标记录', () => {
+    let state = createPlan('stage', '方案');
+
+    state = planReducer(state, {
+      type: 'addImpact',
+      impact: {
+        id: 'imp-1',
+        target: { kind: 'cue', refId: 'cue-1' },
+        reason: '第一次',
+        status: 'open',
+      },
+    });
+    expect(state.impacts).toHaveLength(1);
+    expect(state.impacts[0].id).toBe('imp-1');
+
+    state = planReducer(state, { type: 'resolveImpact', id: 'imp-1', status: 'accepted' });
+    expect(state.impacts[0].status).toBe('accepted');
+
+    state = planReducer(state, {
+      type: 'addImpact',
+      impact: {
+        id: 'imp-1',
+        target: { kind: 'cue', refId: 'cue-1' },
+        reason: '再次出现',
+        status: 'open',
+      },
+    });
+
+    expect(state.impacts).toHaveLength(2);
+    const [first, second] = state.impacts;
+    expect(first.id).toBe('imp-1');
+    expect(second.id).not.toBe('imp-1');
+    expect(second.id).not.toBe(first.id);
+
+    const next = planReducer(state, {
+      type: 'resolveImpact',
+      id: second.id,
+      status: 'keptOld',
+    });
+
+    expect(next.impacts.find((impact) => impact.id === first.id).status).toBe('accepted');
+    expect(next.impacts.find((impact) => impact.id === second.id).status).toBe('keptOld');
+  });
+
   it('setRehearsalNotes 把整理结果写入第一条排练记录并在缺失时创建', () => {
     const state = createPlan('stage', '方案');
     const payload = {

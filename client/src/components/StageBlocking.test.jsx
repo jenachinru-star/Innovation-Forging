@@ -139,4 +139,74 @@ describe('StageBlocking', () => {
     expect(screen.getByTestId('actor-老陈#A')).toBeInTheDocument();
     expect(screen.getByTestId('actor-老陈#B')).toBeInTheDocument();
   });
+
+  it('切换场次后不复用上一场的拖动坐标，回落到默认位置', () => {
+    const twoScenes = [
+      { id: 'sc-1', sceneNumber: 1, lines: [] },
+      { id: 'sc-2', sceneNumber: 2, lines: [] },
+    ];
+
+    const { rerender } = render(
+      <StageBlocking
+        characters={characters}
+        scenes={twoScenes}
+        sceneNumber={1}
+        dispatch={() => {}}
+      />
+    );
+
+    const svg = screen.getByTestId('stage-canvas');
+    Object.defineProperty(svg, 'getBoundingClientRect', { value: rect });
+
+    fireEvent.pointerDown(screen.getByTestId('actor-老陈'));
+    fireEvent.pointerMove(svg, { clientX: 200, clientY: 100 });
+    fireEvent.pointerUp(svg);
+
+    const dragged = screen.getByTestId('actor-老陈');
+    expect(Number(dragged.getAttribute('data-x'))).toBe(200);
+    expect(Number(dragged.getAttribute('data-y'))).toBe(100);
+
+    rerender(
+      <StageBlocking
+        characters={characters}
+        scenes={twoScenes}
+        sceneNumber={2}
+        dispatch={() => {}}
+      />
+    );
+
+    const switched = screen.getByTestId('actor-老陈');
+    const switchedX = Number(switched.getAttribute('data-x'));
+    const switchedY = Number(switched.getAttribute('data-y'));
+
+    expect(switchedX).not.toBe(200);
+    expect(switchedY).not.toBe(100);
+  });
+
+  it('场次不匹配任何场时列表为空并说明当前场次无提示', () => {
+    const plan = {
+      cues: [
+        {
+          id: 'cue-1',
+          department: 'lighting',
+          sceneNumber: 1,
+          content: '加定点',
+          trigger: { type: 'free', quote: '' },
+        },
+      ],
+    };
+
+    render(
+      <StageBlocking
+        characters={characters}
+        scenes={[{ id: 'sc-1', sceneNumber: 1, lines: [] }]}
+        sceneNumber={99}
+        plan={plan}
+        dispatch={() => {}}
+      />
+    );
+
+    expect(screen.queryByTestId('cue-cue-1')).not.toBeInTheDocument();
+    expect(screen.getByText('当前场次无提示')).toBeInTheDocument();
+  });
 });
