@@ -36,11 +36,11 @@ export default function App() {
     }
   }
 
-  async function handleConfirm() {
+  async function handleConfirm({ aliasMap } = {}) {
     setBusy(true);
     setError('');
     try {
-      const data = await parseScript(scriptText);
+      const data = await parseScript(scriptText, { aliasMap });
       setScriptData(data.scriptData);
       setStep('result');
     } catch (e) {
@@ -81,7 +81,7 @@ export default function App() {
         />
       )}
       {step === 'result' && (
-        <ResultTabs scriptData={scriptData} onBackToEdit={() => setStep('confirm')} onChangeScene={handleChangeScene} />
+        <ResultTabs scriptData={scriptData} onBackToEdit={() => setStep('confirm')} onChangeScene={handleChangeScene} source={entryMode} />
       )}
       {step === 'compare' && <VersionCompare onBack={() => setStep('input')} />}
     </div>

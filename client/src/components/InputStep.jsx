@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { generateScript, extractUpload } from '../engine/index.js';
+import { generateScript, extractUpload, getSourceMode } from '../engine/index.js';
+import { SAMPLE_TEXT } from '@director/shared/samples/oneAct.js';
 
 const SAMPLE_MATERIAL = [
   '一对多年未见的老朋友在医院病房重逢。',
@@ -11,6 +12,7 @@ export default function InputStep({ onReady, busy, setBusy, error, setError, onO
   const [mode, setMode] = useState('generate'); // generate | upload
   const [material, setMaterial] = useState('');
   const [info, setInfo] = useState('');
+  const [offline, setOffline] = useState(() => getSourceMode() === 'local');
 
   async function handleGenerate() {
     if (!material.trim()) {
@@ -31,6 +33,7 @@ export default function InputStep({ onReady, busy, setBusy, error, setError, onO
       setError(String(e.message || e));
     } finally {
       setBusy(false);
+      setOffline(getSourceMode() === 'local');
     }
   }
 
@@ -47,7 +50,12 @@ export default function InputStep({ onReady, busy, setBusy, error, setError, onO
       setError(String(err.message || err));
     } finally {
       setBusy(false);
+      setOffline(getSourceMode() === 'local');
     }
+  }
+
+  function handleUseSample() {
+    onReady({ scriptText: SAMPLE_TEXT, material: '', mode: 'sample' });
   }
 
   return (
@@ -80,7 +88,7 @@ export default function InputStep({ onReady, busy, setBusy, error, setError, onO
             placeholder="输入你的想法、对话片段或人物设定（可混合）……"
             className="h-56 w-full rounded-lg border border-stone-700 bg-stone-900 p-4 text-sm text-stone-100 outline-none focus:border-amber-300"
           />
-          <div className="mt-3 flex items-center gap-3">
+          <div className="mt-3 flex flex-wrap items-center gap-3">
             <button
               onClick={() => setMaterial(SAMPLE_MATERIAL)}
               className="text-sm text-stone-400 underline"
@@ -88,13 +96,24 @@ export default function InputStep({ onReady, busy, setBusy, error, setError, onO
               填入示例素材
             </button>
             <button
+              onClick={handleUseSample}
+              className="text-sm text-stone-400 underline"
+            >
+              使用样例剧本
+            </button>
+            <button
               onClick={handleGenerate}
-              disabled={busy}
+              disabled={busy || offline}
               className="rounded-md bg-amber-200 px-5 py-2 text-sm font-medium text-stone-900 disabled:opacity-50"
             >
               {busy ? '生成中…' : '生成剧本'}
             </button>
           </div>
+          {offline && (
+            <p className="mt-2 text-sm text-amber-200">
+              离线状态不可用，请使用导入剧本或样例
+            </p>
+          )}
         </div>
       )}
 

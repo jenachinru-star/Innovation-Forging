@@ -3,8 +3,21 @@ import ScheduleTable from './ScheduleTable.jsx';
 import RelationGraph from './RelationGraph.jsx';
 import CharacterGallery from './CharacterGallery.jsx';
 import StageBlocking from './StageBlocking.jsx';
+import { getSourceMode } from '../engine/index.js';
 
-export default function ResultTabs({ scriptData, onBackToEdit, onChangeScene }) {
+const SOURCE_LABELS = {
+  sample: '来源：样例剧本',
+  upload: '来源：导入剧本',
+  generate: '来源：AI 生成',
+};
+
+function sourceLabel(source) {
+  const base = SOURCE_LABELS[source];
+  if (!base) return '';
+  return getSourceMode() === 'local' ? `${base} · 仅本地处理` : base;
+}
+
+export default function ResultTabs({ scriptData, onBackToEdit, onChangeScene, source }) {
   const [tab, setTab] = useState('schedule'); // schedule | relations | gallery
 
   const tabBtn = (id, label) => (
@@ -18,6 +31,9 @@ export default function ResultTabs({ scriptData, onBackToEdit, onChangeScene }) 
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
+      {sourceLabel(source) && (
+        <p className="mb-3 text-xs text-stone-500">{sourceLabel(source)}</p>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="inline-flex rounded-lg border border-stone-700 p-1">
           {tabBtn('schedule', '排演准备表')}

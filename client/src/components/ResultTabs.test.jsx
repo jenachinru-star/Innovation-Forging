@@ -29,4 +29,8 @@ describe('ResultTabs', () => {
     fireEvent.click(screen.getByText('角色海报'));
     expect(screen.getByText('老陈')).toBeInTheDocument();
   });
+  it('来源为样例时显示来源标记', () => {
+    render(<ResultTabs scriptData={data} onBackToEdit={() => {}} source="sample" />);
+    expect(screen.getByText('来源：样例剧本')).toBeInTheDocument();
+  });
 });

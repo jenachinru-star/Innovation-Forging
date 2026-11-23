@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-vi.mock('../api.js', () => ({
+vi.mock('../engine/index.js', () => ({
   generateScript: vi.fn(),
   extractUpload: vi.fn(),
+  getSourceMode: vi.fn(() => 'ai'),
 }));
 
-import { generateScript } from '../api.js';
+import { generateScript, getSourceMode } from '../engine/index.js';
 import InputStep from './InputStep.jsx';
 
 function baseProps(over = {}) {
@@ -21,7 +22,10 @@ function baseProps(over = {}) {
 }
 
 describe('InputStep', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getSourceMode.mockReturnValue('ai');
+  });
 
   it('点击示例素材填入文本', () => {
     render(<InputStep {...baseProps()} />);
@@ -48,6 +52,25 @@ describe('InputStep', () => {
     fireEvent.click(screen.getByText('生成剧本'));
     await waitFor(() => expect(screen.getByText(/请补充人物名字/)).toBeInTheDocument());
     expect(props.onReady).not.toHaveBeenCalled();
+  });
+
+  it('点击「使用样例剧本」回调 onReady（mode=sample，含样例文本）', () => {
+    const props = baseProps();
+    render(<InputStep {...props} />);
+    fireEvent.click(screen.getByText('使用样例剧本'));
+    expect(props.onReady).toHaveBeenCalledTimes(1);
+    const arg = props.onReady.mock.calls[0][0];
+    expect(arg.mode).toBe('sample');
+    expect(arg.scriptText).toContain('钥匙');
+  });
+
+  it('离线状态下禁用生成按钮并提示', () => {
+    getSourceMode.mockReturnValue('local');
+    render(<InputStep {...baseProps()} />);
+    expect(screen.getByText('生成剧本')).toBeDisabled();
+    expect(
+      screen.getByText('离线状态不可用，请使用导入剧本或样例')
+    ).toBeInTheDocument();
   });
 
   it('点击剧本版本对照调用 onOpenCompare', () => {
