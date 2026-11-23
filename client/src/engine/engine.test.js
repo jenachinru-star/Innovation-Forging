@@ -79,12 +79,27 @@ describe('engine', () => {
     await expect(engine.generateScript('x')).rejects.toThrow('离线状态无法生成剧本');
   });
 
-  it('离线时 extractUpload 抛出中文错误', async () => {
+  it('离线时 txt 上传回退本地读取并切换 sourceMode=local', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
     const engine = await loadEngine();
 
-    await expect(engine.extractUpload(new File(['x'], 'a.txt'))).rejects.toThrow(
-      '离线状态无法解析上传文件'
+    const file = new File(
+      ['人物：老陈、阿岚\n\n第一场 客厅\n\n老陈：你终于回来了。'],
+      'x.txt',
+      { type: 'text/plain' }
     );
+    const result = await engine.extractUpload(file);
+
+    expect(result.scriptText).toContain('你终于回来了');
+    expect(engine.getSourceMode()).toBe('local');
+  });
+
+  it('离线时 docx 上传抛出中文错误', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    const engine = await loadEngine();
+
+    await expect(
+      engine.extractUpload(new File(['x'], 'x.docx'))
+    ).rejects.toThrow('离线状态仅支持');
   });
 });

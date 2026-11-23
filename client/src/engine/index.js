@@ -83,7 +83,15 @@ export async function extractUpload(file) {
   try {
     return await api.extractUpload(file);
   } catch {
-    throw new Error('离线状态无法解析上传文件，请直接粘贴剧本内容或使用样例剧本。');
+    const name = (file && file.name) || '';
+    if (/\.(txt|md|markdown)$/i.test(name)) {
+      const scriptText = await file.text();
+      sourceMode = 'local';
+      return { scriptText };
+    }
+    throw new Error(
+      '离线状态仅支持 .txt / .md 文本文件，.docx 请粘贴内容或使用样例剧本。'
+    );
   }
 }
 
