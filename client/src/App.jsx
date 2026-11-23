@@ -1,3 +1,73 @@
+import { useState } from 'react';
+import InputStep from './components/InputStep.jsx';
+import ConfirmStep from './components/ConfirmStep.jsx';
+import ResultTabs from './components/ResultTabs.jsx';
+import { generateScript, parseScript } from './api.js';
+
 export default function App() {
-  return <div className="p-8 text-2xl">编导 AI 工作台（脚手架就绪）</div>;
+  const [step, setStep] = useState('input'); // input | confirm | result
+  const [material, setMaterial] = useState('');
+  const [scriptText, setScriptText] = useState('');
+  const [entryMode, setEntryMode] = useState('generate'); // generate | upload
+  const [scriptData, setScriptData] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  function handleReady({ scriptText: text, material: mat, mode }) {
+    setScriptText(text);
+    setMaterial(mat || '');
+    setEntryMode(mode);
+    setError('');
+    setStep('confirm');
+  }
+
+  async function handleRegenerate() {
+    setBusy(true);
+    setError('');
+    try {
+      const data = await generateScript(material);
+      if (data.needMoreInfo) throw new Error(data.error);
+      setScriptText(data.scriptText);
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleConfirm() {
+    setBusy(true);
+    setError('');
+    try {
+      const data = await parseScript(scriptText);
+      setScriptData(data.scriptData);
+      setStep('result');
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-[#141010] text-[#f5ece0]">
+      {step === 'input' && (
+        <InputStep onReady={handleReady} busy={busy} setBusy={setBusy} error={error} setError={setError} />
+      )}
+      {step === 'confirm' && (
+        <ConfirmStep
+          scriptText={scriptText}
+          onChangeScriptText={setScriptText}
+          canRegenerate={entryMode === 'generate'}
+          onRegenerate={handleRegenerate}
+          onConfirm={handleConfirm}
+          busy={busy}
+          error={error}
+        />
+      )}
+      {step === 'result' && (
+        <ResultTabs scriptData={scriptData} onBackToEdit={() => setStep('confirm')} />
+      )}
+    </div>
+  );
 }
