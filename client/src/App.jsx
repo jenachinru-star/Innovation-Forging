@@ -49,6 +49,13 @@ export default function App() {
     }
   }
 
+  function handleChangeScene(index, patch) {
+    setScriptData((prev) => {
+      const scenes = prev.scenes.map((s, i) => (i === index ? { ...s, ...patch } : s));
+      return { ...prev, scenes };
+    });
+  }
+
   return (
     <div className="min-h-screen bg-[#141010] text-[#f5ece0]">
       {step === 'input' && (
@@ -66,7 +73,7 @@ export default function App() {
         />
       )}
       {step === 'result' && (
-        <ResultTabs scriptData={scriptData} onBackToEdit={() => setStep('confirm')} />
+        <ResultTabs scriptData={scriptData} onBackToEdit={() => setStep('confirm')} onChangeScene={handleChangeScene} />
       )}
     </div>
   );

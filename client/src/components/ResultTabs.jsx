@@ -2,7 +2,7 @@ import { useState } from 'react';
 import ScheduleTable from './ScheduleTable.jsx';
 import RelationGraph from './RelationGraph.jsx';
 
-export default function ResultTabs({ scriptData, onBackToEdit }) {
+export default function ResultTabs({ scriptData, onBackToEdit, onChangeScene }) {
   const [tab, setTab] = useState('schedule'); // schedule | relations
 
   const tabBtn = (id, label) => (
@@ -27,7 +27,7 @@ export default function ResultTabs({ scriptData, onBackToEdit }) {
       </div>
 
       <div className="mt-6">
-        {tab === 'schedule' && <ScheduleTable scriptData={scriptData} />}
+        {tab === 'schedule' && <ScheduleTable scriptData={scriptData} onChangeScene={onChangeScene} />}
         {tab === 'relations' && <RelationGraph scriptData={scriptData} />}
       </div>
     </div>

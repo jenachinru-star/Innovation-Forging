@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import ScheduleTable from './ScheduleTable.jsx';
 
 const data = {
@@ -30,5 +30,13 @@ describe('ScheduleTable', () => {
     render(<ScheduleTable scriptData={{ summary: '', scenes: [{ sceneNumber: 1, title: '第一场', location: '客厅' }], characters: [], relationships: [] }} />);
     expect(screen.getByText('客厅')).toBeInTheDocument();
     expect(screen.getByText('0 分钟')).toBeInTheDocument();
+  });
+
+  it('传入 onChangeScene 时，编辑地点会回调', () => {
+    const onChangeScene = vi.fn();
+    render(<ScheduleTable scriptData={data} onChangeScene={onChangeScene} />);
+    const cell = screen.getByDisplayValue('医院病房');
+    fireEvent.change(cell, { target: { value: '客厅' } });
+    expect(onChangeScene).toHaveBeenCalledWith(0, { location: '客厅' });
   });
 });

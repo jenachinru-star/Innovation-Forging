@@ -1,4 +1,4 @@
-export default function ScheduleTable({ scriptData }) {
+export default function ScheduleTable({ scriptData, onChangeScene }) {
   const scenes = scriptData?.scenes || [];
   return (
     <div>
@@ -23,14 +23,45 @@ export default function ScheduleTable({ scriptData }) {
               </tr>
             </thead>
             <tbody>
-              {scenes.map((s) => (
+              {scenes.map((s, idx) => (
                 <tr key={`${s.sceneNumber}-${s.title}`} className="border-b border-stone-800 align-top">
                   <td className="p-2 whitespace-nowrap">{s.title || `第 ${s.sceneNumber} 场`}</td>
-                  <td className="p-2">{s.location}</td>
+                  <td className="p-2">
+                    {onChangeScene ? (
+                      <input
+                        value={s.location}
+                        onChange={(e) => onChangeScene(idx, { location: e.target.value })}
+                        className="w-full bg-transparent outline-none"
+                      />
+                    ) : (
+                      s.location
+                    )}
+                  </td>
                   <td className="p-2">{(s.characters ?? []).join('、')}</td>
                   <td className="p-2">{(s.props ?? []).join('、')}</td>
-                  <td className="p-2 whitespace-nowrap">{s.estimatedMinutes ?? 0} 分钟</td>
-                  <td className="p-2">{s.summary}</td>
+                  <td className="p-2 whitespace-nowrap">
+                    {onChangeScene ? (
+                      <input
+                        type="number"
+                        value={s.estimatedMinutes ?? 0}
+                        onChange={(e) => onChangeScene(idx, { estimatedMinutes: Number(e.target.value) })}
+                        className="w-16 bg-transparent outline-none"
+                      />
+                    ) : (
+                      `${s.estimatedMinutes ?? 0} 分钟`
+                    )}
+                  </td>
+                  <td className="p-2">
+                    {onChangeScene ? (
+                      <input
+                        value={s.summary}
+                        onChange={(e) => onChangeScene(idx, { summary: e.target.value })}
+                        className="w-full bg-transparent outline-none"
+                      />
+                    ) : (
+                      s.summary
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
