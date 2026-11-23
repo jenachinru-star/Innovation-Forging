@@ -1,10 +1,18 @@
-import { useReducer, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import InputStep from './components/InputStep.jsx';
 import ConfirmStep from './components/ConfirmStep.jsx';
 import ResultTabs from './components/ResultTabs.jsx';
 import VersionCompare from './components/VersionCompare.jsx';
 import { generateScript, parseScript } from './engine/index.js';
 import { createPlan, planReducer } from './store/plan.js';
+import { loadProject, saveProject } from './store/project.js';
+
+function appPlanReducer(state, action) {
+  if (action?.type === 'replacePlan') {
+    return action.plan && typeof action.plan === 'object' ? action.plan : state;
+  }
+  return planReducer(state, action);
+}
 
 export default function App() {
   const [step, setStep] = useState('input'); // input | confirm | result | compare
@@ -12,11 +20,46 @@ export default function App() {
   const [scriptText, setScriptText] = useState('');
   const [entryMode, setEntryMode] = useState('generate'); // generate | upload
   const [scriptData, setScriptData] = useState(null);
-  const [plan, dispatch] = useReducer(planReducer, undefined, () =>
+  const [plan, dispatch] = useReducer(appPlanReducer, undefined, () =>
     createPlan('stage', '我的舞台方案')
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [restored, setRestored] = useState(false);
+  const skipSaveRef = useRef(true);
+
+  useEffect(() => {
+    let active = true;
+    loadProject()
+      .then((saved) => {
+        if (!active) return;
+        if (saved && typeof saved === 'object') {
+          if (saved.step) setStep(saved.step);
+          if (typeof saved.scriptText === 'string') setScriptText(saved.scriptText);
+          if (saved.scriptData) setScriptData(saved.scriptData);
+          if (saved.plan) dispatch({ type: 'replacePlan', plan: saved.plan });
+          setRestored(true);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        skipSaveRef.current = false;
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (skipSaveRef.current) return;
+    saveProject({
+      step,
+      scriptText,
+      scriptData,
+      plan,
+      savedAt: new Date().toISOString(),
+    }).catch(() => {});
+  }, [scriptData, plan]);
 
   function handleReady({ scriptText: text, material: mat, mode }) {
     setScriptText(text);
@@ -63,6 +106,20 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#141010] text-[#f5ece0]">
+      {restored && (
+        <div className="mx-auto max-w-5xl px-6 pt-6">
+          <div className="flex items-center justify-between rounded-md border border-amber-200/40 bg-amber-200/10 px-4 py-2 text-sm text-amber-100">
+            <span>已恢复上次进度</span>
+            <button
+              type="button"
+              onClick={() => setRestored(false)}
+              className="text-xs underline"
+            >
+              知道了
+            </button>
+          </div>
+        </div>
+      )}
       {step === 'input' && (
         <InputStep
           onReady={handleReady}

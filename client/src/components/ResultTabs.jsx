@@ -6,6 +6,7 @@ import CharacterGallery from './CharacterGallery.jsx';
 import StageBlocking from './StageBlocking.jsx';
 import BriefPanel from './BriefPanel.jsx';
 import RehearsalPanel from './RehearsalPanel.jsx';
+import ExportPanel from './ExportPanel.jsx';
 import { getSourceMode } from '../engine/index.js';
 
 const SOURCE_LABELS = {
@@ -29,7 +30,7 @@ export default function ResultTabs({
   plan,
   dispatch,
 }) {
-  const [tab, setTab] = useState('schedule'); // schedule | relations | gallery | briefs
+  const [tab, setTab] = useState('schedule'); // schedule | relations | gallery | briefs | rehearsal | export
 
   const scenes = scriptData?.scenes || [];
   const stageScene = scenes[0] || null;
@@ -68,6 +69,7 @@ export default function ResultTabs({
           {tabBtn('gallery', '角色海报')}
           {tabBtn('briefs', '需求转译')}
           {tabBtn('rehearsal', '排练与影响')}
+          {tabBtn('export', '导出')}
         </div>
         <button onClick={onBackToEdit} className="text-sm text-stone-400 underline">
           返回编辑剧本
@@ -108,6 +110,13 @@ export default function ResultTabs({
             plan={plan}
             dispatch={dispatch}
             onChange={onChangeScene}
+          />
+        )}
+        {tab === 'export' && (
+          <ExportPanel
+            title={plan?.name || '舞台方案'}
+            scriptData={scriptData}
+            plan={plan}
           />
         )}
       </div>
