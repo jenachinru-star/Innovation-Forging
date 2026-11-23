@@ -49,4 +49,16 @@ describe('InputStep', () => {
     await waitFor(() => expect(screen.getByText(/请补充人物名字/)).toBeInTheDocument());
     expect(props.onReady).not.toHaveBeenCalled();
   });
+
+  it('点击剧本版本对照调用 onOpenCompare', () => {
+    const onOpenCompare = vi.fn();
+    render(<InputStep {...baseProps({ onOpenCompare })} />);
+    fireEvent.click(screen.getByText('剧本版本对照'));
+    expect(onOpenCompare).toHaveBeenCalledTimes(1);
+  });
+
+  it('未提供 onOpenCompare 时不显示入口', () => {
+    render(<InputStep {...baseProps()} />);
+    expect(screen.queryByText('剧本版本对照')).not.toBeInTheDocument();
+  });
 });

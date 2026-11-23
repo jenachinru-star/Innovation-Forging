@@ -7,7 +7,7 @@ const SAMPLE_MATERIAL = [
   '两人聊起年轻时一起排过的一出戏。请写成一场戏。',
 ].join('\n');
 
-export default function InputStep({ onReady, busy, setBusy, error, setError }) {
+export default function InputStep({ onReady, busy, setBusy, error, setError, onOpenCompare }) {
   const [mode, setMode] = useState('generate'); // generate | upload
   const [material, setMaterial] = useState('');
   const [info, setInfo] = useState('');
@@ -114,6 +114,12 @@ export default function InputStep({ onReady, busy, setBusy, error, setError }) {
 
       {info && <p className="mt-4 rounded-md bg-amber-900/40 p-3 text-sm text-amber-100">AI：{info}</p>}
       {error && <p className="mt-4 rounded-md bg-red-900/40 p-3 text-sm text-red-200">{error}</p>}
+
+      {onOpenCompare && (
+        <button onClick={onOpenCompare} className="mt-8 text-sm text-stone-400 underline">
+          剧本版本对照
+        </button>
+      )}
     </div>
   );
 }

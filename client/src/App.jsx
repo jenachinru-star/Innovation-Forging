@@ -2,10 +2,11 @@ import { useState } from 'react';
 import InputStep from './components/InputStep.jsx';
 import ConfirmStep from './components/ConfirmStep.jsx';
 import ResultTabs from './components/ResultTabs.jsx';
+import VersionCompare from './components/VersionCompare.jsx';
 import { generateScript, parseScript } from './api.js';
 
 export default function App() {
-  const [step, setStep] = useState('input'); // input | confirm | result
+  const [step, setStep] = useState('input'); // input | confirm | result | compare
   const [material, setMaterial] = useState('');
   const [scriptText, setScriptText] = useState('');
   const [entryMode, setEntryMode] = useState('generate'); // generate | upload
@@ -59,7 +60,14 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#141010] text-[#f5ece0]">
       {step === 'input' && (
-        <InputStep onReady={handleReady} busy={busy} setBusy={setBusy} error={error} setError={setError} />
+        <InputStep
+          onReady={handleReady}
+          busy={busy}
+          setBusy={setBusy}
+          error={error}
+          setError={setError}
+          onOpenCompare={() => setStep('compare')}
+        />
       )}
       {step === 'confirm' && (
         <ConfirmStep
@@ -75,6 +83,7 @@ export default function App() {
       {step === 'result' && (
         <ResultTabs scriptData={scriptData} onBackToEdit={() => setStep('confirm')} onChangeScene={handleChangeScene} />
       )}
+      {step === 'compare' && <VersionCompare onBack={() => setStep('input')} />}
     </div>
   );
 }
