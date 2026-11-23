@@ -14,7 +14,7 @@ export function createApp() {
   app.use('/api/script', createScriptRouter());
   app.use('/api/character', createCharacterRouter());
 
-  const distPath = path.resolve(__dirname, '../client/dist');
+  const distPath = path.resolve(__dirname, '../dist');
   app.use(express.static(distPath));
   app.use((req, res, next) => {
     if (req.method !== 'GET' || req.path.startsWith('/api')) return next();

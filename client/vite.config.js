@@ -7,6 +7,10 @@ export default defineConfig({
   server: {
     proxy: { '/api': 'http://localhost:3001' }
   },
+  build: {
+    outDir: '../dist',
+    emptyOutDir: true
+  },
   test: {
     environment: 'jsdom',
     globals: true,
