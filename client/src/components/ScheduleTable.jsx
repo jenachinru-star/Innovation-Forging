@@ -27,9 +27,9 @@ export default function ScheduleTable({ scriptData }) {
                 <tr key={`${s.sceneNumber}-${s.title}`} className="border-b border-stone-800 align-top">
                   <td className="p-2 whitespace-nowrap">{s.title || `第 ${s.sceneNumber} 场`}</td>
                   <td className="p-2">{s.location}</td>
-                  <td className="p-2">{s.characters.join('、')}</td>
-                  <td className="p-2">{s.props.join('、')}</td>
-                  <td className="p-2 whitespace-nowrap">{s.estimatedMinutes} 分钟</td>
+                  <td className="p-2">{(s.characters ?? []).join('、')}</td>
+                  <td className="p-2">{(s.props ?? []).join('、')}</td>
+                  <td className="p-2 whitespace-nowrap">{s.estimatedMinutes ?? 0} 分钟</td>
                   <td className="p-2">{s.summary}</td>
                 </tr>
               ))}

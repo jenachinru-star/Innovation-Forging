@@ -20,4 +20,15 @@ describe('ScheduleTable', () => {
     expect(screen.getByText('茶杯')).toBeInTheDocument();
     expect(screen.getByText('6 分钟')).toBeInTheDocument();
   });
+
+  it('无场次时显示空态', () => {
+    render(<ScheduleTable scriptData={{ summary: '', scenes: [], characters: [], relationships: [] }} />);
+    expect(screen.getByText('未解析到场次信息。')).toBeInTheDocument();
+  });
+
+  it('字段缺失时不崩溃（characters/props 缺省为空）', () => {
+    render(<ScheduleTable scriptData={{ summary: '', scenes: [{ sceneNumber: 1, title: '第一场', location: '客厅' }], characters: [], relationships: [] }} />);
+    expect(screen.getByText('客厅')).toBeInTheDocument();
+    expect(screen.getByText('0 分钟')).toBeInTheDocument();
+  });
 });
