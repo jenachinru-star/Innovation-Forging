@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import ScheduleTable from './ScheduleTable.jsx';
 import RelationGraph from './RelationGraph.jsx';
+import CharacterGallery from './CharacterGallery.jsx';
 
 export default function ResultTabs({ scriptData, onBackToEdit, onChangeScene }) {
-  const [tab, setTab] = useState('schedule'); // schedule | relations
+  const [tab, setTab] = useState('schedule'); // schedule | relations | gallery
 
   const tabBtn = (id, label) => (
     <button
@@ -20,6 +21,7 @@ export default function ResultTabs({ scriptData, onBackToEdit, onChangeScene }) 
         <div className="inline-flex rounded-lg border border-stone-700 p-1">
           {tabBtn('schedule', '排演准备表')}
           {tabBtn('relations', '人物关系图')}
+          {tabBtn('gallery', '角色海报')}
         </div>
         <button onClick={onBackToEdit} className="text-sm text-stone-400 underline">
           返回编辑剧本
@@ -29,6 +31,7 @@ export default function ResultTabs({ scriptData, onBackToEdit, onChangeScene }) 
       <div className="mt-6">
         {tab === 'schedule' && <ScheduleTable scriptData={scriptData} onChangeScene={onChangeScene} />}
         {tab === 'relations' && <RelationGraph scriptData={scriptData} />}
+        {tab === 'gallery' && <CharacterGallery characters={scriptData.characters} />}
       </div>
     </div>
   );

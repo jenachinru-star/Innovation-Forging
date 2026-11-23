@@ -19,4 +19,14 @@ describe('ResultTabs', () => {
     fireEvent.click(screen.getByText('返回编辑剧本'));
     expect(onBack).toHaveBeenCalled();
   });
+  it('切换到角色海报能看到人物名称', () => {
+    const withChars = {
+      summary: '简介', scenes: [],
+      characters: [{ name: '老陈', description: '55岁退休教师' }],
+      relationships: [],
+    };
+    render(<ResultTabs scriptData={withChars} onBackToEdit={() => {}} />);
+    fireEvent.click(screen.getByText('角色海报'));
+    expect(screen.getByText('老陈')).toBeInTheDocument();
+  });
 });

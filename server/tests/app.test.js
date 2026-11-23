@@ -12,8 +12,8 @@ describe('createApp', () => {
     const res = await request(createApp()).post('/api/script/parse').send({});
     expect(res.status).toBe(400);
   });
-  it('已挂载 /api/character 路由', async () => {
+  it('已挂载 /api/character 路由（空请求返回 400 而非 404）', async () => {
     const res = await request(createApp()).post('/api/character/generate-image').send({});
-    expect(res.status).toBe(501);
+    expect(res.status).toBe(400);
   });
 });

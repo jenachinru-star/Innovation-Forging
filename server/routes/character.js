@@ -1,11 +1,19 @@
 import { Router } from 'express';
+import { generateCharacterImage } from '../services/seedream.js';
 
 export function createCharacterRouter(deps = {}) {
-  // 加分项在 Task 15 真正实现；此处占位，保证 app 可启动
-  void deps;
+  const generate = deps.generateCharacterImage || generateCharacterImage;
   const router = Router();
-  router.post('/generate-image', (req, res) => {
-    res.status(501).json({ error: '角色生图功能尚未启用' });
+  router.post('/generate-image', async (req, res) => {
+    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    const description = typeof req.body?.description === 'string' ? req.body.description.trim() : '';
+    if (!name || !description) return res.status(400).json({ error: '缺少人物名称或描述' });
+    try {
+      const imageUrl = await generate(description);
+      return res.json({ name, imageUrl });
+    } catch (e) {
+      return res.status(502).json({ error: '生成失败', detail: String(e?.message || e) });
+    }
   });
   return router;
 }
