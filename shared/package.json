@@ -6,6 +6,12 @@
   "main": "index.js",
   "exports": {
     ".": "./index.js",
-    "./diff.js": "./diff.js"
+    "./diff.js": "./diff.js",
+    "./parser/index.js": "./parser/index.js",
+    "./rules/breakdown.js": "./rules/breakdown.js",
+    "./rules/briefs.js": "./rules/briefs.js",
+    "./rules/impact.js": "./rules/impact.js",
+    "./samples/oneAct.js": "./samples/oneAct.js",
+    "./export/index.js": "./export/index.js"
   }
 }
