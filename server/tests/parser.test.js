@@ -38,9 +38,27 @@ describe('parseScriptOffline', () => {
     expect(TEXT.slice(r.start, r.end)).toContain('老陈的客厅');
   });
 
-  it('无结构文本给警告不抛错', () => {
+  it('无结构文本给出至少一条警告', () => {
     const { warnings } = parseScriptOffline('随便一段没有结构的文字');
-    expect(Array.isArray(warnings)).toBe(true);
+    expect(warnings.length).toBeGreaterThan(0);
+  });
+
+  it('不把含中文标点的整句误判为台词角色', () => {
+    const { scriptData } = parseScriptOffline('第一场 客厅\n\n老陈坐下，他说：我累了。');
+    const names = scriptData.characters.map((c) => c.name);
+    expect(names).not.toContain('老陈坐下，他说');
+  });
+
+  it('台词不误收单字道具，舞台说明仍识别道具', () => {
+    const text = `第一场 客厅
+
+（他拿起钥匙，又放下书）
+老陈：你相信我吗？`;
+    const { scriptData } = parseScriptOffline(text);
+    const props = scriptData.scenes[0].props;
+    expect(props).not.toContain('信');
+    expect(props).toContain('钥匙');
+    expect(props).toContain('书');
   });
 
   it('空输入、纯空白、单行文字都不抛错', () => {

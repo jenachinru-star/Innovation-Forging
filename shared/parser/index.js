@@ -3,7 +3,7 @@ import { normalizeScriptData } from '../index.js';
 const ACT_RE = /^第[一二三四五六七八九十百\d]+幕/;
 const SCENE_RE = /^第[一二三四五六七八九十百\d]+场\s*(.*)$/;
 const SCENE_NUM_RE = /^第([一二三四五六七八九十百\d]+)场/;
-const CUE_RE = /^([^\s：:（）()【】]{1,12})[：:]\s*(.+)$/;
+const CUE_RE = /^([^\s：:，。！？、；（）()【】《》“”‘’"'…—]{1,12})[：:]\s*(.+)$/;
 const DIR_RE = /^[（(【].*[）)】]$/;
 const CAST_RE = /^(?:人物|角色)\s*[：:]\s*(.+)$/;
 
@@ -99,9 +99,10 @@ export function parseScriptOffline(text) {
   let sceneCounter = 0;
   let actCounter = 0;
 
-  const scanProps = (value) => {
+  const scanProps = (value, allowSingleChar = false) => {
     if (!currentScene) return;
     for (const prop of PROPS) {
+      if (!allowSingleChar && prop.length < 2) continue;
       if (value.includes(prop) && !currentScene._propSet.has(prop)) {
         currentScene._propSet.add(prop);
         currentScene._propOrder.push(prop);
@@ -209,7 +210,7 @@ export function parseScriptOffline(text) {
 
     if (DIR_RE.test(t)) {
       currentScene.stageDirections.push(t);
-      scanProps(t);
+      scanProps(t, true);
       continue;
     }
 
