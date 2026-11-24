@@ -5,17 +5,18 @@ import ResultTabs from './components/ResultTabs.jsx';
 import VersionCompare from './components/VersionCompare.jsx';
 import ProjectLibrary from './components/ProjectLibrary.jsx';
 import ProjectOverview from './components/ProjectOverview.jsx';
+import Landing from './components/Landing.jsx';
 import { generateScript, parseScript } from './engine/index.js';
 import { createPlan, planReducer } from './store/plan.js';
+import { currentUser, logout } from './api/auth.js';
 import {
-  deleteProjectRecord,
-  listProjectRecords,
-  loadProject,
-  loadProjectRecord,
-  saveProject,
-  saveProjectRecord,
-} from './store/project.js';
+  listProjects,
+  getProject,
+  saveProject as persistProject,
+  removeProject,
+} from './api/projects.js';
 import { findImpacts } from '@director/shared/rules/impact.js';
+import { demoProject } from './fixtures/demoProject.js';
 
 const NAV_ITEMS = [
   { id: 'overview', mark: '00', label: '项目总览', phase: '作品' },
@@ -46,12 +47,7 @@ function createProjectId() {
 function downloadArchive(record) {
   if (typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') return false;
   const payload = JSON.stringify(
-    {
-      format: 'kaipai-project',
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      project: record,
-    },
+    { format: 'kaipai-project', version: 1, exportedAt: new Date().toISOString(), project: record },
     null,
     2
   );
@@ -77,6 +73,11 @@ function BrandMark() {
 }
 
 export default function App() {
+  const [booted, setBooted] = useState(false);
+  const [view, setView] = useState('cover'); // cover | workbench | demo
+  const [hydrated, setHydrated] = useState(false);
+  const [user, setUser] = useState(null);
+
   const [step, setStep] = useState('input');
   const [material, setMaterial] = useState('');
   const [scriptText, setScriptText] = useState('');
@@ -95,89 +96,92 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saveStatus, setSaveStatus] = useState('saved');
-  const [restored, setRestored] = useState(false);
-  const restoredRef = useRef(false);
 
-  useEffect(() => {
-    let active = true;
-    Promise.all([loadProject(), listProjectRecords()])
-      .then(([saved, records]) => {
-        if (!active) return;
-        if (saved && typeof saved === 'object') {
-          if (saved.projectId) setProjectId(saved.projectId);
-          if (saved.step) setStep(saved.step);
-          if (saved.activeNav) setActiveNav(saved.activeNav);
-          if (saved.activeTab) setResultTab(saved.activeTab);
-          if (typeof saved.scriptText === 'string') setScriptText(saved.scriptText);
-          if (Array.isArray(saved.scriptVersions)) setScriptVersions(saved.scriptVersions);
-          if (saved.scriptData) setScriptData(saved.scriptData);
-          if (saved.plan) dispatch({ type: 'replacePlan', plan: saved.plan });
-          setRestored(true);
-        }
-        if (Array.isArray(records)) {
-          setProjects(
-            records
-              .filter((item) => item && item.id)
-              .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))
-          );
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        restoredRef.current = true;
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
+  const readOnly = view === 'demo';
   const projectName = plan?.name || '我的舞台方案';
   const sceneCount = Array.isArray(scriptData?.scenes) ? scriptData.scenes.length : 0;
   const unresolved = plan?.impacts?.filter((item) => item.status === 'open').length || 0;
 
+  function applyRecord(record) {
+    setProjectId(record.id);
+    setStep(record.step || 'input');
+    setActiveNav(record.activeNav || 'script');
+    setResultTab(record.activeTab || 'schedule');
+    setScriptText(typeof record.scriptText === 'string' ? record.scriptText : '');
+    setScriptVersions(Array.isArray(record.scriptVersions) ? record.scriptVersions : []);
+    setScriptData(record.scriptData || null);
+    dispatch({
+      type: 'replacePlan',
+      plan: record.plan || createPlan('stage', record.name || '我的舞台方案'),
+    });
+  }
+
+  // 启动：检查后端会话，有则恢复作品
   useEffect(() => {
-    if (!restoredRef.current) return;
-    const updatedAt = new Date().toISOString();
-    const payload = {
-      id: projectId,
-      projectId,
-      name: projectName,
-      summary: scriptData?.summary || '',
-      status: step === 'result' ? (unresolved ? '待复核' : '排演中') : '筹备中',
-      sceneCount,
-      updatedAt,
-      step,
-      activeNav,
-      activeTab: resultTab,
-      scriptText,
-      scriptVersions,
-      scriptData,
-      plan,
-    };
-    setSaveStatus('saving');
-    Promise.all([saveProject(payload), saveProjectRecord(payload)])
-      .then(() => listProjectRecords())
-      .then((records) => {
-        setProjects(
-          records
-            .filter((item) => item && item.id)
-            .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))
-        );
-        setSaveStatus('saved');
+    let active = true;
+    currentUser()
+      .then(async (u) => {
+        if (!active || !u) return;
+        setUser(u);
+        const list = await listProjects();
+        if (!active) return;
+        setProjects(list);
+        if (list[0]) applyRecord(list[0]);
+        else resetProject();
+        setHydrated(true);
+        setView('workbench');
       })
-      .catch(() => setSaveStatus('error'));
+      .catch(() => {})
+      .finally(() => {
+        if (active) setBooted(true);
+      });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 自动保存：工作台且已恢复后，debounce 写入后端
+  useEffect(() => {
+    if (view !== 'workbench' || !hydrated) return undefined;
+    // 纵深防御：内置演示作品绝不写入用户账号
+    if (projectId === demoProject.id) return undefined;
+    setSaveStatus('saving');
+    const timer = setTimeout(() => {
+      const record = {
+        id: projectId,
+        name: projectName,
+        summary: scriptData?.summary || '',
+        status: step === 'result' ? (unresolved ? '待复核' : '排演中') : '筹备中',
+        sceneCount,
+        updatedAt: new Date().toISOString(),
+        step,
+        activeNav,
+        activeTab: resultTab,
+        scriptText,
+        scriptVersions,
+        scriptData,
+        plan,
+      };
+      persistProject(projectId, record)
+        .then(() => setSaveStatus('saved'))
+        .catch(() => setSaveStatus('error'));
+    }, 600);
+    return () => clearTimeout(timer);
   }, [
-    activeNav,
-    plan,
+    view,
+    hydrated,
     projectId,
     projectName,
-    resultTab,
     sceneCount,
-    scriptData,
+    unresolved,
+    step,
+    activeNav,
+    resultTab,
     scriptText,
     scriptVersions,
-    step,
-    unresolved,
+    scriptData,
+    plan,
   ]);
 
   const phaseLabel = useMemo(() => {
@@ -188,8 +192,7 @@ export default function App() {
   }, [step]);
 
   function resetProject() {
-    const nextId = createProjectId();
-    setProjectId(nextId);
+    setProjectId(createProjectId());
     setStep('input');
     setMaterial('');
     setScriptText('');
@@ -200,8 +203,14 @@ export default function App() {
     setResultTab('schedule');
     setCompareReturnStep('input');
     setError('');
-    setRestored(false);
     dispatch({ type: 'replacePlan', plan: createPlan('stage', '我的舞台方案') });
+  }
+
+  async function handleOpenProject(id) {
+    const record = await getProject(id);
+    if (!record) return;
+    applyRecord(record);
+    setLibraryOpen(false);
   }
 
   function handleCreateProject() {
@@ -209,31 +218,12 @@ export default function App() {
     setLibraryOpen(false);
   }
 
-  async function handleOpenProject(id) {
-    const record = await loadProjectRecord(id);
-    if (!record) return;
-    setProjectId(record.id || id);
-    setStep(record.step || 'input');
-    setScriptText(typeof record.scriptText === 'string' ? record.scriptText : '');
-    setScriptVersions(Array.isArray(record.scriptVersions) ? record.scriptVersions : []);
-    setScriptData(record.scriptData || null);
-    setActiveNav(record.activeNav || 'script');
-    setResultTab(record.activeTab || 'schedule');
-    dispatch({ type: 'replacePlan', plan: record.plan || createPlan('stage', record.name || '我的舞台方案') });
-    setLibraryOpen(false);
-  }
-
-  function handleImportProject(record) {
-    const imported = {
-      ...record,
-      id: createProjectId(),
-      updatedAt: new Date().toISOString(),
-    };
-    saveProjectRecord(imported)
-      .then(() => listProjectRecords())
-      .then(setProjects)
-      .then(() => handleOpenProject(imported.id))
-      .catch((importError) => setError(String(importError.message || importError)));
+  async function handleImportProject(record) {
+    const id = createProjectId();
+    const imported = { ...record, id, updatedAt: new Date().toISOString() };
+    await persistProject(id, imported);
+    setProjects(await listProjects());
+    await handleOpenProject(id);
   }
 
   async function handleExportProject(id) {
@@ -252,18 +242,17 @@ export default function App() {
             scriptData,
             plan,
           }
-        : await loadProjectRecord(id);
+        : await getProject(id);
     if (record) downloadArchive(record);
   }
 
   async function handleDeleteProject(id) {
     if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
-      const accepted = window.confirm('删除这件作品？本操作会同时删除本地保存的数据。');
+      const accepted = window.confirm('删除这件作品？会同时删除服务端保存的数据。');
       if (!accepted) return;
     }
-    await deleteProjectRecord(id);
-    const records = await listProjectRecords();
-    setProjects(records);
+    await removeProject(id);
+    setProjects(await listProjects());
     if (id === projectId) handleCreateProject();
   }
 
@@ -283,17 +272,54 @@ export default function App() {
             scriptData,
             plan,
           }
-        : await loadProjectRecord(id);
+        : await getProject(id);
     if (!source) return;
+    const newId = createProjectId();
     const copy = {
       ...source,
-      id: createProjectId(),
+      id: newId,
       name: `${source.name || '未命名作品'} · 副本`,
       updatedAt: new Date().toISOString(),
     };
-    await saveProjectRecord(copy);
-    setProjects(await listProjectRecords());
-    await handleOpenProject(copy.id);
+    await persistProject(newId, copy);
+    setProjects(await listProjects());
+    await handleOpenProject(newId);
+  }
+
+  // ===== 视图 / 认证回调 =====
+  async function handleAuth() {
+    const u = await currentUser();
+    setUser(u);
+    const list = await listProjects();
+    setProjects(list);
+    // 以服务端数据为准：有作品恢复最新一条，否则给干净空白项目，避免 demo 残留
+    if (list[0]) applyRecord(list[0]);
+    else resetProject();
+    setHydrated(true);
+    setView('workbench');
+  }
+
+  function handleTryDemo() {
+    applyRecord(demoProject);
+    setView('demo');
+  }
+
+  function handleResume() {
+    setView('workbench');
+  }
+
+  async function handleLogout() {
+    await logout();
+    setUser(null);
+    setHydrated(false);
+    resetProject();
+    setView('cover');
+  }
+
+  function handleBackToCover() {
+    // 从只读演示退出时清掉示例数据；工作台返回则保留已保存内容
+    if (view === 'demo') resetProject();
+    setView('cover');
   }
 
   function navigate(id) {
@@ -368,7 +394,7 @@ export default function App() {
         plan.assets.length > 0 &&
         JSON.stringify(scriptData) !== JSON.stringify(nextScriptData)
       ) {
-        dispatch({ type: 'markAssetsStale', reason: '剧本结构或人物资料发生变化' });
+        dispatch({ type: 'markAssetsStale', reason: '剧本结构或人物资料变化' });
       }
       setScriptData(nextScriptData);
       const nextVersion = {
@@ -400,7 +426,21 @@ export default function App() {
     });
   }
 
-  const navGroups = ['作品', '拆解', '排演', '交付'];
+  if (!booted) {
+    return <div className="app-boot" aria-label="正在启动" />;
+  }
+
+  if (view === 'cover') {
+    return (
+      <Landing
+        user={user}
+        onAuth={handleAuth}
+        onTryDemo={handleTryDemo}
+        onResume={handleResume}
+        onLogout={handleLogout}
+      />
+    );
+  }
 
   return (
     <div data-theme="theatre" className="app-root">
@@ -421,6 +461,7 @@ export default function App() {
             className="project-context-name"
             aria-label="作品名"
             value={projectName}
+            disabled={readOnly}
             onChange={(event) => dispatch({ type: 'renamePlan', name: event.target.value })}
             onBlur={(event) => {
               if (!event.currentTarget.value.trim()) {
@@ -428,34 +469,45 @@ export default function App() {
               }
             }}
           />
-          <button
-            type="button"
-            className="project-switch-button"
-            aria-label="打开作品库"
-            onClick={() => setLibraryOpen(true)}
-          >
-            ⌄
-          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              className="project-switch-button"
+              aria-label="打开作品库"
+              onClick={() => setLibraryOpen(true)}
+            >
+              ⌄
+            </button>
+          )}
           <span className="project-context-version">剧本工作版</span>
         </div>
         <div className="topbar-actions">
           <span className={`save-state is-${saveStatus}`}>
             <i />
-            {saveStatus === 'saving' && '正在保存'}
-            {saveStatus === 'saved' && '本地已保存'}
-            {saveStatus === 'error' && '保存失败'}
+            {readOnly && '只读演示'}
+            {!readOnly && saveStatus === 'saving' && '正在保存'}
+            {!readOnly && saveStatus === 'saved' && '本地已保存'}
+            {!readOnly && saveStatus === 'error' && '保存失败'}
           </span>
-          <button type="button" className="btn-ghost btn-small" onClick={() => setLibraryOpen(true)}>
-            作品库
-          </button>
-          <button
-            type="button"
-            className="btn-primary btn-small"
-            disabled={!scriptData}
-            onClick={() => navigate('export')}
-          >
-            导出材料
-          </button>
+          {!readOnly && (
+            <>
+              <button
+                type="button"
+                className="btn-ghost btn-small"
+                onClick={() => setLibraryOpen(true)}
+              >
+                作品库
+              </button>
+              <button
+                type="button"
+                className="btn-primary btn-small"
+                disabled={!scriptData}
+                onClick={() => navigate('export')}
+              >
+                导出材料
+              </button>
+            </>
+          )}
         </div>
       </header>
 
@@ -464,50 +516,49 @@ export default function App() {
           <div className="rail-project">
             <span className="rail-kicker">当前阶段</span>
             <b>{phaseLabel}</b>
-            <p>{sceneCount ? `${sceneCount} 场 · ${unresolved} 条待处理` : '从剧本开始建立制作链路'}</p>
+            <p>
+              {sceneCount ? `${sceneCount} 场 · ${unresolved} 条待处理` : '从剧本开始建立制作链路'}
+            </p>
           </div>
           <nav aria-label="项目工作区" className="phase-nav">
-            {navGroups.map((phase) => (
-              <div className="phase-group" key={phase}>
-                <span className="phase-label">{phase}</span>
-                {NAV_ITEMS.filter((item) => item.phase === phase).map((item) => {
-                  const needsScript = item.id !== 'script' && item.id !== 'overview';
-                  const disabled = needsScript && !scriptData;
-                  return (
-                    <button
-                      type="button"
-                      key={item.id}
-                      className={`rail-item ${activeNav === item.id ? 'is-active' : ''}`}
-                      disabled={disabled}
-                      onClick={() => navigate(item.id)}
-                    >
-                      <span className="rail-mark">{item.mark}</span>
-                      <span>{item.label}</span>
-                      {item.id === 'rehearsal' && unresolved > 0 && (
-                        <span className="rail-count">{unresolved}</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
+            {navGroupsMarkup()}
           </nav>
-          <button type="button" className="rail-library-link" onClick={() => setLibraryOpen(true)}>
-            <span>打开本地作品库</span>
-            <span aria-hidden="true">↗</span>
-          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              className="rail-library-link"
+              onClick={() => setLibraryOpen(true)}
+            >
+              <span>打开本地作品库</span>
+              <span aria-hidden="true">↗</span>
+            </button>
+          )}
+          <div className="rail-account">
+            <span className="rail-kicker">当前身份</span>
+            <b className="rail-account-name">
+              {readOnly ? '体验用户（只读）' : user?.username}
+            </b>
+            <button type="button" className="rail-account-link" onClick={handleBackToCover}>
+              返回封面
+            </button>
+            {!readOnly && (
+              <button type="button" className="rail-account-link" onClick={handleLogout}>
+                退出登录
+              </button>
+            )}
+          </div>
         </aside>
 
         <main id="workspace-main" className="workspace-main">
-          {restored && (
-            <div className="restore-banner">
-              <span>已恢复上次进度</span>
-              <button type="button" onClick={() => setRestored(false)}>
-                关闭
+          {readOnly && (
+            <div className="demo-banner">
+              <span>只读演示：可浏览各模块，注册/登录后即可编辑与保存</span>
+              <button type="button" onClick={handleBackToCover}>
+                去注册/登录
               </button>
             </div>
           )}
-          <div className="workspace-paper">
+          <fieldset className="workspace-paper" disabled={readOnly}>
             {step === 'input' && (
               <InputStep
                 onReady={handleReady}
@@ -522,10 +573,6 @@ export default function App() {
                 }}
                 aiEnabled={Boolean(plan?.aiConsent?.text)}
                 onAiEnabledChange={(value) => dispatch({ type: 'setAIConsent', value })}
-                onOpenCompare={() => {
-                  setCompareReturnStep('confirm');
-                  setStep('compare');
-                }}
               />
             )}
             {step === 'confirm' && (
@@ -541,8 +588,8 @@ export default function App() {
                 onAiEnabledChange={(value) => dispatch({ type: 'setAIConsent', value })}
               />
             )}
-            {step === 'result' && (
-              activeNav === 'overview' ? (
+            {step === 'result' &&
+              (activeNav === 'overview' ? (
                 <ProjectOverview
                   scriptData={scriptData}
                   plan={plan}
@@ -569,8 +616,7 @@ export default function App() {
                   }}
                   showTabs={false}
                 />
-              )
-            )}
+              ))}
             {step === 'compare' && (
               <VersionCompare
                 aiEnabled={Boolean(plan?.aiConsent?.text)}
@@ -580,7 +626,7 @@ export default function App() {
                 }}
               />
             )}
-          </div>
+          </fieldset>
         </main>
 
         <aside className="context-rail" aria-label="项目状态">
@@ -602,7 +648,12 @@ export default function App() {
           <div className="context-section">
             <span className="rail-kicker">现在要处理</span>
             {unresolved > 0 ? (
-              <button type="button" className="context-alert" onClick={() => navigate('rehearsal')}>
+              <button
+                type="button"
+                className="context-alert"
+                disabled={readOnly}
+                onClick={() => navigate('rehearsal')}
+              >
                 <span>{unresolved}</span>
                 条修改影响等待确认
               </button>
@@ -631,4 +682,31 @@ export default function App() {
       />
     </div>
   );
+
+  function navGroupsMarkup() {
+    return ['作品', '拆解', '排演', '交付'].map((phase) => (
+      <div className="phase-group" key={phase}>
+        <span className="phase-label">{phase}</span>
+        {NAV_ITEMS.filter((item) => item.phase === phase).map((item) => {
+          const needsScript = item.id !== 'script' && item.id !== 'overview';
+          const disabled = needsScript && !scriptData;
+          return (
+            <button
+              type="button"
+              key={item.id}
+              className={`rail-item ${activeNav === item.id ? 'is-active' : ''}`}
+              disabled={disabled}
+              onClick={() => navigate(item.id)}
+            >
+              <span className="rail-mark">{item.mark}</span>
+              <span>{item.label}</span>
+              {item.id === 'rehearsal' && unresolved > 0 && (
+                <span className="rail-count">{unresolved}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    ));
+  }
 }

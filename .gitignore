@@ -24,3 +24,6 @@ arena-skill.zip
 
 dist/
 !.env.example
+
+# 本地运行数据（账号/会话/作品）
+server/data/

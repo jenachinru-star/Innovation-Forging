@@ -2,37 +2,32 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { createPlan } from './store/plan.js';
 
-const mocks = vi.hoisted(() => {
-  const state = {
-    loadResult: null,
-    parseResult: null,
-    saveProject: null,
-    parseScript: null,
-  };
-  state.saveProject = vi.fn(async () => {});
-  state.parseScript = vi.fn(async () => state.parseResult);
-  return state;
-});
+const state = vi.hoisted(() => ({
+  initialRecord: null,
+  saveProject: vi.fn(async () => ({})),
+  parseScript: vi.fn(),
+}));
 
 vi.mock('./engine/index.js', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    parseScript: mocks.parseScript,
+    parseScript: state.parseScript,
     generateScript: vi.fn(async () => ({ scriptText: '' })),
-    extractUpload: vi.fn(),
-    getSourceMode: () => 'local',
   };
 });
 
-vi.mock('./store/project.js', async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...actual,
-    loadProject: vi.fn(async () => mocks.loadResult),
-    saveProject: mocks.saveProject,
-  };
-});
+vi.mock('./api/auth.js', () => ({
+  currentUser: vi.fn(async () => ({ username: 'tester' })),
+  logout: vi.fn(async () => {}),
+}));
+
+vi.mock('./api/projects.js', () => ({
+  listProjects: vi.fn(async () => (state.initialRecord ? [state.initialRecord] : [])),
+  getProject: vi.fn(async () => state.initialRecord),
+  saveProject: state.saveProject,
+  removeProject: vi.fn(async () => {}),
+}));
 
 import App from './App.jsx';
 
@@ -73,7 +68,8 @@ function planWithCue() {
         department: 'lighting',
         sceneId: 'sc-1',
         sceneNumber: 1,
-        trigger: { type: 'line', quote: '你终于回来了' },
+        anchor: null,
+        trigger: { type: 'line', quote: '你终于回来了', offset: null },
         content: '暖光渐亮',
         status: 'draft',
         note: '',
@@ -83,21 +79,24 @@ function planWithCue() {
 }
 
 beforeEach(() => {
-  mocks.loadResult = null;
-  mocks.parseResult = null;
-  mocks.saveProject.mockClear();
-  mocks.parseScript.mockClear();
+  state.initialRecord = null;
+  state.saveProject.mockClear();
+  state.parseScript.mockReset();
 });
 
 describe('App 集成', () => {
-  it('确认新解析后对已删除的绑定台词记录 cue 类影响', async () => {
-    mocks.loadResult = {
+  it('确认新解析后对已删除绑定台词的 cue 生成影响', async () => {
+    state.initialRecord = {
+      id: 'rec-1',
       step: 'confirm',
       scriptText: '老陈：你终于回来了',
       scriptData: scriptDataWith('你终于回来了'),
       plan: planWithCue(),
     };
-    mocks.parseResult = { scriptData: scriptDataWith('爸，我回来了') };
+    state.parseScript.mockResolvedValue({
+      scriptData: scriptDataWith('爸，我回来了'),
+      sourceMode: 'local',
+    });
 
     render(<App />);
 
@@ -111,8 +110,10 @@ describe('App 集成', () => {
   });
 
   it('把 plan.briefs 传给节奏时间线', async () => {
-    mocks.loadResult = {
+    state.initialRecord = {
+      id: 'rec-2',
       step: 'result',
+      activeNav: 'rehearsal',
       scriptText: '',
       scriptData: scriptDataWith('你终于回来了'),
       plan: {
@@ -121,24 +122,28 @@ describe('App 集成', () => {
           {
             id: 'brief-1',
             department: 'music',
+            sceneId: 'sc-1',
             sceneNumber: 1,
+            cueId: null,
             original: '音乐渐入',
             items: ['音乐渐入'],
             uncertain: [],
-            status: 'draft',
+            priority: 'medium',
             dueDate: '2026-11-30',
+            status: 'draft',
+            owner: '',
           },
         ],
       },
     };
 
     render(<App />);
-
     expect(await screen.findByTestId('cadence-brief')).toHaveTextContent('音乐渐入');
   });
 
-  it('恢复完成并修改剧本文本后会触发保存', async () => {
-    mocks.loadResult = {
+  it('修改剧本文本后触发保存到后端', async () => {
+    state.initialRecord = {
+      id: 'rec-3',
       step: 'confirm',
       scriptText: '原文',
       scriptData: scriptDataWith('你终于回来了'),
@@ -151,9 +156,9 @@ describe('App 集成', () => {
     fireEvent.change(textarea, { target: { value: '新的剧本文本' } });
 
     await waitFor(() => {
-      const states = mocks.saveProject.mock.calls.map(([state]) => state);
+      const records = state.saveProject.mock.calls.map(([, rec]) => rec);
       expect(
-        states.some((state) => state && state.step === 'confirm' && state.scriptText === '新的剧本文本')
+        records.some((rec) => rec && rec.step === 'confirm' && rec.scriptText === '新的剧本文本')
       ).toBe(true);
     });
   });
