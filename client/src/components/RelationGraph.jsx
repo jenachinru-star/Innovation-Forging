@@ -46,8 +46,19 @@ export default function RelationGraph({ scriptData }) {
     let chart = null;
     let disposed = false;
 
-    import('echarts').then((echarts) => {
+    Promise.all([
+      import('echarts/core'),
+      import('echarts/charts'),
+      import('echarts/components'),
+      import('echarts/renderers'),
+    ]).then(([echarts, charts, components, renderers]) => {
       if (disposed || !ref.current) return;
+      echarts.use([
+        charts.GraphChart,
+        components.TooltipComponent,
+        components.LegendComponent,
+        renderers.CanvasRenderer,
+      ]);
       chart = echarts.init(ref.current);
       chart.setOption(buildOption(scriptData));
     });

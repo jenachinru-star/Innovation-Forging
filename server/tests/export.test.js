@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toHtml, toCsv } from '@director/shared/export/index.js';
+import { toHtml, toCsv, toFountain } from '@director/shared/export/index.js';
 
 const scriptData = {
   summary: '一个雨夜里的重逢。',
@@ -92,6 +92,23 @@ describe('toHtml', () => {
 
     expect(html).toContain('第 1 场 · 音乐渐入');
   });
+
+  it('视觉方案进入打印材料并生成色带', () => {
+    const html = toHtml({
+      scriptData,
+      plan: {
+        ...plan,
+        style: {
+          familyName: '黑色悬疑与冷调惊悚',
+          directorName: '希区柯克',
+          palette: ['#1a1918', '#6d6d65', '#bdb7aa', '#2f6450', '#b1332e'],
+        },
+      },
+    });
+    expect(html).toContain('视觉方向：希区柯克');
+    expect(html).toContain('class="style-band"');
+    expect(html).toContain('#2f6450');
+  });
 });
 
 describe('toCsv', () => {
@@ -111,5 +128,24 @@ describe('toCsv', () => {
 
   it('缺失字段输出为空字符串', () => {
     expect(toCsv([{ a: 'x' }], ['a', 'b'])).toBe('\uFEFFa,b\nx,');
+  });
+});
+
+describe('toFountain', () => {
+  it('输出可继续编辑的 Fountain 文本并保留人物台词', () => {
+    const text = toFountain({
+      title: '雨夜重逢方案',
+      scriptData: {
+        scenes: [
+          {
+            location: '老宅客厅',
+            lines: [{ speaker: '老陈', text: '你终于回来了' }],
+          },
+        ],
+      },
+    });
+    expect(text).toContain('Title: 雨夜重逢方案');
+    expect(text).toContain('INT. 老宅客厅');
+    expect(text).toContain('\n老陈\n你终于回来了');
   });
 });

@@ -209,4 +209,70 @@ describe('StageBlocking', () => {
     expect(screen.queryByTestId('cue-cue-1')).not.toBeInTheDocument();
     expect(screen.getByText('当前场次无提示')).toBeInTheDocument();
   });
+
+  it('可切换到共享位置数据的 3D 白模视图', () => {
+    render(<StageBlocking characters={characters} dispatch={() => {}} />);
+    fireEvent.click(screen.getByText('3D 白模'));
+    expect(screen.getByTestId('actor-3d-老陈')).toBeInTheDocument();
+    expect(screen.getByTestId('actor-3d-阿岚')).toBeInTheDocument();
+    expect(screen.getByLabelText('三维白模预览')).toBeInTheDocument();
+  });
+
+  it('技术提示可以绑定到具体舞台动作', () => {
+    const dispatch = vi.fn();
+    const withDirection = [
+      {
+        id: 'sc-1',
+        sceneNumber: 1,
+        lines: [],
+        stageDirections: ['老陈把钥匙放进阿岚手心'],
+      },
+    ];
+    render(
+      <StageBlocking
+        characters={characters}
+        scenes={withDirection}
+        sceneNumber={1}
+        dispatch={dispatch}
+      />
+    );
+    fireEvent.click(screen.getByText('添加提示'));
+    fireEvent.change(screen.getByLabelText('绑定动作'), {
+      target: { value: '老陈把钥匙放进阿岚手心' },
+    });
+    fireEvent.change(screen.getByLabelText('内容'), { target: { value: '定点打亮钥匙' } });
+    fireEvent.click(screen.getByText('确认添加'));
+
+    const call = dispatch.mock.calls.find(([action]) => action.type === 'addCue');
+    expect(call[0].cue.trigger).toEqual({
+      type: 'action',
+      quote: '老陈把钥匙放进阿岚手心',
+    });
+  });
+
+  it('可以向当前场次添加可编辑白模对象', () => {
+    const dispatch = vi.fn();
+    render(<StageBlocking characters={characters} scenes={scenes} sceneNumber={1} dispatch={dispatch} />);
+    fireEvent.change(screen.getByLabelText('添加白模对象'), { target: { value: 'chair' } });
+    fireEvent.click(screen.getByText('放入舞台'));
+    const call = dispatch.mock.calls.find(([action]) => action.type === 'addStageObject');
+    expect(call[0].object.kind).toBe('chair');
+    expect(call[0].object.sceneNumber).toBe(1);
+  });
+
+  it('开启轨迹记录后拖动演员会保存路径点', () => {
+    const dispatch = vi.fn();
+    render(<StageBlocking characters={characters} dispatch={dispatch} />);
+    const svg = screen.getByTestId('stage-canvas');
+    Object.defineProperty(svg, 'getBoundingClientRect', { value: rect });
+    fireEvent.click(screen.getByText('记录走位轨迹'));
+    fireEvent.pointerDown(screen.getByTestId('actor-老陈'));
+    fireEvent.pointerMove(svg, { clientX: 240, clientY: 180 });
+    fireEvent.pointerMove(svg, { clientX: 280, clientY: 210 });
+    fireEvent.pointerUp(svg);
+
+    const call = dispatch.mock.calls.find(([action]) => action.type === 'addPath');
+    expect(call[0].path.characterId).toBe('老陈');
+    expect(call[0].path.points.length).toBeGreaterThan(1);
+  });
 });

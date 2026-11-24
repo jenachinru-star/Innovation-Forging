@@ -66,6 +66,7 @@ function scriptDataWith(lineText) {
 function planWithCue() {
   return {
     ...createPlan('stage', '测试方案'),
+    aiConsent: { text: true, authorizedAt: '2026-11-24T00:00:00.000Z' },
     cues: [
       {
         id: 'cue-1',

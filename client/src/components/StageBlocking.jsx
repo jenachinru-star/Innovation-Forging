@@ -106,13 +106,22 @@ export default function StageBlocking({
   dispatch,
 }) {
   const svgRef = useRef(null);
+  const stage3dRef = useRef(null);
   const dragRef = useRef(null);
+  const pathRef = useRef([]);
   const [draggingId, setDraggingId] = useState(null);
   const [positions, setPositions] = useState({});
+  const [objectPositions, setObjectPositions] = useState({});
+  const [selectedObjectId, setSelectedObjectId] = useState('');
+  const [objectKind, setObjectKind] = useState('table');
+  const [recordPath, setRecordPath] = useState(false);
+  const [pathDraft, setPathDraft] = useState([]);
+  const [viewMode, setViewMode] = useState('plan');
   const [showForm, setShowForm] = useState(false);
   const [department, setDepartment] = useState(DEPARTMENTS[0] || 'lighting');
   const [content, setContent] = useState('');
   const [quote, setQuote] = useState('');
+  const [action, setAction] = useState('');
 
   const actors = actorsFor(characters, plan?.cast);
   const placements = plan?.staging?.placements;
@@ -121,6 +130,15 @@ export default function StageBlocking({
   const sceneCues = (Array.isArray(plan?.cues) ? plan.cues : []).filter(
     (cue) => cue && Number(cue.sceneNumber) === Number(sceneNumber)
   );
+  const sceneObjects = (Array.isArray(plan?.staging?.objects) ? plan.staging.objects : []).filter(
+    (object) => object && Number(object.sceneNumber) === Number(sceneNumber)
+  );
+  const scenePaths = (Array.isArray(plan?.staging?.paths) ? plan.staging.paths : []).filter(
+    (path) => path && Number(path.sceneNumber) === Number(sceneNumber)
+  );
+  const sceneDirections = Array.isArray(getScene(scenes, sceneNumber)?.stageDirections)
+    ? getScene(scenes, sceneNumber).stageDirections
+    : [];
 
   function positionFor(actor, index) {
     const local = positions[sceneNumber]?.[actor.characterId];
@@ -128,10 +146,37 @@ export default function StageBlocking({
     return storedPosition(placements, sceneNumber, actor.characterId) || defaultPosition(index, actors.length);
   }
 
+  function objectPositionFor(object) {
+    const local = objectPositions[sceneNumber]?.[object.id];
+    return local || { x: object.x, y: object.y };
+  }
+
   function handlePointerDown(event, actor, position) {
     event.preventDefault?.();
-    dragRef.current = { characterId: actor.characterId, x: position.x, y: position.y };
+    dragRef.current = {
+      kind: 'actor',
+      id: actor.characterId,
+      characterId: actor.characterId,
+      x: position.x,
+      y: position.y,
+    };
+    if (recordPath) {
+      pathRef.current = [{ x: position.x, y: position.y }];
+      setPathDraft(pathRef.current);
+    }
     setDraggingId(actor.characterId);
+  }
+
+  function handleObjectPointerDown(event, object, position) {
+    event.preventDefault?.();
+    setSelectedObjectId(object.id);
+    dragRef.current = {
+      kind: 'object',
+      id: object.id,
+      x: position.x,
+      y: position.y,
+    };
+    setDraggingId(object.id);
   }
 
   function handlePointerMove(event) {
@@ -148,13 +193,27 @@ export default function StageBlocking({
     const y = clamp((clientY - (box.top || 0)) * (VIEW_H / height), 0, VIEW_H);
 
     dragRef.current = { ...dragRef.current, x, y };
-    setPositions((prev) => {
-      const forScene = prev[sceneNumber] && typeof prev[sceneNumber] === 'object' ? prev[sceneNumber] : {};
-      return {
-        ...prev,
-        [sceneNumber]: { ...forScene, [dragRef.current.characterId]: { x, y } },
-      };
-    });
+    if (dragRef.current.kind === 'actor' && recordPath) {
+      pathRef.current = [...pathRef.current, { x, y }];
+      setPathDraft(pathRef.current);
+    }
+    if (dragRef.current.kind === 'object') {
+      setObjectPositions((prev) => {
+        const forScene = prev[sceneNumber] && typeof prev[sceneNumber] === 'object' ? prev[sceneNumber] : {};
+        return {
+          ...prev,
+          [sceneNumber]: { ...forScene, [dragRef.current.id]: { x, y } },
+        };
+      });
+    } else {
+      setPositions((prev) => {
+        const forScene = prev[sceneNumber] && typeof prev[sceneNumber] === 'object' ? prev[sceneNumber] : {};
+        return {
+          ...prev,
+          [sceneNumber]: { ...forScene, [dragRef.current.characterId]: { x, y } },
+        };
+      });
+    }
   }
 
   function handlePointerUp() {
@@ -165,9 +224,79 @@ export default function StageBlocking({
 
     const x = Number.isFinite(drag.x) ? drag.x : 0;
     const y = Number.isFinite(drag.y) ? drag.y : 0;
+    if (drag.kind === 'object') {
+      dispatch?.({
+        type: 'updateStageObject',
+        id: drag.id,
+        patch: { x, y },
+      });
+    } else {
+      dispatch?.({
+        type: 'setPlacement',
+        placement: { sceneNumber, characterId: drag.characterId, x, y },
+      });
+      if (recordPath && pathRef.current.length > 1) {
+        dispatch?.({
+          type: 'addPath',
+          path: {
+            sceneNumber,
+            characterId: drag.characterId,
+            points: pathRef.current,
+            triggerQuote: '',
+          },
+        });
+      }
+    }
+    pathRef.current = [];
+    setPathDraft([]);
+  }
+
+  function handle3DPointerMove(event) {
+    if (!dragRef.current) return;
+    const box = stage3dRef.current?.getBoundingClientRect();
+    if (!box) return;
+    const clientX = Number(event.clientX ?? event.nativeEvent?.clientX ?? 0);
+    const clientY = Number(event.clientY ?? event.nativeEvent?.clientY ?? 0);
+    const x = clamp(((clientX - box.left) / (box.width || 1)) * VIEW_W, 0, VIEW_W);
+    const y = clamp(((clientY - box.top) / (box.height || 1)) * VIEW_H, 0, VIEW_H);
+    dragRef.current = { ...dragRef.current, x, y };
+    if (dragRef.current.kind === 'actor' && recordPath) {
+      pathRef.current = [...pathRef.current, { x, y }];
+      setPathDraft(pathRef.current);
+    }
+    if (dragRef.current.kind === 'object') {
+      setObjectPositions((prev) => {
+        const forScene = prev[sceneNumber] && typeof prev[sceneNumber] === 'object' ? prev[sceneNumber] : {};
+        return {
+          ...prev,
+          [sceneNumber]: { ...forScene, [dragRef.current.id]: { x, y } },
+        };
+      });
+    } else {
+      setPositions((prev) => {
+        const forScene = prev[sceneNumber] && typeof prev[sceneNumber] === 'object' ? prev[sceneNumber] : {};
+        return {
+          ...prev,
+          [sceneNumber]: { ...forScene, [dragRef.current.characterId]: { x, y } },
+        };
+      });
+    }
+  }
+
+  function handleAddObject() {
+    const labels = { table: '桌', chair: '椅', entrance: '门口', prop: '道具' };
     dispatch?.({
-      type: 'setPlacement',
-      placement: { sceneNumber, characterId: drag.characterId, x, y },
+      type: 'addStageObject',
+      object: {
+        id: nextId('object', plan?.staging?.objects),
+        kind: objectKind,
+        label: labels[objectKind] || '道具',
+        sceneNumber,
+        x: VIEW_W / 2,
+        y: VIEW_H / 2,
+        rotation: 0,
+        scale: 1,
+      },
     });
   }
 
@@ -176,35 +305,144 @@ export default function StageBlocking({
     if (!text) return;
 
     const quoteText = quote.trim();
+    const actionText = action.trim();
     const cue = {
       id: nextId('cue', plan?.cues),
       department,
       sceneNumber,
       trigger: quoteText
         ? { type: 'line', quote: quoteText }
-        : { type: 'free', quote: '' },
+        : actionText
+          ? { type: 'action', quote: actionText }
+          : { type: 'free', quote: '' },
       content: text,
       status: 'draft',
       note: '',
+      anchor: {
+        kind: quoteText ? 'line' : actionText ? 'action' : 'scene',
+        sceneId: `sc-${sceneNumber}`,
+        quote: quoteText || actionText,
+      },
     };
     dispatch?.({ type: 'addCue', cue });
 
     setContent('');
     setQuote('');
+    setAction('');
     setShowForm(false);
   }
 
   return (
     <div>
-      <div className="media-area overflow-hidden rounded-lg">
-        <svg
-          ref={svgRef}
-          data-testid="stage-canvas"
-          viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-          className="block h-auto w-full touch-none select-none"
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
+      <div className="stage-view-switch" role="group" aria-label="舞台视图">
+        <button
+          type="button"
+          className={viewMode === 'plan' ? 'is-active' : ''}
+          onClick={() => setViewMode('plan')}
         >
+          2D 平面
+        </button>
+        <button
+          type="button"
+          className={viewMode === '3d' ? 'is-active' : ''}
+          onClick={() => setViewMode('3d')}
+        >
+          3D 白模
+        </button>
+        <button
+          type="button"
+          className={recordPath ? 'is-active' : ''}
+          aria-pressed={recordPath}
+          onClick={() => setRecordPath((value) => !value)}
+        >
+          记录走位轨迹
+        </button>
+        <span>两种视图共享同一组位置数据</span>
+      </div>
+
+      <div className="stage-object-tools">
+        <label htmlFor="stage-object-kind">添加白模对象</label>
+        <select
+          id="stage-object-kind"
+          className="field"
+          value={objectKind}
+          onChange={(event) => setObjectKind(event.target.value)}
+        >
+          <option value="table">桌</option>
+          <option value="chair">椅子</option>
+          <option value="entrance">出入口</option>
+          <option value="prop">通用道具</option>
+        </select>
+        <button type="button" className="btn-ghost btn-small" onClick={handleAddObject}>
+          放入舞台
+        </button>
+        {selectedObjectId && (
+          <div className="stage-object-inspector">
+            {(() => {
+              const selectedObject = sceneObjects.find((item) => item.id === selectedObjectId);
+              if (!selectedObject) return null;
+              return (
+                <>
+                  <label>
+                    旋转
+                    <input
+                      type="number"
+                      min="-180"
+                      max="180"
+                      value={selectedObject.rotation || 0}
+                      onChange={(event) =>
+                        dispatch?.({
+                          type: 'updateStageObject',
+                          id: selectedObject.id,
+                          patch: { rotation: Number(event.target.value) || 0 },
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    大小
+                    <input
+                      type="number"
+                      min="0.4"
+                      max="2.5"
+                      step="0.1"
+                      value={selectedObject.scale || 1}
+                      onChange={(event) =>
+                        dispatch?.({
+                          type: 'updateStageObject',
+                          id: selectedObject.id,
+                          patch: { scale: Number(event.target.value) || 1 },
+                        })
+                      }
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="text-action is-danger"
+                    onClick={() => {
+                      dispatch?.({ type: 'removeStageObject', id: selectedObject.id });
+                      setSelectedObjectId('');
+                    }}
+                  >
+                    移除
+                  </button>
+                </>
+              );
+            })()}
+          </div>
+        )}
+      </div>
+
+      <div className="media-area overflow-hidden rounded-lg">
+        {viewMode === 'plan' ? (
+          <svg
+            ref={svgRef}
+            data-testid="stage-canvas"
+            viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+            className="block h-auto w-full touch-none select-none"
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+          >
           <rect
             x="0"
             y="0"
@@ -232,6 +470,64 @@ export default function StageBlocking({
             strokeWidth="2"
             style={{ fill: 'var(--media-raised)', stroke: 'var(--media-muted)' }}
           />
+
+          {scenePaths.map((path) =>
+            Array.isArray(path.points) && path.points.length > 1 ? (
+              <polyline
+                key={path.id}
+                points={path.points.map((point) => `${point.x},${point.y}`).join(' ')}
+                fill="none"
+                stroke="#b39b73"
+                strokeWidth="2"
+                strokeDasharray="6 6"
+                opacity=".75"
+              />
+            ) : null
+          )}
+          {pathDraft.length > 1 && (
+            <polyline
+              points={pathDraft.map((point) => `${point.x},${point.y}`).join(' ')}
+              fill="none"
+              stroke="var(--cue)"
+              strokeWidth="3"
+              strokeDasharray="5 5"
+            />
+          )}
+
+          {sceneObjects.map((object) => {
+            const position = objectPositionFor(object);
+            const width = 54 * (object.scale || 1) * (object.kind === 'table' ? 1.5 : 1);
+            const height = 30 * (object.scale || 1);
+            return (
+              <g
+                key={object.id}
+                data-testid={`stage-object-${object.id}`}
+                onPointerDown={(event) => handleObjectPointerDown(event, object, position)}
+                style={{ cursor: 'grab' }}
+              >
+                <rect
+                  x={position.x - width / 2}
+                  y={position.y - height / 2}
+                  width={width}
+                  height={height}
+                  rx="3"
+                  transform={`rotate(${object.rotation || 0} ${position.x} ${position.y})`}
+                  fill="#3a3026"
+                  stroke={selectedObjectId === object.id ? 'var(--cue)' : '#756047'}
+                  strokeWidth="2"
+                />
+                <text
+                  x={position.x}
+                  y={position.y + 4}
+                  textAnchor="middle"
+                  fontSize="11"
+                  fill="#d8c9b1"
+                >
+                  {object.label || object.kind}
+                </text>
+              </g>
+            );
+          })}
 
           <rect
             x="18"
@@ -303,7 +599,59 @@ export default function StageBlocking({
               </g>
             );
           })}
-        </svg>
+          </svg>
+        ) : (
+          <div
+            ref={stage3dRef}
+            className="stage-3d-viewport"
+            onPointerMove={handle3DPointerMove}
+            onPointerUp={handlePointerUp}
+            aria-label="三维白模预览"
+          >
+            <span className="stage-3d-audience">观众方向</span>
+            <div className="stage-3d-floor">
+              <span className="stage-3d-door is-left">上场口</span>
+              <span className="stage-3d-door is-right">下场口</span>
+              {sceneObjects.map((object) => {
+                const position = objectPositionFor(object);
+                return (
+                  <button
+                    type="button"
+                    key={object.id}
+                    className={`stage-3d-object ${selectedObjectId === object.id ? 'is-selected' : ''}`}
+                    style={{
+                      left: `${(position.x / VIEW_W) * 100}%`,
+                      top: `${(position.y / VIEW_H) * 100}%`,
+                      transform: `translate(-50%, -50%) translateZ(8px) rotate(${object.rotation || 0}deg) scale(${object.scale || 1})`,
+                    }}
+                    onPointerDown={(event) => handleObjectPointerDown(event, object, position)}
+                  >
+                    {object.label || object.kind}
+                  </button>
+                );
+              })}
+              {actors.map((actor, index) => {
+                const position = positionFor(actor, index);
+                return (
+                  <button
+                    type="button"
+                    key={actor.characterId}
+                    data-testid={`actor-3d-${actor.characterId}`}
+                    className="stage-3d-actor"
+                    style={{
+                      left: `${(position.x / VIEW_W) * 100}%`,
+                      top: `${(position.y / VIEW_H) * 100}%`,
+                    }}
+                    onPointerDown={(event) => handlePointerDown(event, actor, position)}
+                  >
+                    <span>{actor.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="stage-3d-caption">拖动演员调整平面位置 · 白模为排演预览，不模拟真实灯具</p>
+          </div>
+        )}
       </div>
 
       <div className="mt-4">
@@ -370,6 +718,28 @@ export default function StageBlocking({
               </select>
             </div>
 
+            <div>
+              <label htmlFor="cue-action" className="muted mb-1 block text-xs">
+                绑定动作
+              </label>
+              <select
+                id="cue-action"
+                value={action}
+                onChange={(event) => {
+                  setAction(event.target.value);
+                  if (event.target.value) setQuote('');
+                }}
+                className="field px-2 py-1 text-sm"
+              >
+                <option value="">不绑定动作</option>
+                {sceneDirections.map((direction, index) => (
+                  <option key={`${direction}-${index}`} value={direction}>
+                    {direction}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <button
               type="button"
               onClick={handleAddCue}
@@ -401,8 +771,26 @@ export default function StageBlocking({
                 </span>
                 <span className="flex-1">{cue.content}</span>
                 {cue.trigger?.quote && (
-                  <span className="muted">绑定：{cue.trigger.quote}</span>
+                  <span className="muted">
+                    绑定{cue.trigger.type === 'action' ? '动作' : '台词'}：{cue.trigger.quote}
+                  </span>
                 )}
+                <select
+                  aria-label={`提示状态 ${cue.content}`}
+                  value={cue.status || 'draft'}
+                  onChange={(event) =>
+                    dispatch?.({
+                      type: 'updateCue',
+                      id: cue.id,
+                      patch: { status: event.target.value },
+                    })
+                  }
+                  className="cue-status-select"
+                >
+                  <option value="draft">草案</option>
+                  <option value="review">待复核</option>
+                  <option value="confirmed">已确认</option>
+                </select>
                 <button
                   type="button"
                   onClick={() => dispatch?.({ type: 'removeCue', id: cue.id })}

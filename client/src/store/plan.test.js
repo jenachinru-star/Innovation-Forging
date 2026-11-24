@@ -241,4 +241,57 @@ describe('planReducer', () => {
     expect(again.rehearsals[0].id).toBe('reh-1');
     expect(again.rehearsals[0].decisions).toEqual(['改主意']);
   });
+
+  it('可重命名作品并保存视觉风格', () => {
+    const state = createPlan('stage', '旧名字');
+    const renamed = planReducer(state, { type: 'renamePlan', name: '钥匙' });
+    expect(renamed.name).toBe('钥匙');
+
+    const styled = planReducer(renamed, {
+      type: 'setStyle',
+      style: { familyId: 'noir', directorId: 'alfred-hitchcock', prompt: '视觉提示' },
+    });
+    expect(styled.style).toMatchObject({
+      familyId: 'noir',
+      directorId: 'alfred-hitchcock',
+      prompt: '视觉提示',
+    });
+
+    const consented = planReducer(styled, { type: 'setAIConsent', value: true });
+    expect(consented.aiConsent.text).toBe(true);
+    expect(consented.aiConsent.mediaConfirmRequired).toBe(true);
+    expect(consented.aiConsent.authorizedAt).toBeTruthy();
+
+    const withAsset = planReducer(consented, {
+      type: 'upsertAsset',
+      asset: { id: 'character-老陈', type: 'character', url: 'http://img/1.png' },
+    });
+    expect(withAsset.assets).toHaveLength(1);
+
+    const replaced = planReducer(withAsset, {
+      type: 'upsertAsset',
+      asset: { id: 'character-老陈', type: 'character', status: 'stale' },
+    });
+    expect(replaced.assets).toHaveLength(1);
+    expect(replaced.assets[0].status).toBe('stale');
+  });
+
+  it('可添加、变换和删除舞台白模对象', () => {
+    const state = createPlan('stage', '方案');
+    const added = planReducer(state, {
+      type: 'addStageObject',
+      object: { id: 'object-1', kind: 'table', label: '桌', sceneNumber: 1, x: 200, y: 180 },
+    });
+    expect(added.staging.objects).toHaveLength(1);
+
+    const updated = planReducer(added, {
+      type: 'updateStageObject',
+      id: 'object-1',
+      patch: { x: 320, rotation: 30, scale: 1.2 },
+    });
+    expect(updated.staging.objects[0]).toMatchObject({ x: 320, rotation: 30, scale: 1.2 });
+
+    const removed = planReducer(updated, { type: 'removeStageObject', id: 'object-1' });
+    expect(removed.staging.objects).toHaveLength(0);
+  });
 });

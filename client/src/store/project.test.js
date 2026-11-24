@@ -1,5 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { saveProject, loadProject, clearProject, isPersistent } from './project.js';
+import {
+  deleteProjectRecord,
+  listProjectRecords,
+  loadProjectRecord,
+  saveProject,
+  loadProject,
+  clearProject,
+  isPersistent,
+  saveProjectRecord,
+} from './project.js';
 
 describe('project store', () => {
   beforeEach(async () => {
@@ -29,5 +38,20 @@ describe('project store', () => {
     await saveProject({ step: 'confirm' });
     await clearProject();
     await expect(loadProject()).resolves.toBeNull();
+  });
+
+  it('保存、枚举、读取并删除本地作品记录', async () => {
+    const first = { id: 'p-1', name: '第一场雨', updatedAt: '2026-11-24T10:00:00.000Z' };
+    const second = { id: 'p-2', name: '旧钥匙', updatedAt: '2026-11-24T11:00:00.000Z' };
+    await saveProjectRecord(first);
+    await saveProjectRecord(second);
+
+    expect((await listProjectRecords()).map((item) => item.id)).toEqual(
+      expect.arrayContaining(['p-1', 'p-2'])
+    );
+    await expect(loadProjectRecord('p-1')).resolves.toEqual(first);
+
+    await deleteProjectRecord('p-1');
+    await expect(loadProjectRecord('p-1')).resolves.toBeNull();
   });
 });

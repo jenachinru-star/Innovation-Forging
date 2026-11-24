@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { extractUpload, parseScript } from '../api.js';
+import { extractUpload, parseScript } from '../engine/index.js';
 import { diffScriptData } from '@director/shared/diff.js';
 
-export default function VersionCompare({ onBack }) {
+export default function VersionCompare({ onBack, aiEnabled = false }) {
   const [a, setA] = useState(null);
   const [b, setB] = useState(null);
   const [diff, setDiff] = useState(null);
@@ -15,7 +15,7 @@ export default function VersionCompare({ onBack }) {
     setDiff(null);
     try {
       const { scriptText } = await extractUpload(file);
-      const { scriptData } = await parseScript(scriptText);
+      const { scriptData } = await parseScript(scriptText, { allowRemote: aiEnabled });
       setter(scriptData);
     } catch (e) {
       setError(String(e.message || e));
@@ -42,17 +42,17 @@ export default function VersionCompare({ onBack }) {
         <div className="grid grid-cols-2 gap-4">
           <div className="card rounded p-3">
             <p className="muted mb-2">旧版本（上传）</p>
-            <input type="file" accept=".txt,.md,.docx" onChange={(e) => e.target.files?.[0] && load(e.target.files[0], setA)} />
+            <input type="file" accept=".txt,.md,.fountain,.docx,.pdf" onChange={(e) => e.target.files?.[0] && load(e.target.files[0], setA)} />
             <p className="muted mt-2 text-xs">{a ? `已解析 ${a.scenes.length} 场` : '未加载'}</p>
           </div>
           <div className="card rounded p-3">
             <p className="muted mb-2">新版本（上传）</p>
-            <input type="file" accept=".txt,.md,.docx" onChange={(e) => e.target.files?.[0] && load(e.target.files[0], setB)} />
+            <input type="file" accept=".txt,.md,.fountain,.docx,.pdf" onChange={(e) => e.target.files?.[0] && load(e.target.files[0], setB)} />
             <p className="muted mt-2 text-xs">{b ? `已解析 ${b.scenes.length} 场` : '未加载'}</p>
           </div>
         </div>
         <button onClick={compare} disabled={!a || !b || busy} className="btn-primary px-4 py-2">对比</button>
-        {error && <p className="alert-error p-3">{error}</p>}
+        {error && <p role="alert" className="alert-error p-3">{error}</p>}
         {diff && (
           <div className="space-y-2">
             <p>新增场次：{diff.addedScenes.join('、') || '无'}</p>

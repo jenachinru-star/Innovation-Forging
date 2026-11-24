@@ -25,6 +25,11 @@ function pad2(value) {
   return String(value).padStart(2, '0');
 }
 
+function safeColor(value, fallback = '#1c1917') {
+  const color = text(value);
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : fallback;
+}
+
 function formatNow(now) {
   if (typeof now === 'string' && now.trim()) return now.trim();
   const date = now instanceof Date ? now : now == null ? new Date() : new Date(now);
@@ -211,6 +216,9 @@ export function toHtml({ title, scriptData, plan, now } = {}) {
   const planName = text(title) || text(plan?.name) || '舞台方案';
   const time = formatNow(now);
   const summary = text(scriptData?.summary);
+  const palette = asArray(plan?.style?.palette).map((color, index) =>
+    safeColor(color, ['#1c1917', '#746c61', '#d3cabc', '#c18a2d', '#f4f0e8'][index])
+  );
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -219,12 +227,29 @@ export function toHtml({ title, scriptData, plan, now } = {}) {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${esc(planName)} · 排演材料</title>
   <style>${STYLE}
+    :root {
+      --export-ink: ${palette[0] || '#1c1917'};
+      --export-cue: ${palette[3] || '#c18a2d'};
+      --export-paper: ${palette[4] || '#fffdf7'};
+    }
+    body { color: var(--export-ink); background: var(--export-paper); }
+    h2 { border-bottom-color: var(--export-ink); }
+    .style-band { display: flex; height: 10px; margin: 18px 0 28px; }
+    .style-band i { flex: 1; }
   </style>
 </head>
 <body>
   <main class="page">
     <h1>${esc(planName)}</h1>
     <p class="subtitle">排演材料 · 生成时间 ${esc(time)}</p>
+    ${
+      plan?.style
+        ? `<div class="style-band">${palette
+            .map((color) => `<i style="background:${color}"></i>`)
+            .join('')}</div>
+    <p class="subtitle">视觉方向：${esc(plan.style.directorName || plan.style.familyName || '未命名')}</p>`
+        : ''
+    }
 
     <section>
       <h2>作品信息</h2>
@@ -263,4 +288,38 @@ export function toCsv(rows, headers) {
     lines.push(columns.map((column) => csvCell(record[column])).join(','));
   }
   return `\uFEFF${lines.join('\n')}`;
+}
+
+export function toFountain({ title, scriptData } = {}) {
+  const project = text(title) || text(scriptData?.summary) || '未命名作品';
+  const scenes = asArray(scriptData?.scenes);
+  const blocks = [
+    `Title: ${project}`,
+    'Credit: 开排',
+    'Draft date: ' + formatNow(new Date()),
+    '',
+    '====',
+    '',
+  ];
+
+  for (const scene of scenes) {
+    const heading = text(scene?.location) || text(scene?.title) || '未命名场景';
+    blocks.push(`INT. ${heading}`);
+    blocks.push('');
+    for (const direction of asArray(scene?.stageDirections)) {
+      blocks.push(`> ${text(direction)}`);
+      blocks.push('');
+    }
+    for (const line of asArray(scene?.lines)) {
+      const speaker = text(line?.speaker).toUpperCase();
+      const dialogue = text(line?.text);
+      if (speaker) blocks.push(speaker);
+      if (dialogue) blocks.push(dialogue);
+      blocks.push('');
+    }
+    blocks.push('====');
+    blocks.push('');
+  }
+
+  return `${blocks.join('\n').trim()}\n`;
 }

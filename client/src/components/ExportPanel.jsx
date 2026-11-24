@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { toCsv, toHtml } from '@director/shared/export/index.js';
+import { toCsv, toFountain, toHtml } from '@director/shared/export/index.js';
 import { DEPARTMENT_LABELS } from '@director/shared/rules/briefs.js';
 
 const UNSUPPORTED_MESSAGE = '当前环境不支持下载，可改用浏览器打印（Ctrl+P）';
@@ -123,6 +123,36 @@ export default function ExportPanel({ title, scriptData, plan }) {
     announce(ok);
   }
 
+  function exportFountain() {
+    const ok = download(
+      `${safeName(planName)}-${timestamp()}.fountain`,
+      toFountain({ title: planName, scriptData }),
+      'text/plain;charset=utf-8'
+    );
+    announce(ok);
+  }
+
+  function exportProjectArchive() {
+    const archive = {
+      format: 'kaipai-project',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      project: {
+        name: planName,
+        summary: scriptData?.summary || '',
+        updatedAt: new Date().toISOString(),
+        scriptData,
+        plan,
+      },
+    };
+    const ok = download(
+      `${safeName(planName)}-项目归档-${timestamp()}.kaipai.json`,
+      JSON.stringify(archive, null, 2),
+      'application/json;charset=utf-8'
+    );
+    announce(ok);
+  }
+
   return (
     <div>
       <p className="muted mb-4 text-sm">
@@ -161,6 +191,12 @@ export default function ExportPanel({ title, scriptData, plan }) {
           className="btn-primary px-4 py-2 text-sm"
         >
           全部
+        </button>
+        <button type="button" onClick={exportFountain} className="btn-ghost px-4 py-2 text-sm">
+          Fountain 剧本
+        </button>
+        <button type="button" onClick={exportProjectArchive} className="btn-ghost px-4 py-2 text-sm">
+          项目归档
         </button>
       </div>
     </div>

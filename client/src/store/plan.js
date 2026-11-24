@@ -42,6 +42,7 @@ function normalizeStaging(staging) {
   return {
     stage: base.stage ?? null,
     placements: asArray(base.placements),
+    objects: asArray(base.objects),
     paths: asArray(base.paths),
     notes: asArray(base.notes),
   };
@@ -52,6 +53,51 @@ export function planReducer(state, action) {
   const type = action && action.type;
 
   switch (type) {
+    case 'renamePlan':
+      return { ...current, name: String(action.name || '').trim() || '未命名作品' };
+
+    case 'setStyle':
+      return {
+        ...current,
+        style: action.style && typeof action.style === 'object' ? { ...action.style } : null,
+      };
+
+    case 'setAIConsent':
+      return {
+        ...current,
+        aiConsent: {
+          text: Boolean(action.value),
+          authorizedAt: action.value ? new Date().toISOString() : null,
+          mediaConfirmRequired: true,
+        },
+      };
+
+    case 'setSourceVersion':
+      return { ...current, sourceVersion: String(action.id || '') };
+
+    case 'upsertAsset': {
+      const assets = asArray(current.assets);
+      const asset = asObject(action.asset);
+      if (!asset.id) return current;
+      const found = assets.some((item) => item?.id === asset.id);
+      return {
+        ...current,
+        assets: found
+          ? assets.map((item) => (item?.id === asset.id ? { ...item, ...asset } : item))
+          : [...assets, asset],
+      };
+    }
+
+    case 'markAssetsStale':
+      return {
+        ...current,
+        assets: asArray(current.assets).map((asset) => ({
+          ...asset,
+          status: 'stale',
+          staleReason: String(action.reason || '上游剧本已修改'),
+        })),
+      };
+
     case 'addSegment': {
       const segments = asArray(current.segments);
       const segment = asObject(action.segment);
@@ -87,6 +133,7 @@ export function planReducer(state, action) {
             department: cue.department || 'lighting',
             sceneId,
             sceneNumber: toSceneNumber(cue.sceneNumber, sceneId),
+            anchor: cue.anchor || null,
             trigger: cue.trigger || { type: 'free', quote: '', offset: null },
             content: cue.content || '',
             status: cue.status || 'draft',
@@ -162,6 +209,54 @@ export function planReducer(state, action) {
         staging: {
           ...staging,
           paths: [...staging.paths, { ...path, id: path.id || nextId('path', staging.paths) }],
+        },
+      };
+    }
+
+    case 'addStageObject': {
+      const staging = normalizeStaging(current.staging);
+      const object = asObject(action.object);
+      return {
+        ...current,
+        staging: {
+          ...staging,
+          objects: [
+            ...staging.objects,
+            {
+              id: object.id || nextId('object', staging.objects),
+              kind: object.kind || 'table',
+              label: object.label || '道具',
+              sceneNumber: toSceneNumber(object.sceneNumber, object.sceneNumber),
+              x: Number.isFinite(object.x) ? object.x : 400,
+              y: Number.isFinite(object.y) ? object.y : 260,
+              rotation: Number.isFinite(object.rotation) ? object.rotation : 0,
+              scale: Number.isFinite(object.scale) ? object.scale : 1,
+            },
+          ],
+        },
+      };
+    }
+
+    case 'updateStageObject': {
+      const staging = normalizeStaging(current.staging);
+      return {
+        ...current,
+        staging: {
+          ...staging,
+          objects: staging.objects.map((object) =>
+            object?.id === action.id ? { ...object, ...asObject(action.patch) } : object
+          ),
+        },
+      };
+    }
+
+    case 'removeStageObject': {
+      const staging = normalizeStaging(current.staging);
+      return {
+        ...current,
+        staging: {
+          ...staging,
+          objects: staging.objects.filter((object) => object?.id !== action.id),
         },
       };
     }

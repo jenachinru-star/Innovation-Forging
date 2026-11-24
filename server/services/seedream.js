@@ -1,11 +1,14 @@
 export const STYLE_PROMPT = '水彩插画风格，暖色调，半身肖像，简化背景，柔和线条，戏剧海报质感';
 
-export async function generateCharacterImage(description, { fetchImpl = fetch } = {}) {
+export async function generateCharacterImage(
+  description,
+  { fetchImpl = fetch, stylePrompt = '' } = {}
+) {
   const BASE = process.env.SEEDREAM_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3';
   const MODEL = process.env.SEEDREAM_MODEL || '';
   const KEY = process.env.SEEDREAM_API_KEY || '';
 
-  const prompt = `人物肖像：${description}。${STYLE_PROMPT}，非写实，不要照片级真人脸。`;
+  const prompt = `人物定妆参考：${description}。${stylePrompt || STYLE_PROMPT}。角色外观必须保持连续，避免无依据的表情、服装和道具变化。`;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 90000);

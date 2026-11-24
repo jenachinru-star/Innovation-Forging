@@ -17,6 +17,6 @@ describe('extractText', () => {
     expect(await extractText(Buffer.from('x'), 'a.docx')).toBe('来自docx的文本');
   });
   it('拒绝不支持的类型', async () => {
-    await expect(extractText(Buffer.from('x'), 'a.pdf')).rejects.toThrow('不支持的文件类型');
+    await expect(extractText(Buffer.from('x'), 'a.exe')).rejects.toThrow('不支持的文件类型');
   });
 });

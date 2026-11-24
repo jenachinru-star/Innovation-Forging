@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>编导工作台 · 设计稿 v3（剧场工作本）</title>
+<style>
+  :root {
+    --paper: #f6f1e7;
+    --paper-2: #fdfaf4;
+    --paper-3: #efe7d6;
+    --ink: #211c17;
+    --muted: #756a5b;
+    --faint: #9d917e;
+    --line: #dbd0bb;
+    --line-soft: #e9e0cf;
+    --seal: #a72f26;
+    --seal-deep: #81221c;
+    --gold: #9b7a3c;
+    --moss: #3f6b4d;
+    --rail: #1d1814;
+    --rail-2: #29221b;
+    --rail-text: #c9bba5;
+    --rail-faint: #8b7d6a;
+    --stage: #15110e;
+    --stage-line: #45382b;
+    --stage-text: #d8c9b1;
+    --font-head: "Songti SC", "Noto Serif SC", "SimSun", Georgia, serif;
+    --font-body: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+    --font-num: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--ink);
+    background: var(--paper);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { font-family: var(--font-head); font-weight: 600; margin: 0; }
+  p { margin: 0; }
+  ul { margin: 0; padding: 0; list-style: none; }
+  button, textarea, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  ::selection { background: rgba(167, 47, 38, .18); }
+  :focus-visible { outline: 2px solid var(--seal); outline-offset: 2px; }
+
+  .mono { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); }
+  .faint { color: var(--faint); }
+  .hidden { display: none !important; }
+
+  /* ---------- 顶栏：深墨色，像后台 ---------- */
+  .topbar {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    padding: 0 28px;
+    background: var(--rail);
+    color: var(--rail-text);
+    border-bottom: 1px solid #000;
+  }
+  .brand { display: flex; align-items: center; gap: 11px; white-space: nowrap; }
+  .seal {
+    width: 32px; height: 32px; flex: none;
+    display: grid; place-items: center;
+    background: var(--seal); color: #fdf7ec;
+    font-family: var(--font-head); font-size: 18px; line-height: 1;
+    border-radius: 2px;
+  }
+  .brand b { font-family: var(--font-head); font-size: 17px; font-weight: 600; color: #f3e9d8; letter-spacing: .04em; }
+  .brand em { font-style: normal; font-size: 9.5px; letter-spacing: .16em; color: var(--rail-faint); }
+
+  .progress { display: flex; align-items: center; gap: 0; margin-left: 12px; }
+  .progress .step {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 16px; height: 60px;
+    font-size: 12.5px; color: var(--rail-faint);
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+  }
+  .progress .step i { font-family: var(--font-num); font-style: normal; font-size: 11px; opacity: .75; }
+  .progress .step.on { color: #f3e9d8; border-bottom-color: var(--seal); }
+  .progress .step.on i { color: #d9a95f; opacity: 1; }
+  .progress .step.past { color: var(--rail-text); }
+
+  .top-right { margin-left: auto; display: flex; align-items: center; gap: 18px; white-space: nowrap; }
+  .saved { font-size: 12px; color: var(--rail-faint); display: flex; align-items: center; gap: 7px; }
+  .saved .dot { width: 6px; height: 6px; border-radius: 50%; background: #7fa58a; }
+  .top-link { background: none; border: 0; color: var(--rail-text); font-size: 12.5px; padding: 4px; }
+  .top-link:hover { color: #fff; }
+  .top-export {
+    background: transparent; color: #f3e9d8;
+    border: 1px solid #5b4e40; border-radius: 3px;
+    height: 32px; padding: 0 14px; font-size: 12.5px;
+  }
+  .top-export:hover { border-color: #c39a55; color: #f6dcae; }
+
+  /* ---------- 侧栏 ---------- */
+  .shell { display: grid; grid-template-columns: 224px minmax(0, 1fr); min-height: calc(100vh - 60px); }
+  .side {
+    background: var(--rail-2);
+    border-right: 1px solid #100d0a;
+    padding: 22px 0 30px;
+  }
+  .side-group { margin-bottom: 22px; }
+  .side-label {
+    display: block; padding: 0 20px 8px;
+    font-size: 10px; letter-spacing: .16em; color: var(--rail-faint);
+  }
+  .nav-item {
+    width: 100%; min-height: 38px;
+    display: flex; align-items: center; gap: 11px;
+    padding: 7px 18px 7px 17px;
+    background: transparent; border: 0; border-left: 3px solid transparent;
+    color: var(--rail-text); font-size: 13.5px; text-align: left;
+    transition: background .15s ease, color .15s ease;
+  }
+  .nav-item:hover { background: rgba(255,255,255,.05); color: #fff; }
+  .nav-item.on { background: rgba(255,255,255,.075); border-left-color: var(--seal); color: #f7efe1; font-weight: 600; }
+  .nav-item svg { flex: none; opacity: .8; }
+  .nav-item.on svg { color: #d9a95f; opacity: 1; }
+  .nav-count {
+    margin-left: auto; font-family: var(--font-num); font-size: 10.5px;
+    color: #e2b9a8; background: rgba(167,47,38,.32);
+    border-radius: 999px; padding: 1px 7px;
+  }
+
+  /* ---------- 主区 ---------- */
+  .main { padding: 36px 46px 76px; min-width: 0; }
+  .inner { max-width: 1100px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; letter-spacing: .14em; color: var(--seal);
+  }
+  .eyebrow::before { content: ""; width: 16px; height: 2px; background: var(--seal); }
+  .page-title { font-size: 30px; line-height: 1.25; letter-spacing: -.01em; margin-top: 6px; }
+  .page-sub { margin-top: 8px; display: flex; align-items: center; gap: 9px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+  .sep { color: var(--faint); }
+  .page-head { display: flex; align-items: flex-end; gap: 12px; }
+  .page-head .grow { flex: 1; min-width: 0; }
+  .head-actions { display: flex; gap: 8px; align-items: center; }
+  .rule { height: 1px; background: var(--line); margin: 24px 0 26px; }
+  .section { margin-top: 32px; }
+  .section-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+  .section-head h2 { font-size: 18px; }
+  .section-head .side-note { margin-left: auto; font-size: 11.5px; letter-spacing: .08em; color: var(--faint); }
+
+  .card { background: var(--paper-2); border: 1px solid var(--line); border-radius: 4px; }
+  .card-pad { padding: 18px 20px; }
+  .label { font-size: 11px; letter-spacing: .1em; color: var(--muted); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    height: 34px; padding: 0 15px; border-radius: 3px;
+    font-size: 13px; font-weight: 500; transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--ink); color: var(--paper-2); border: 1px solid var(--ink); }
+  .btn-primary:hover { background: #3b3229; }
+  .btn-seal { background: var(--seal); color: #fff8ee; border: 1px solid var(--seal); }
+  .btn-seal:hover { background: var(--seal-deep); }
+  .btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .btn-ghost:hover { background: #fff; border-color: var(--faint); }
+  .btn-sm { height: 30px; padding: 0 12px; font-size: 12.5px; }
+  .linkish { background: none; border: 0; border-bottom: 1px solid var(--line); padding: 0 0 1px; color: var(--muted); font-size: 12.5px; }
+  .linkish:hover { color: var(--seal); border-color: var(--seal); }
+
+  /* ---------- 入口 ---------- */
+  .entry-grid {
+    display: grid; grid-template-columns: minmax(0, 1.06fr) minmax(360px, .94fr);
+    gap: 64px; align-items: start;
+  }
+  .hero { position: relative; padding-top: 26px; }
+  .hero::before {
+    content: ""; position: absolute; left: 0; top: 0;
+    width: 52px; height: 3px; background: var(--seal);
+  }
+  .hero h1 { font-size: 40px; line-height: 1.3; letter-spacing: -.015em; margin-top: 16px; }
+  .hero h1 span { color: var(--seal); }
+  .hero .lede { margin-top: 20px; font-size: 15px; line-height: 1.9; color: var(--muted); max-width: 33em; }
+  .hero-lines {
+    margin-top: 34px; padding: 16px 0 0;
+    border-top: 1px solid var(--line);
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+  }
+  .hero-lines div span { display: block; font-size: 11px; letter-spacing: .08em; color: var(--faint); }
+  .hero-lines div b { display: block; font-family: var(--font-head); font-size: 17px; font-weight: 600; margin-top: 2px; }
+  .entry-cards { display: flex; flex-direction: column; gap: 14px; }
+  .entry-card { padding: 17px 18px 15px; }
+  .entry-top { display: flex; align-items: baseline; gap: 10px; margin-bottom: 11px; }
+  .entry-no { font-family: var(--font-num); font-size: 11px; color: var(--seal); }
+  .entry-name { font-family: var(--font-head); font-size: 16px; font-weight: 600; }
+  .entry-hint { margin-left: auto; font-size: 10.5px; letter-spacing: .08em; color: var(--faint); }
+  .fake-field {
+    background: var(--paper); border: 1px solid var(--line-soft); border-radius: 3px;
+    padding: 10px 12px; min-height: 68px;
+    font-family: var(--font-head); font-size: 14px; line-height: 1.85; color: var(--muted);
+  }
+  .dropzone {
+    border: 1px dashed var(--faint); border-radius: 3px;
+    padding: 17px 12px; text-align: center; background: var(--paper);
+    font-size: 13px; color: var(--muted);
+  }
+  .quote {
+    font-family: var(--font-head); font-size: 14.5px; line-height: 1.9;
+    border-left: 2px solid var(--seal); padding-left: 12px;
+  }
+  .entry-foot { display: flex; align-items: center; gap: 10px; margin-top: 11px; font-size: 12px; color: var(--faint); }
+  .entry-foot .right { margin-left: auto; }
+
+  /* ---------- 表格 / 节奏 ---------- */
+  .table-wrap { overflow: auto; border-radius: 4px; }
+  table.paper { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; }
+  table.paper th {
+    position: sticky; top: 0; z-index: 2;
+    text-align: left; font-size: 11px; font-weight: 500; letter-spacing: .1em;
+    color: var(--muted); background: var(--paper-3);
+    border-bottom: 1px solid var(--line);
+    padding: 11px 13px; white-space: nowrap;
+  }
+  table.paper td {
+    padding: 12px 13px; border-bottom: 1px solid var(--line-soft); vertical-align: top;
+  }
+  table.paper tbody tr:nth-child(odd) { background: var(--paper); }
+  table.paper tbody tr:nth-child(even) { background: var(--paper-2); }
+  table.paper tbody tr:hover { background: #fbf3e6; }
+  table.paper tbody tr:last-child td { border-bottom: 0; }
+  .c-scene { width: 58px; color: var(--faint); }
+  .c-title { font-family: var(--font-head); font-size: 15.5px; font-weight: 600; }
+  .cadence { display: flex; flex-direction: column; gap: 12px; }
+  .bar-row { display: grid; grid-template-columns: 34px 1fr 128px; align-items: center; gap: 14px; }
+  .track { height: 12px; background: var(--paper-3); border-radius: 2px; overflow: hidden; }
+  .fill { height: 100%; background: #a99b84; border-radius: 2px; }
+  .fill.hot { background: var(--seal); }
+  .bar-note { font-size: 12.5px; color: var(--muted); }
+
+  /* ---------- 舞台 ---------- */
+  .stage-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .select {
+    appearance: none; height: 34px; padding: 0 30px 0 12px;
+    border: 1px solid var(--line); border-radius: 3px; background: var(--paper-2);
+    font-size: 13px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%23756a5b'/></svg>");
+    background-repeat: no-repeat; background-position: right 11px center;
+  }
+  .stage-wrap { background: var(--stage); border: 1px solid var(--stage-line); border-radius: 5px; padding: 10px; }
+  .stage-wrap svg { display: block; width: 100%; height: auto; }
+  .cue-list > li {
+    display: grid; grid-template-columns: 12px 72px 1fr auto;
+    align-items: center; gap: 14px;
+    padding: 12px 15px; border-bottom: 1px solid var(--line-soft); font-size: 14px;
+  }
+  .cue-list > li:last-child { border-bottom: 0; }
+  .cue-list > li:nth-child(odd) { background: var(--paper); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; padding: 2px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); white-space: nowrap; }
+  .chip.open { color: var(--seal); border-color: rgba(167,47,38,.4); }
+  .chip.review { color: var(--gold); border-color: rgba(155,122,60,.45); }
+  .chip.done { color: var(--moss); border-color: rgba(63,107,77,.4); }
+  .cue-dept { font-size: 12.5px; color: var(--muted); letter-spacing: .06em; }
+  .anchor { font-family: var(--font-head); color: var(--seal); }
+
+  /* ---------- 关系 ---------- */
+  .people { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .person { padding: 18px; }
+  .person .avatar {
+    width: 44px; height: 44px; border-radius: 2px; background: var(--paper-3);
+    display: grid; place-items: center; font-family: var(--font-head); font-size: 21px; color: var(--seal);
+    border: 1px solid var(--line); margin-bottom: 11px;
+  }
+  .person h3 { font-size: 17px; }
+  .person p { font-size: 12.5px; color: var(--muted); margin-top: 5px; line-height: 1.7; }
+  .rel-row { display: grid; grid-template-columns: 1fr 1fr 1.4fr auto; gap: 14px; align-items: center; padding: 12px 15px; border-bottom: 1px solid var(--line-soft); font-size: 13.5px; }
+  .rel-row:last-child { border-bottom: 0; }
+
+  /* ---------- 需求转译 ---------- */
+  .brief-input {
+    width: 100%; min-height: 78px; resize: vertical;
+    border: 1px solid var(--line); border-radius: 3px; background: var(--paper);
+    padding: 11px 13px; font-family: var(--font-head); font-size: 15px; line-height: 1.9;
+  }
+  .dept-head { display: flex; align-items: baseline; gap: 10px; margin: 24px 0 9px; }
+  .dept-head .count { font-family: var(--font-num); font-size: 11px; color: var(--faint); }
+  .dept-head .right { margin-left: auto; }
+  .brief-row { padding: 14px 17px; border-bottom: 1px solid var(--line-soft); }
+  .brief-row:last-child { border-bottom: 0; }
+  .brief-top { display: flex; align-items: baseline; gap: 11px; }
+  .brief-kind { font-size: 14px; font-weight: 600; }
+  .brief-item { font-size: 13.5px; color: var(--muted); }
+  .brief-top .chip { margin-left: auto; }
+  .brief-origin { margin-top: 7px; padding-left: 12px; border-left: 2px solid var(--line); font-family: var(--font-head); font-size: 13px; color: var(--muted); }
+  .uncertain { margin-top: 7px; font-size: 12px; color: var(--gold); }
+
+  /* ---------- 影响 / 记录 ---------- */
+  .impact { display: grid; gap: 10px; }
+  .impact-row {
+    display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center;
+    padding: 15px 17px; background: var(--paper-2);
+    border: 1px solid var(--line); border-left: 3px solid var(--seal); border-radius: 4px;
+  }
+  .impact-title { font-size: 14px; font-weight: 600; }
+  .impact-reason { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .impact-actions { display: flex; gap: 7px; }
+  .notes {
+    width: 100%; min-height: 104px; resize: vertical;
+    border: 1px solid var(--line); border-radius: 3px; background: var(--paper);
+    padding: 11px 13px; font-size: 14px; line-height: 1.9;
+  }
+  .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .three h3 { display: flex; align-items: baseline; gap: 8px; font-size: 15px; margin-bottom: 8px; }
+  .three li { font-size: 13px; padding: 6px 0; border-bottom: 1px dotted var(--line); }
+  .three li:last-child { border-bottom: 0; }
+
+  /* ---------- 导出 ---------- */
+  .export-row { display: flex; align-items: center; gap: 14px; padding: 15px 18px; border-bottom: 1px solid var(--line-soft); }
+  .export-row:last-child { border-bottom: 0; }
+  .export-row .grow { flex: 1; }
+  .export-row .name { font-size: 14px; font-weight: 600; }
+  .export-row .desc { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+  .export-actions { display: flex; gap: 7px; }
+
+  /* ---------- 下一步引导 ---------- */
+  .next-step {
+    margin-top: 34px; padding: 15px 18px;
+    border: 1px solid var(--line); border-left: 3px solid var(--gold);
+    background: rgba(239,231,214,.45);
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .next-step b { font-size: 11px; letter-spacing: .12em; color: var(--gold); white-space: nowrap; }
+  .next-step span { flex: 1; font-size: 13.5px; color: var(--muted); }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(8px);
+    background: var(--rail); color: #f5ecdc; font-size: 13px;
+    padding: 9px 17px; border-radius: 3px; opacity: 0; pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease; z-index: 50;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 1000px) {
+    .progress { display: none; }
+    .shell { grid-template-columns: 1fr; }
+    .side { display: none; }
+    .entry-grid { grid-template-columns: 1fr; gap: 34px; }
+    .main { padding: 26px 20px 56px; }
+    .people, .three { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="seal">劇</span>
+      <b>编导工作台</b>
+      <em>DIRECTOR'S WORKBENCH</em>
+    </div>
+    <div class="progress" id="progress">
+      <div class="step" data-step="0"><i>01</i>剧本来源</div>
+      <div class="step" data-step="1"><i>02</i>结构与排演</div>
+      <div class="step" data-step="2"><i>03</i>提示与转译</div>
+      <div class="step" data-step="3"><i>04</i>交付</div>
+    </div>
+    <div class="top-right">
+      <span class="saved"><span class="dot"></span>已保存 · 20:14</span>
+      <button class="top-link" type="button">帮助</button>
+      <button class="top-export" type="button" data-goto="export">导出材料</button>
+    </div>
+  </header>
+
+  <div class="shell">
+    <nav class="side" id="side" aria-label="工作区导航">
+      <div class="side-group">
+        <span class="side-label">剧本与人物</span>
+        <button class="nav-item" data-view="entry" type="button">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 2.5h7l3 3v8H3z"/><path d="M10 2.5v3h3"/></svg>
+          作品入口
+        </button>
+        <button class="nav-item" data-view="table" type="button">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.5" y="3" width="11" height="10" rx="1"/><path d="M2.5 6.5h11M6.5 6.5V13"/></svg>
+          排演准备表
+        </button>
+        <button class="nav-item" data-view="relations" type="button">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="5" cy="5" r="2.2"/><circle cx="11.5" cy="8.5" r="2.2"/><path d="M5 7.2v2.6a2 2 0 0 0 2 2h2.3"/></svg>
+          人物与关系
+        </button>
+      </div>
+
+      <div class="side-group">
+        <span class="side-label">排演筹备</span>
+        <button class="nav-item" data-view="stage" type="button">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 12.5h12"/><circle cx="5" cy="7" r="1.6"/><circle cx="11" cy="9" r="1.6"/><path d="M6.4 7.6l3.2 1"/></svg>
+          走位与提示
+        </button>
+        <button class="nav-item" data-view="briefs" type="button">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 3.5h11v6.5l-3 3h-8z"/><path d="M5 6.5h6M5 9h4"/></svg>
+          需求转译
+          <span class="nav-count">3</span>
+        </button>
+        <button class="nav-item" data-view="rehearsal" type="button">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 12V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v8"/><path d="M5.5 6.5h5M5.5 9h3"/></svg>
+          排练与影响
+          <span class="nav-count">1</span>
+        </button>
+      </div>
+
+      <div class="side-group">
+        <span class="side-label">交付</span>
+        <button class="nav-item" data-view="export" type="button">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2.5v7"/><path d="M5 7l3 3 3-3"/><path d="M3 12.5h10"/></svg>
+          导出
+        </button>
+      </div>
+    </nav>
+
+    <!-- 入口 -->
+    <main class="main view" id="view-entry">
+      <div class="entry-grid">
+        <section class="hero">
+          <span class="eyebrow">从剧本到排演现场</span>
+          <h1>把零散的想法，<br>变成<span>各部门能执行</span>的排演材料</h1>
+          <p class="lede">面向学生剧组与小剧场。剧本、人物、走位、提示、排练修改，一条链路留痕。导演的模糊描述，会被拆成灯光、音乐、音响、舞美各自能确认的条目。</p>
+          <div class="hero-lines">
+            <div><span>当前作品</span><b>我的舞台方案</b></div>
+            <div><span>剧本来源</span><b>样例剧本</b></div>
+            <div><span>规模</span><b>3 场 · 21 分钟</b></div>
+          </div>
+          <div class="next-step">
+            <b>下一步</b>
+            <span>先看一遍样例，再从排演准备表进入舞台画布。</span>
+            <button class="btn btn-ghost btn-sm" type="button" data-goto="table">查看排演准备表 →</button>
+          </div>
+        </section>
+
+        <section class="entry-cards" aria-label="开始方式">
+          <div class="card entry-card">
+            <div class="entry-top">
+              <span class="entry-no">01</span>
+              <span class="entry-name">从想法开始</span>
+              <span class="entry-hint">需联网</span>
+            </div>
+            <div class="fake-field">比如：多年未见的父女，在一把旧钥匙前重逢。父亲想留她，女儿已经准备走。</div>
+            <div class="entry-foot">
+              <span class="mono">0 / 500</span>
+              <span class="right"><button class="btn btn-seal btn-sm" type="button">生成剧本</button></span>
+            </div>
+          </div>
+
+          <div class="card entry-card">
+            <div class="entry-top">
+              <span class="entry-no">02</span>
+              <span class="entry-name">导入剧本</span>
+              <span class="entry-hint">TXT · MD · DOCX</span>
+            </div>
+            <div class="dropzone">拖入文件，或点击选择</div>
+          </div>
+
+          <div class="card entry-card">
+            <div class="entry-top">
+              <span class="entry-no">03</span>
+              <span class="entry-name">使用样例剧本</span>
+              <span class="entry-hint">离线可用</span>
+            </div>
+            <p class="quote">老陈：你终于回来了。<br>阿岚：爸，我回来了。</p>
+            <div class="entry-foot">
+              <span>三场 · 三角色 · 含灯效与雨声</span>
+              <span class="right"><button class="btn btn-primary btn-sm" type="button" data-goto="table">打开样例</button></span>
+            </div>
+          </div>
+          <button class="linkish" style="align-self:flex-start" type="button">剧本版本对照 →</button>
+        </section>
+      </div>
+    </main>
+
+    <!-- 排演准备表 -->
+    <main class="main view hidden" id="view-table">
+      <div class="inner">
+        <div class="page-head">
+          <div class="grow">
+            <span class="eyebrow">02 · 结构与排演</span>
+            <h1 class="page-title">排演准备表</h1>
+            <div class="page-sub">
+              <span>我的舞台方案</span><span class="sep">·</span>
+              <span class="mono">3</span><span>场</span><span class="sep">·</span>
+              <span class="mono">3</span><span>个角色</span><span class="sep">·</span>
+              <span>预计 <span class="mono">21</span> 分钟</span>
+            </div>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-ghost btn-sm" type="button">返回编辑剧本</button>
+            <button class="btn btn-primary btn-sm" type="button" data-goto="export">导出</button>
+          </div>
+        </div>
+
+        <div class="rule"></div>
+
+        <div class="card table-wrap">
+          <table class="paper">
+            <thead>
+              <tr>
+                <th class="c-scene">场次</th>
+                <th>场景</th>
+                <th>在场人物</th>
+                <th>道具</th>
+                <th>舞台说明</th>
+                <th style="text-align:right">时长</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="c-scene mono">01</td><td class="c-title">老陈的客厅</td><td>老陈、阿岚</td><td>钥匙、茶杯</td><td class="muted">灯亮；灯光转暖，落在钥匙上</td><td class="mono" style="text-align:right">6′</td></tr>
+              <tr><td class="c-scene mono">02</td><td class="c-title">门口</td><td>阿岚、老周</td><td>伞</td><td class="muted">楼道灯忽明忽暗；雨声渐起</td><td class="mono" style="text-align:right">4′</td></tr>
+              <tr><td class="c-scene mono">03</td><td class="c-title">老陈的客厅</td><td>老陈、阿岚</td><td>钥匙</td><td class="muted">雨声渐小；灯光暗，留一束在钥匙上</td><td class="mono" style="text-align:right">11′</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <section class="section">
+          <div class="section-head">
+            <h2>节奏与时长</h2>
+            <span class="side-note">铺垫 — 转折 — 高潮</span>
+          </div>
+          <div class="card card-pad cadence">
+            <div class="bar-row"><span class="mono faint">01</span><div class="track"><div class="fill" style="width:55%"></div></div><span class="bar-note">铺垫 · 6′</span></div>
+            <div class="bar-row"><span class="mono faint">02</span><div class="track"><div class="fill" style="width:36%"></div></div><span class="bar-note">转折 · 4′</span></div>
+            <div class="bar-row"><span class="mono faint">03</span><div class="track"><div class="fill hot" style="width:100%"></div></div><span class="bar-note">高潮 · 11′</span></div>
+          </div>
+        </section>
+
+        <div class="next-step">
+          <b>下一步</b>
+          <span>第 3 场时长最长，先在这里定走位，再把灯效绑定到台词。</span>
+          <button class="btn btn-ghost btn-sm" type="button" data-goto="stage">进入舞台画布 →</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- 人物与关系 -->
+    <main class="main view hidden" id="view-relations">
+      <div class="inner">
+        <div class="page-head">
+          <div class="grow">
+            <span class="eyebrow">02 · 结构与排演</span>
+            <h1 class="page-title">人物与关系</h1>
+            <div class="page-sub"><span class="mono">3</span><span>个角色</span><span class="sep">·</span><span class="mono">2</span><span>条关系待复核</span></div>
+          </div>
+          <button class="btn btn-ghost btn-sm" type="button">返回编辑剧本</button>
+        </div>
+        <div class="rule"></div>
+        <div class="people">
+          <div class="card person"><div class="avatar">陈</div><h3>老陈</h3><p>父亲。重病隐瞒中，想把旧钥匙交给女儿。</p></div>
+          <div class="card person"><div class="avatar">岚</div><h3>阿岚</h3><p>女儿。已经准备离开，回来只为取一件东西。</p></div>
+          <div class="card person"><div class="avatar">周</div><h3>老周</h3><p>老友。唯一知情者，第二场在门口出现。</p></div>
+        </div>
+        <section class="section">
+          <div class="section-head"><h2>关系与依据</h2><span class="side-note">来源：剧本与推断分开标注</span></div>
+          <div class="card">
+            <div class="rel-row"><span>老陈</span><span>阿岚</span><span class="muted">父女；钥匙交接是全场核心动作</span><span class="chip done"><span class="dot"></span>剧本明确</span></div>
+            <div class="rel-row"><span>老陈</span><span>老周</span><span class="muted">多年老友；老周知道病情</span><span class="chip review"><span class="dot"></span>待复核</span></div>
+            <div class="rel-row"><span>阿岚</span><span>老周</span><span class="muted">在门口短暂相遇，关系未写明</span><span class="chip review"><span class="dot"></span>待复核</span></div>
+          </div>
+        </section>
+        <div class="next-step">
+          <b>下一步</b>
+          <span>关系只标依据，不替你下结论；确认后再标注到排演准备表。</span>
+          <button class="btn btn-ghost btn-sm" type="button" data-goto="stage">去画布排位 →</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- 走位与提示 -->
+    <main class="main view hidden" id="view-stage">
+      <div class="inner">
+        <div class="page-head">
+          <div class="grow">
+            <span class="eyebrow">03 · 提示与转译</span>
+            <h1 class="page-title">走位与提示</h1>
+            <div class="page-sub"><span>我的舞台方案</span><span class="sep">·</span><span>舞台 <span class="mono">8 × 6</span> 米</span><span class="sep">·</span><span>观众正面</span></div>
+          </div>
+        </div>
+        <div class="rule"></div>
+
+        <div class="stage-toolbar">
+          <span class="label">场次</span>
+          <select class="select" aria-label="选择场次"><option>01 老陈的客厅</option><option>02 门口</option><option>03 老陈的客厅</option></select>
+          <span style="margin-left:auto"></span>
+          <button class="btn btn-ghost btn-sm" type="button">保存走位</button>
+          <button class="btn btn-seal btn-sm" type="button">添加提示</button>
+        </div>
+
+        <div class="stage-wrap">
+          <svg viewBox="0 0 800 400" role="img" aria-label="第一场走位示意">
+            <defs>
+              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#d8c9b1" stroke-opacity=".07" stroke-width="1"/></pattern>
+              <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#b39b73"/></marker>
+            </defs>
+            <rect x="0" y="0" width="800" height="400" fill="url(#grid)"/>
+            <text x="400" y="25" text-anchor="middle" fill="#b39b73" font-size="11" letter-spacing="7">观 众 方 向</text>
+            <path d="M400 33l-5 8h10z" fill="#b39b73"/>
+            <rect x="56" y="52" width="688" height="292" fill="none" stroke="#45382b" stroke-width="1.5"/>
+            <rect x="56" y="52" width="688" height="6" fill="#b39b73" opacity=".7"/>
+            <rect x="18" y="140" width="34" height="92" rx="2" fill="#282019" stroke="#45382b"/>
+            <text x="35" y="196" text-anchor="middle" fill="#b39b73" font-size="11" letter-spacing="4" transform="rotate(-90 35 196)">上 场 口</text>
+            <rect x="748" y="140" width="34" height="92" rx="2" fill="#282019" stroke="#45382b"/>
+            <text x="765" y="196" text-anchor="middle" fill="#b39b73" font-size="11" letter-spacing="4" transform="rotate(-90 765 196)">下 场 口</text>
+            <rect x="352" y="252" width="120" height="46" rx="2" fill="#33281e" stroke="#5c4a37"/>
+            <text x="412" y="281" text-anchor="middle" fill="#b39b73" font-size="11" letter-spacing="2">桌</text>
+            <path d="M206 206 C 250 236, 300 258, 348 268" fill="none" stroke="#b39b73" stroke-width="1.5" stroke-dasharray="5 5" marker-end="url(#arrow)" opacity=".9"/>
+            <path d="M612 196 C 590 250, 540 268, 476 272" fill="none" stroke="#b39b73" stroke-width="1.5" stroke-dasharray="5 5" marker-end="url(#arrow)" opacity=".6"/>
+            <g><circle cx="200" cy="196" r="20" fill="#a72f26"/><text x="200" y="201" text-anchor="middle" fill="#fff6e8" font-size="13">老</text><text x="200" y="234" text-anchor="middle" fill="#d8c9b1" font-size="12">老陈</text></g>
+            <g><circle cx="616" cy="188" r="20" fill="#4b3b2b" stroke="#9b7a3c"/><text x="616" y="193" text-anchor="middle" fill="#f4e8d2" font-size="13">岚</text><text x="616" y="226" text-anchor="middle" fill="#d8c9b1" font-size="12">阿岚</text></g>
+          </svg>
+        </div>
+
+        <section class="section">
+          <div class="section-head"><h2>本场提示</h2><span class="side-note">03 条 · 待复核 01</span></div>
+          <ul class="card cue-list">
+            <li><span class="dot review"></span><span class="cue-dept">灯光</span><span>加暖色定点，面光降一档，绑定 <span class="anchor">「你终于回来了」</span></span><span class="chip review"><span class="dot"></span>待复核</span></li>
+            <li><span class="dot done"></span><span class="cue-dept">音效</span><span>雨声渐起，未绑定台词</span><span class="chip done"><span class="dot"></span>已确认</span></li>
+            <li><span class="dot faint"></span><span class="cue-dept">舞美</span><span>桌上钥匙需在第一场结束前留在桌面</span><span class="chip"><span class="dot"></span>草案</span></li>
+          </ul>
+        </section>
+
+        <div class="next-step">
+          <b>下一步</b>
+          <span>灯光提示还挂在旧台词上；改台词后到排练与影响里逐条确认。</span>
+          <button class="btn btn-ghost btn-sm" type="button" data-goto="briefs">去需求转译 →</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- 需求转译 -->
+    <main class="main view hidden" id="view-briefs">
+      <div class="inner">
+        <div class="page-head">
+          <div class="grow">
+            <span class="eyebrow">03 · 提示与转译</span>
+            <h1 class="page-title">需求转译</h1>
+            <div class="page-sub"><span>导演原话拆成四部门可执行条目</span><span class="sep">·</span><span class="mono">6</span><span>条需求</span><span class="sep">·</span><span class="chip review"><span class="dot"></span>待复核 3</span></div>
+          </div>
+          <select class="select" aria-label="选择场次"><option>01 老陈的客厅</option><option>02 门口</option></select>
+        </div>
+        <div class="rule"></div>
+
+        <div class="card card-pad">
+          <span class="label">导演原话</span>
+          <textarea class="brief-input" style="margin-top:8px" spellcheck="false">这里想更暖一点，加个定点，面光弱一些；音乐渐入，加点雨声；声音加混响</textarea>
+          <div class="entry-foot"><span>保留原话，不确定的部分不会被补全</span><span class="right"><button class="btn btn-seal btn-sm" type="button">拆分</button></span></div>
+        </div>
+
+        <div class="dept-head"><span class="label">灯光</span><span class="count">03</span><span class="right"><button class="linkish" type="button">全部提交 →</button></span></div>
+        <div class="card">
+          <div class="brief-row"><div class="brief-top"><span class="brief-kind">定点光</span><span class="brief-item">加暖色定点，落在桌面钥匙</span><span class="chip"><span class="dot"></span>草案</span></div><div class="brief-origin">「这里想更暖一点，加个定点」</div></div>
+          <div class="brief-row"><div class="brief-top"><span class="brief-kind">面光</span><span class="brief-item">面光强度降一档</span><span class="chip review"><span class="dot"></span>待复核</span></div><div class="brief-origin">「面光弱一些」</div><div class="uncertain">待确认：弱多少？原话没有量化描述</div></div>
+          <div class="brief-row"><div class="brief-top"><span class="brief-kind">氛围</span><span class="brief-item">整体色温偏暖</span><span class="chip"><span class="dot"></span>草案</span></div><div class="brief-origin">「这里想更暖一点」</div></div>
+        </div>
+
+        <div class="dept-head"><span class="label">音乐</span><span class="count">01</span></div>
+        <div class="card"><div class="brief-row"><div class="brief-top"><span class="brief-kind">音效</span><span class="brief-item">雨声渐入，随第二场抬升</span><span class="chip done"><span class="dot"></span>已确认</span></div><div class="brief-origin">「音乐渐入，加点雨声」</div></div></div>
+
+        <div class="dept-head"><span class="label">音响</span><span class="count">01</span></div>
+        <div class="card"><div class="brief-row"><div class="brief-top"><span class="brief-kind">人声</span><span class="brief-item">对白加少量混响</span><span class="chip review"><span class="dot"></span>待复核</span></div><div class="brief-origin">「声音加混响」</div><div class="uncertain">待确认：混响量级与是否只作用于阿岚</div></div></div>
+
+        <div class="dept-head"><span class="label">舞美 / 服化道</span><span class="count">01</span></div>
+        <div class="card"><div class="brief-row"><div class="brief-top"><span class="brief-kind">道具</span><span class="brief-item">钥匙为旧铜色，需可长时间握持</span><span class="chip"><span class="dot"></span>草案</span></div><div class="brief-origin">「这是你妈留下的那把」</div></div></div>
+
+        <div class="next-step">
+          <b>下一步</b>
+          <span>3 条待复核项确认后，才能作为部门需求单导出。</span>
+          <button class="btn btn-ghost btn-sm" type="button" data-goto="rehearsal">查看排练与影响 →</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- 排练与影响 -->
+    <main class="main view hidden" id="view-rehearsal">
+      <div class="inner">
+        <div class="page-head">
+          <div class="grow">
+            <span class="eyebrow">03 · 提示与转译</span>
+            <h1 class="page-title">排练与影响</h1>
+            <div class="page-sub"><span>第 3 次排练 · 11 月 23 日 · 排练厅 B</span><span class="sep">·</span><span>到场 <span class="mono">3</span> 人</span></div>
+          </div>
+          <button class="btn btn-primary btn-sm" type="button" data-goto="export">导出交接单</button>
+        </div>
+        <div class="rule"></div>
+
+        <div class="card card-pad">
+          <span class="label">排练笔记</span>
+          <textarea class="notes" style="margin-top:8px" spellcheck="false">老陈递钥匙的动作太早，等到「你妈留下的那把」之后再交
+阿岚最后一句要不要留下来？还是直接走
+# 通知舞美，钥匙要做旧
+灯光定点先不加，等调度定下来</textarea>
+          <div class="entry-foot"><span>按行整理：问句进待确认，井号进待办</span><span class="right"><button class="btn btn-ghost btn-sm" type="button">整理</button></span></div>
+        </div>
+
+        <section class="section">
+          <div class="section-head"><h2>剧本修改带来的影响</h2><span class="side-note">02 条待处理</span></div>
+          <div class="impact">
+            <div class="impact-row">
+              <div><div class="impact-title">灯光提示「加暖色定点」失去绑定台词</div><div class="impact-reason">它绑定的「你终于回来了」在新版剧本中已不存在</div></div>
+              <div class="impact-actions"><button class="btn btn-ghost btn-sm" type="button">保留旧版</button><button class="btn btn-ghost btn-sm" type="button">暂缓</button><button class="btn btn-seal btn-sm" type="button">重新绑定</button></div>
+            </div>
+            <div class="impact-row">
+              <div><div class="impact-title">需求「雨声渐入」对应场次被拆分</div><div class="impact-reason">第二场拆成 02A、02B，原需求只覆盖前者</div></div>
+              <div class="impact-actions"><button class="btn btn-ghost btn-sm" type="button">保留旧版</button><button class="btn btn-ghost btn-sm" type="button">暂缓</button><button class="btn btn-seal btn-sm" type="button">扩展到 02B</button></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head"><h2>整理结果</h2></div>
+          <div class="three">
+            <div class="card card-pad"><h3>已决定 <span class="mono faint">01</span></h3><ul><li>钥匙改在「你妈留下的那把」之后交付</li></ul></div>
+            <div class="card card-pad"><h3>待确认 <span class="mono faint">01</span></h3><ul><li>阿岚最后是否留下</li></ul></div>
+            <div class="card card-pad"><h3>待办 <span class="mono faint">02</span></h3><ul><li>通知舞美：钥匙做旧</li><li>等调度定稿后再加定点光</li></ul></div>
+          </div>
+        </section>
+
+        <div class="next-step">
+          <b>下一步</b>
+          <span>影响逐条处理完，材料版本才能定稿。</span>
+          <button class="btn btn-ghost btn-sm" type="button" data-goto="export">进入导出 →</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- 导出 -->
+    <main class="main view hidden" id="view-export">
+      <div class="inner">
+        <div class="page-head">
+          <div class="grow">
+            <span class="eyebrow">04 · 交付</span>
+            <h1 class="page-title">导出</h1>
+            <div class="page-sub"><span>我的舞台方案</span><span class="sep">·</span><span>剧本 v3</span><span class="sep">·</span><span>2026-11-23 20:14</span></div>
+          </div>
+        </div>
+        <div class="rule"></div>
+
+        <div class="card">
+          <div class="export-row"><div class="grow"><div class="name">排演准备表</div><div class="desc">场次、在场人物、道具、舞台说明、时长；可打印为 PDF</div></div><div class="export-actions"><button class="btn btn-ghost btn-sm" type="button">CSV</button><button class="btn btn-primary btn-sm" type="button">HTML</button></div></div>
+          <div class="export-row"><div class="grow"><div class="name">部门需求单</div><div class="desc">按灯光 / 音乐 / 音响 / 舞美分组，保留导演原话</div></div><div class="export-actions"><button class="btn btn-ghost btn-sm" type="button">CSV</button><button class="btn btn-primary btn-sm" type="button">HTML</button></div></div>
+          <div class="export-row"><div class="grow"><div class="name">走位与提示</div><div class="desc">当前场次的站位、路径、灯光与音效提示</div></div><div class="export-actions"><button class="btn btn-primary btn-sm" type="button">HTML</button></div></div>
+          <div class="export-row"><div class="grow"><div class="name">全部材料</div><div class="desc">合并为一份带目录的排演手册</div></div><div class="export-actions"><button class="btn btn-seal btn-sm" type="button">导出全部</button></div></div>
+        </div>
+
+        <section class="section">
+          <div class="section-head"><h2>导出记录</h2><span class="side-note">本次会话</span></div>
+          <ul class="card cue-list">
+            <li><span class="dot done"></span><span class="cue-dept mono">20:12</span><span>排演准备表 · 我的舞台方案 · 剧本 v3</span><span class="chip done"><span class="dot"></span>已生成</span></li>
+            <li><span class="dot done"></span><span class="cue-dept mono">19:48</span><span>部门需求单 · 我的舞台方案 · 剧本 v2</span><span class="chip"><span class="dot"></span>已被取代</span></li>
+          </ul>
+        </section>
+
+        <div class="next-step">
+          <b>回到工作区</b>
+          <span>导出不会结束任务；回到排演表可以继续修改，导出记录保留版本痕迹。</span>
+          <button class="btn btn-ghost btn-sm" type="button" data-goto="entry">返回作品入口 →</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  (function () {
+    var views = {
+      entry: { el: document.getElementById('view-entry'), step: 0 },
+      table: { el: document.getElementById('view-table'), step: 1 },
+      relations: { el: document.getElementById('view-relations'), step: 1 },
+      stage: { el: document.getElementById('view-stage'), step: 2 },
+      briefs: { el: document.getElementById('view-briefs'), step: 2 },
+      rehearsal: { el: document.getElementById('view-rehearsal'), step: 2 },
+      export: { el: document.getElementById('view-export'), step: 3 }
+    };
+    var toastEl = document.getElementById('toast');
+    var timer = null;
+
+    function toast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(timer);
+      timer = setTimeout(function () { toastEl.classList.remove('show'); }, 1800);
+    }
+
+    function show(key) {
+      if (!views[key]) key = 'entry';
+      Object.keys(views).forEach(function (k) {
+        views[k].el.classList.toggle('hidden', k !== key);
+      });
+      var step = views[key].step;
+      document.querySelectorAll('.progress .step').forEach(function (el) {
+        var n = Number(el.getAttribute('data-step'));
+        el.classList.toggle('on', n === step);
+        el.classList.toggle('past', n < step);
+      });
+      document.querySelectorAll('.nav-item').forEach(function (el) {
+        var on = el.getAttribute('data-view') === key;
+        el.classList.toggle('on', on);
+        if (on) el.setAttribute('aria-current', 'page');
+        else el.removeAttribute('aria-current');
+      });
+      window.scrollTo(0, 0);
+    }
+
+    document.querySelectorAll('.nav-item').forEach(function (el) {
+      el.addEventListener('click', function () { show(el.getAttribute('data-view')); });
+    });
+    document.querySelectorAll('[data-goto]').forEach(function (el) {
+      el.addEventListener('click', function () { show(el.getAttribute('data-goto')); });
+    });
+    document.querySelectorAll('button:not([data-goto]):not(.nav-item)').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var label = (el.textContent || '').trim();
+        if (label) toast(label + '（设计稿演示）');
+      });
+    });
+
+    show((location.hash || '#entry').slice(1));
+  })();
+</script>
+</body>
+</html>

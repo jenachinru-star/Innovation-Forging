@@ -1,5 +1,6 @@
 import { parseScriptOffline } from '@director/shared/parser/index.js';
 import * as api from '../api.js';
+import { extractBrowserFile } from '../services/extractBrowser.js';
 
 let sourceMode = 'ai';
 
@@ -67,12 +68,14 @@ function applyAliasMap(scriptData, aliasMap) {
   return scriptData;
 }
 
-export async function parseScript(scriptText, { aliasMap } = {}) {
-  try {
-    const data = await api.parseScript(scriptText);
-    if (isValidParseResult(data)) return data;
-  } catch {
-    // 远程不可用，回退本地解析
+export async function parseScript(scriptText, { aliasMap, allowRemote = true } = {}) {
+  if (allowRemote) {
+    try {
+      const data = await api.parseScript(scriptText);
+      if (isValidParseResult(data)) return data;
+    } catch {
+      // 远程不可用，回退本地解析
+    }
   }
   sourceMode = 'local';
   const { scriptData } = parseScriptOffline(scriptText);
@@ -83,15 +86,9 @@ export async function extractUpload(file) {
   try {
     return await api.extractUpload(file);
   } catch {
-    const name = (file && file.name) || '';
-    if (/\.(txt|md|markdown)$/i.test(name)) {
-      const scriptText = await file.text();
-      sourceMode = 'local';
-      return { scriptText };
-    }
-    throw new Error(
-      '离线状态仅支持 .txt / .md 文本文件，.docx 请粘贴内容或使用样例剧本。'
-    );
+    const scriptText = await extractBrowserFile(file);
+    sourceMode = 'local';
+    return { scriptText };
   }
 }
 

@@ -87,6 +87,7 @@ describe('ResultTabs', () => {
       />
     );
 
+    fireEvent.click(screen.getByText('走位与提示'));
     expect(screen.getByTestId('actor-老陈')).toBeInTheDocument();
     expect(screen.queryByTestId('actor-阿岚')).not.toBeInTheDocument();
 
@@ -94,5 +95,24 @@ describe('ResultTabs', () => {
 
     expect(screen.getByTestId('actor-阿岚')).toBeInTheDocument();
     expect(screen.queryByTestId('actor-老陈')).not.toBeInTheDocument();
+  });
+
+  it('切换到视觉制作显示视觉族与导演库', () => {
+    render(
+      <ResultTabs
+        scriptData={{
+          summary: '简介',
+          scenes: [],
+          characters: [{ id: 'ch-1', name: '老陈' }],
+          relationships: [],
+        }}
+        onBackToEdit={() => {}}
+        plan={{ assets: [] }}
+        dispatch={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByText('视觉制作'));
+    expect(screen.getByText('先锁定世界观，再生成资产')).toBeInTheDocument();
+    expect(screen.getByText('冷调惊悚')).toBeInTheDocument();
   });
 });

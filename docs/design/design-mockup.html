@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>编导 AI 工作台 · 设计稿 v1</title>
+<style>
+  :root{
+    --bg:#0F0B09; --surface:#171210; --elev:#1F1815; --line:rgba(255,255,255,.08);
+    --text:#F2E9DA; --muted:#B9A98F; --dim:#6B5E4E;
+    --gold:#C8A24A; --gold-soft:rgba(200,162,74,.14); --rose:#A8453C;
+    --r-card:16px; --r-input:10px; --r-bezel:20px;
+    --serif:"Songti SC","Noto Serif SC","SimSun",Georgia,serif;
+    --sans:system-ui,"PingFang SC","Microsoft YaHei",sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --ease:cubic-bezier(.32,.72,0,1);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(200,162,74,.10), transparent 60%),
+      radial-gradient(900px 500px at 0% 110%, rgba(168,69,60,.08), transparent 60%),
+      var(--bg);
+    color:var(--text); font-family:var(--sans); min-height:100dvh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .serif{font-family:var(--serif)}
+  .mono{font-family:var(--mono)}
+  a{color:inherit}
+  img{display:block;max-width:100%}
+
+  /* mockup chrome */
+  .mockbar{
+    position:sticky; top:0; z-index:50;
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    padding:10px 18px; background:rgba(15,11,9,.8); backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .mockbar .brand{font-family:var(--serif); font-size:16px; letter-spacing:.02em}
+  .mockbar .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold)}
+  .navbtn{
+    border:1px solid var(--line); background:transparent; color:var(--muted);
+    padding:6px 12px; border-radius:999px; font-size:13px; cursor:pointer;
+    transition:all .25s var(--ease);
+  }
+  .navbtn:hover{color:var(--text); border-color:rgba(255,255,255,.18)}
+  .navbtn.active{background:var(--gold); color:#1a130a; border-color:var(--gold); font-weight:600}
+  .mockbar .spacer{flex:1}
+  .mockbar .tag{font-size:11px; color:var(--dim); letter-spacing:.18em; text-transform:uppercase}
+
+  .wrap{max-width:1180px; margin:0 auto; padding:40px 24px 90px}
+  .screen{display:none}
+  .screen.active{display:block; animation:fade .45s var(--ease)}
+  @keyframes fade{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+
+  /* components */
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--gold);border:1px solid var(--gold-soft);
+    background:var(--gold-soft);padding:6px 12px;border-radius:999px}
+  .btn{font-family:var(--sans);font-size:14px;border-radius:999px;padding:11px 20px;border:1px solid transparent;
+    cursor:pointer;display:inline-flex;align-items:center;gap:10px;transition:transform .2s var(--ease),background .2s var(--ease),border-color .2s var(--ease)}
+  .btn:active{transform:scale(.98)}
+  .btn-primary{background:var(--gold);color:#1a130a;font-weight:600}
+  .btn-primary:hover{background:#d8b45c}
+  .btn-primary .ic{width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.16);display:grid;place-items:center;font-size:14px}
+  .btn-ghost{background:transparent;color:var(--text);border-color:var(--line)}
+  .btn-ghost:hover{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.03)}
+  .btn-sm{padding:7px 13px;font-size:12.5px}
+  .muted{color:var(--muted)} .dim{color:var(--dim)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card)}
+  .bezel{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:var(--r-bezel);padding:8px}
+  .bezel-core{background:var(--surface);border-radius:calc(var(--r-bezel) - 8px);overflow:hidden}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .badge-rose{color:#f0b7b0;border-color:rgba(168,69,60,.55);background:rgba(168,69,60,.14)}
+  .chip{font-size:12.5px;color:var(--muted);border:1px solid var(--line);background:rgba(255,255,255,.02);
+    padding:6px 12px;border-radius:999px;cursor:pointer;transition:all .2s var(--ease)}
+  .chip:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
+  .field{width:100%;background:var(--elev);border:1px solid var(--line);border-radius:var(--r-input);
+    color:var(--text);padding:14px 16px;font-size:15px;font-family:var(--sans);line-height:1.7}
+  .field::placeholder{color:var(--dim)}
+  .seg{display:inline-flex;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:999px;padding:4px;gap:4px}
+  .seg button{border:0;background:transparent;color:var(--muted);padding:8px 18px;border-radius:999px;font-size:13.5px;cursor:pointer;transition:all .25s var(--ease)}
+  .seg button.active{background:var(--gold);color:#1a130a;font-weight:600}
+
+  .stats{display:flex;gap:10px;flex-wrap:wrap}
+  .stat{display:flex;flex-direction:column;gap:2px;padding:10px 16px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02)}
+  .stat b{font-family:var(--mono);font-size:18px;color:var(--text)}
+  .stat span{font-size:11px;color:var(--dim);letter-spacing:.08em}
+
+  /* entry */
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:center;margin-top:24px}
+  .hero-title{font-family:var(--serif);font-size:clamp(34px,4.4vw,56px);line-height:1.12;letter-spacing:.01em;margin:18px 0 14px}
+  .hero-sub{font-size:15.5px;line-height:1.8;color:var(--muted);max-width:34ch}
+  .editor-card{margin-top:22px}
+  .sample-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+  .sample-row .lbl{font-size:12px;color:var(--dim)}
+  .link{color:var(--gold);text-decoration:none;border-bottom:1px solid rgba(200,162,74,.35);font-size:13.5px}
+  .hero-cap{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 4px;font-size:12px;color:var(--dim)}
+  .hero-img{aspect-ratio:16/10;width:100%;object-fit:cover;border-radius:12px}
+
+  /* confirm */
+  .two-col{display:grid;grid-template-columns:1.5fr .8fr;gap:22px;margin-top:22px}
+  .manuscript{font-family:var(--serif);font-size:16px;line-height:1.95;padding:26px 28px;color:var(--text);max-height:520px;overflow:auto}
+  .manuscript .scene{color:var(--gold);letter-spacing:.06em;font-size:14px;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:16px}
+  .manuscript .spk{color:#e9d9b6}
+  .manuscript p{margin:0 0 14px}
+  .checkitem{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .checkitem .n{font-family:var(--mono);color:var(--gold)}
+
+  /* workbench */
+  .wb-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:6px}
+  .wb-title{font-family:var(--serif);font-size:26px}
+  .tabs{display:flex;gap:26px;border-bottom:1px solid var(--line);margin-top:22px}
+  .tab{background:none;border:0;color:var(--muted);padding:12px 2px;font-size:14.5px;cursor:pointer;position:relative;transition:color .2s var(--ease)}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--gold)}
+  .tab.active::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--gold);border-radius:2px}
+  .panel{display:none;padding-top:22px}
+  .panel.active{display:block;animation:fade .4s var(--ease)}
+
+  .sched{display:grid;grid-template-columns:220px 1fr;gap:20px}
+  .rail{border:1px solid var(--line);border-radius:var(--r-card);padding:14px;background:rgba(255,255,255,.02);height:max-content}
+  .rail .h{font-size:11px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;margin-bottom:10px}
+  .rail .item{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;cursor:pointer;color:var(--muted);transition:all .2s var(--ease)}
+  .rail .item:hover{background:rgba(255,255,255,.03);color:var(--text)}
+  .rail .item.active{background:var(--gold-soft);color:var(--text);border:1px solid rgba(200,162,74,.3)}
+  .rail .item small{color:var(--dim);font-size:11px}
+  .scene-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .scene-head h3{font-family:var(--serif);font-size:20px;margin:0}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:left;color:var(--dim);font-weight:500;font-size:12px;letter-spacing:.06em;padding:10px 12px;border-bottom:1px solid var(--line)}
+  td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--text)}
+  td.mono{font-family:var(--mono)}
+  .row-actions{display:flex;gap:14px;justify-content:flex-end;margin-top:16px}
+
+  /* graph */
+  .graph-wrap{display:grid;grid-template-columns:1.4fr .8fr;gap:20px}
+  .stage-plot{position:relative;border:1px solid var(--line);border-radius:var(--r-card);background:
+      radial-gradient(600px 300px at 50% 0%, rgba(200,162,74,.08), transparent 60%), rgba(255,255,255,.015);
+    min-height:420px;overflow:hidden}
+  .rel-list .h{font-size:11px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;margin-bottom:10px}
+  .rel{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;font-size:13.5px;transition:all .2s var(--ease)}
+  .rel:hover{border-color:rgba(200,162,74,.35);background:var(--gold-soft)}
+  .rel .sw{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+  .rel.review{border-color:rgba(168,69,60,.45)}
+  .rel.review .sw{background:var(--rose)}
+
+  /* gallery */
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .char-card{border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden;background:var(--surface)}
+  .char-img{aspect-ratio:1/1;width:100%;object-fit:cover;background:var(--elev)}
+  .char-body{padding:12px 14px}
+  .char-body .nm{font-family:var(--serif);font-size:16px;color:var(--gold)}
+  .char-body p{margin:4px 0 10px;font-size:12px;color:var(--muted);line-height:1.6}
+  .skel{width:100%;height:100%;background:linear-gradient(100deg,#1a1411 30%,#231b17 50%,#1a1411 70%);background-size:200% 100%;animation:sh 1.4s infinite}
+  @keyframes sh{from{background-position:200% 0}to{background-position:-200% 0}}
+  .silhouette{width:100%;height:100%;display:grid;place-items:center;color:var(--dim);font-size:12px;background:var(--elev)}
+
+  /* blocking */
+  .stage{position:relative;height:320px;border-radius:var(--r-card);border:1px solid var(--line);
+    background:radial-gradient(700px 200px at 50% 8%, rgba(200,162,74,.10), transparent 60%), linear-gradient(#151010,#100c0a)}
+  .stage .floor{position:absolute;left:8%;right:8%;bottom:44px;height:1px;background:rgba(200,162,74,.35)}
+  .actor{position:absolute;transform:translate(-50%,-50%);background:var(--gold);color:#1a130a;font-size:12px;
+    padding:6px 12px;border-radius:999px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+
+  /* compare */
+  .diff{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .diff .col{border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden}
+  .diff .col h4{margin:0;padding:12px 14px;font-size:13px;color:var(--muted);border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+  .diff .ln{padding:8px 14px;font-size:13px;font-family:var(--mono);border-left:3px solid transparent}
+  .diff .add{background:rgba(80,160,110,.12);border-left-color:#5aa87a}
+  .diff .del{background:rgba(168,69,60,.12);border-left-color:var(--rose)}
+  .diff .mod{background:rgba(200,162,74,.10);border-left-color:var(--gold)}
+
+  .hint{font-size:12px;color:var(--dim);margin-top:10px}
+  @media (max-width:980px){
+    .hero-grid,.two-col,.sched,.graph-wrap,.diff{grid-template-columns:1fr}
+    .grid-4{grid-template-columns:repeat(2,1fr)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none!important;transition:none!important}
+  }
+  :focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+</style>
+</head>
+<body>
+
+<div class="mockbar">
+  <span class="dot"></span>
+  <span class="brand">编导 AI 工作台</span>
+  <span class="tag">设计稿 v1 · 剧场手稿</span>
+  <span class="spacer"></span>
+  <button class="navbtn active" data-nav="entry">入口</button>
+  <button class="navbtn" data-nav="confirm">确认剧本</button>
+  <button class="navbtn" data-nav="work">工作台</button>
+</div>
+
+<!-- ============ 入口 ============ -->
+<section class="screen active" id="entry">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <span class="eyebrow">戏剧 · AI 工作台</span>
+        <h1 class="hero-title">从一句想法<br/>到可以开排的剧本</h1>
+        <p class="hero-sub">把零散素材或现成剧本，整理成剧本、拆出场次、理清人物关系，直接进入排演筹备。</p>
+
+        <div class="card editor-card" style="padding:18px">
+          <div class="seg" role="tablist">
+            <button class="active">素材生成</button>
+            <button>上传剧本</button>
+          </div>
+          <textarea class="field" style="margin-top:14px;height:150px;resize:none" placeholder="写下你的想法、对话片段或人物设定（可混合）……"></textarea>
+          <div class="sample-row">
+            <span class="lbl">示例</span>
+            <button class="chip">医院病房</button>
+            <button class="chip">茶馆重逢</button>
+            <button class="chip">雨夜追凶</button>
+            <span class="spacer" style="flex:1"></span>
+            <button class="btn btn-primary">生成剧本 <span class="ic">→</span></button>
+          </div>
+        </div>
+        <p style="margin-top:16px">已有两版剧本想对比？ <a class="link" href="#">剧本版本对照</a></p>
+      </div>
+
+      <div class="bezel">
+        <div class="bezel-core">
+          <img class="hero-img" src="./assets/hero.png" alt="舞台主视觉" />
+          <div class="hero-cap"><span>概念视觉 · Seedream 生成</span><span class="mono">16:9</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 确认剧本 ============ -->
+<section class="screen" id="confirm">
+  <div class="wrap">
+    <div class="wb-head">
+      <div>
+        <div class="dim" style="font-size:13px">← 返回入口</div>
+        <div class="wb-title" style="margin-top:6px">确认与编辑剧本</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost btn-sm">重新生成</button>
+        <button class="btn btn-primary btn-sm">进入工作台 <span class="ic">→</span></button>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card manuscript">
+        <div class="scene">第 1 场 · 市医院病房 · 傍晚</div>
+        <p><span class="spk">老陈：</span>你来了。</p>
+        <p><span class="spk">老周：</span>我来看看你。你这病房倒清静。</p>
+        <p><span class="spk">老陈：</span>三人间，另外两个下楼遛弯了。你坐。</p>
+        <p class="dim">（老周把苹果放柜上，看见病历卡被扣着。）</p>
+        <p><span class="spk">老周：</span>化验单呢？</p>
+        <p><span class="spk">老陈：</span>在这儿。肺上那个东西，医生说得绕，我听懂了。</p>
+        <p><span class="spk">老周：</span>嫂子知道吗？</p>
+        <p><span class="spk">老陈：</span>不知道。……先别声张。</p>
+        <p class="dim" style="font-family:var(--sans);font-size:13px;margin-top:18px">— 可直接修改上方文字，确认后自动结构化 —</p>
+      </div>
+
+      <div class="card" style="padding:18px;height:max-content">
+        <div class="dim" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase">解析预检</div>
+        <div class="checkitem"><span>场次</span><span class="n">1</span></div>
+        <div class="checkitem"><span>人物</span><span class="n">4</span></div>
+        <div class="checkitem"><span>人物关系</span><span class="n">5</span></div>
+        <div class="checkitem"><span>待核实</span><span class="badge badge-rose">1 条</span></div>
+        <ul class="muted" style="font-size:12.5px;line-height:1.9;padding-left:16px;margin:14px 0 0">
+          <li>左侧文本可直接编辑</li>
+          <li>「确认」后生成结构化数据</li>
+          <li>橙色标记建议重点核对</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 工作台 ============ -->
+<section class="screen" id="work">
+  <div class="wrap">
+    <div class="wb-head">
+      <div>
+        <div class="dim" style="font-size:12px">工作台</div>
+        <div class="wb-title">《雷雨之后》</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><b>3</b><span>场次</span></div>
+        <div class="stat"><b>6</b><span>人物</span></div>
+        <div class="stat"><b>42</b><span>总分钟</span></div>
+        <div class="stat"><b style="color:#f0b7b0">2</b><span>待核实</span></div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="sched">排演准备表</button>
+      <button class="tab" data-tab="graph">人物关系图</button>
+      <button class="tab" data-tab="gallery">角色海报</button>
+      <button class="tab" data-tab="block">走位示意</button>
+      <button class="tab" data-tab="diff">版本对照</button>
+    </div>
+
+    <!-- 排演表 -->
+    <div class="panel active" id="sched">
+      <div class="sched">
+        <aside class="rail">
+          <div class="h">场次</div>
+          <div class="item active"><span>第 1 场</span><small>病房 · 傍晚 · 18 分</small></div>
+          <div class="item"><span>第 2 场</span><small>走廊 · 夜 · 12 分</small></div>
+          <div class="item"><span>第 3 场</span><small>家中 · 晨 · 12 分</small></div>
+        </aside>
+        <div class="card" style="padding:18px">
+          <div class="scene-head">
+            <h3>第 1 场 · 市医院病房 · 傍晚</h3>
+            <span class="badge"><span class="mono">⏱ 18 分</span></span>
+          </div>
+          <table>
+            <thead><tr><th>出场人物</th><th>道具</th><th>剧情摘要</th><th>时长</th></tr></thead>
+            <tbody>
+              <tr><td>老陈、老周</td><td>茶杯、果篮、病历卡</td><td>老周探望，发现老陈隐瞒病情</td><td class="mono">18</td></tr>
+            </tbody>
+          </table>
+          <div class="row-actions">
+            <button class="btn btn-ghost btn-sm">导出 CSV</button>
+            <button class="btn btn-ghost btn-sm">导出剧本</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 关系图 -->
+    <div class="panel" id="graph">
+      <div class="graph-wrap">
+        <div class="stage-plot">
+          <svg viewBox="0 0 640 420" width="100%" height="100%">
+            <line x1="180" y1="150" x2="450" y2="150" stroke="#B9A98F" stroke-width="1.5"/>
+            <line x1="180" y1="150" x2="320" y2="320" stroke="#B9A98F" stroke-width="1.5"/>
+            <line x1="450" y1="150" x2="320" y2="320" stroke="#A8453C" stroke-width="2" stroke-dasharray="6 5"/>
+            <line x1="180" y1="150" x2="120" y2="300" stroke="#6B5E4E" stroke-width="1.2" stroke-dasharray="3 4"/>
+            <circle cx="180" cy="150" r="34" fill="#1F1815" stroke="#C8A24A" stroke-width="1.5"/>
+            <circle cx="450" cy="150" r="34" fill="#1F1815" stroke="#C8A24A" stroke-width="1.5"/>
+            <circle cx="320" cy="320" r="28" fill="#1F1815" stroke="#6B5E4E"/>
+            <circle cx="120" cy="300" r="28" fill="#1F1815" stroke="#6B5E4E"/>
+            <text x="180" y="155" fill="#F2E9DA" font-size="14" text-anchor="middle" font-family="Songti SC,serif">老陈</text>
+            <text x="450" y="155" fill="#F2E9DA" font-size="14" text-anchor="middle" font-family="Songti SC,serif">老周</text>
+            <text x="320" y="325" fill="#B9A98F" font-size="13" text-anchor="middle">妻子</text>
+            <text x="120" y="305" fill="#B9A98F" font-size="13" text-anchor="middle">儿子</text>
+            <text x="315" y="138" fill="#B9A98F" font-size="11" text-anchor="middle">挚友</text>
+            <text x="405" y="245" fill="#f0b7b0" font-size="11" text-anchor="middle">未说出口</text>
+          </svg>
+        </div>
+        <div class="rel-list">
+          <div class="h">关系清单</div>
+          <div class="rel"><span class="sw"></span>老陈 ↔ 老周 · 多年挚友</div>
+          <div class="rel"><span class="sw"></span>老陈 ↔ 妻子 · 夫妻（隐瞒）</div>
+          <div class="rel review"><span class="sw"></span>老周 ↔ 妻子 · 电话未说 <span class="badge badge-rose" style="margin-left:auto">待核实</span></div>
+          <div class="rel"><span class="sw"></span>老陈 ↔ 儿子 · 父子（异地）</div>
+          <p class="hint">橙色虚线 = AI 把握不足，建议核实</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 角色海报 -->
+    <div class="panel" id="gallery">
+      <div class="grid-4">
+        <div class="char-card">
+          <img class="char-img" src="./assets/char1.png" alt="老陈" />
+          <div class="char-body"><div class="nm">老陈</div><p>55岁 · 退休教师 · 隐瞒病情</p><button class="btn btn-ghost btn-sm" style="width:100%">重新生成</button></div>
+        </div>
+        <div class="char-card">
+          <img class="char-img" src="./assets/char2.png" alt="老周" />
+          <div class="char-body"><div class="nm">老周</div><p>54岁 · 老同学 · 唯一知情者</p><button class="btn btn-ghost btn-sm" style="width:100%">重新生成</button></div>
+        </div>
+        <div class="char-card">
+          <div class="char-img"><div class="skel"></div></div>
+          <div class="char-body"><div class="nm">妻子</div><p>未出场 · 生成中…</p><button class="btn btn-ghost btn-sm" style="width:100%" disabled>生成中…</button></div>
+        </div>
+        <div class="char-card">
+          <div class="char-img"><div class="silhouette">暂无形象</div></div>
+          <div class="char-body"><div class="nm">儿子</div><p>未出场 · 在外地</p><button class="btn btn-primary btn-sm" style="width:100%">生成形象</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 走位 -->
+    <div class="panel" id="block">
+      <div class="stage">
+        <div class="floor"></div>
+        <div class="actor" style="left:30%;top:58%">老陈</div>
+        <div class="actor" style="left:64%;top:40%">老周</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="btn btn-primary btn-sm">播放走位</button>
+        <button class="btn btn-ghost btn-sm">重置</button>
+        <span class="hint" style="margin-left:auto;align-self:center">提示：可拖拽圆点调整站位</span>
+      </div>
+    </div>
+
+    <!-- 版本对照 -->
+    <div class="panel" id="diff">
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <span class="badge">新增 2 场</span><span class="badge">删除 1 场</span><span class="badge">修改 3 处</span>
+      </div>
+      <div class="diff">
+        <div class="col">
+          <h4>旧版本</h4>
+          <div class="ln">第 1 场 · 病房 · 傍晚</div>
+          <div class="ln del">老陈：你来了。</div>
+          <div class="ln del">老周：我来看看你。</div>
+          <div class="ln mod">老陈：我没事。</div>
+          <div class="ln">第 2 场 · 走廊 · 夜</div>
+        </div>
+        <div class="col">
+          <h4>新版本</h4>
+          <div class="ln">第 1 场 · 病房 · 傍晚</div>
+          <div class="ln add">老陈：你来了。</div>
+          <div class="ln add">老周：我来看看你。你这病房倒清静。</div>
+          <div class="ln mod">老陈：先别声张。</div>
+          <div class="ln">第 2 场 · 走廊 · 夜</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // 顶层：入口 / 确认 / 工作台
+  const screens = { entry: document.getElementById('entry'), confirm: document.getElementById('confirm'), work: document.getElementById('work') };
+  document.querySelectorAll('[data-nav]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-nav]').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      Object.values(screens).forEach((s) => s.classList.remove('active'));
+      screens[btn.dataset.nav].classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+
+  // 工作台内部 tabs
+  document.querySelectorAll('[data-tab]').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('[data-tab]').forEach((t) => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.tab).classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>

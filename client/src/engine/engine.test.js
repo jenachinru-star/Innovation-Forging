@@ -39,6 +39,18 @@ describe('engine', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('未获得作品级 AI 授权时不发送剧本到外部接口', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const engine = await loadEngine();
+
+    const { scriptData } = await engine.parseScript(SAMPLE_TEXT, { allowRemote: false });
+
+    expect(scriptData.scenes.length).toBe(3);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(engine.getSourceMode()).toBe('local');
+  });
+
   it('本地兜底时 aliasMap 会把别名替换为规范名', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
     const engine = await loadEngine();
@@ -94,12 +106,22 @@ describe('engine', () => {
     expect(engine.getSourceMode()).toBe('local');
   });
 
-  it('离线时 docx 上传抛出中文错误', async () => {
+  it('离线时可读取 Fountain 文本', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
     const engine = await loadEngine();
 
-    await expect(
-      engine.extractUpload(new File(['x'], 'x.docx'))
-    ).rejects.toThrow('离线状态仅支持');
+    const result = await engine.extractUpload(
+      new File(['Title: 钥匙\n\nINT. 客厅\n\n老陈\n你终于回来了。'], 'x.fountain')
+    );
+    expect(result.scriptText).toContain('你终于回来了');
+  });
+
+  it('离线时未知扩展名抛出中文错误', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    const engine = await loadEngine();
+
+    await expect(engine.extractUpload(new File(['x'], 'x.exe'))).rejects.toThrow(
+      '本地模式支持'
+    );
   });
 });

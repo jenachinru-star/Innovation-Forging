@@ -1,6 +1,7 @@
 export const DB_NAME = 'director-workbench';
 export const STORE_NAME = 'projects';
 export const KEY = 'current';
+export const PROJECT_KEY_PREFIX = 'project:';
 
 const memory = new Map();
 
@@ -86,4 +87,48 @@ export async function clearProject() {
   memory.delete(KEY);
   if (!hasIndexedDB()) return;
   await runTransaction('readwrite', (store) => store.delete(KEY));
+}
+
+export async function saveProjectRecord(record) {
+  if (!record?.id) throw new Error('缺少作品 ID');
+  const key = `${PROJECT_KEY_PREFIX}${record.id}`;
+  memory.set(key, record);
+  if (!hasIndexedDB()) return record;
+  await runTransaction('readwrite', (store) => store.put(record, key));
+  return record;
+}
+
+export async function loadProjectRecord(projectId) {
+  if (!projectId) return null;
+  const key = `${PROJECT_KEY_PREFIX}${projectId}`;
+  if (!hasIndexedDB()) {
+    return memory.has(key) ? memory.get(key) : null;
+  }
+  const saved = await runTransaction('readonly', (store) => store.get(key));
+  return saved === undefined ? null : saved;
+}
+
+export async function listProjectRecords() {
+  if (!hasIndexedDB()) {
+    return [...memory.entries()]
+      .filter(([key]) => key.startsWith(PROJECT_KEY_PREFIX))
+      .map(([, value]) => value);
+  }
+
+  const records = await runTransaction('readonly', (store) => {
+    if (typeof store.getAll === 'function') return store.getAll();
+    return store.openCursor();
+  });
+  if (Array.isArray(records)) {
+    return records.filter((item) => item && item.id);
+  }
+  return [];
+}
+
+export async function deleteProjectRecord(projectId) {
+  if (!projectId) return;
+  const key = `${PROJECT_KEY_PREFIX}${projectId}`;
+  memory.delete(key);
+  if (!hasIndexedDB()) return;
+  await runTransaction('readwrite', (store) => store.delete(key));
 }
