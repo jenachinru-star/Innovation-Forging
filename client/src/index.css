@@ -3567,6 +3567,8 @@ fieldset.workspace-paper {
 .blocking-notes {
   position: sticky;
   top: 0.5rem;
+  max-height: calc(100dvh - 11rem);
+  overflow-y: auto;
 }
 
 .blocking-note-list {
@@ -3579,6 +3581,7 @@ fieldset.workspace-paper {
 
 .blocking-stage {
   min-width: 0;
+  min-height: 30rem;
 }
 
 .blocking-cues-head {

@@ -36,14 +36,29 @@ export default function ProjectOverview({ scriptData, plan, versions = [], onNav
   const reviewBriefs = briefs.filter((item) => item.status === 'review');
   const pendingCount = impacts.length + reviewBriefs.length;
 
+  const segments = Array.isArray(plan?.segments) ? plan.segments : [];
+  const placements = Array.isArray(plan?.staging?.placements) ? plan.staging.placements : [];
+  const rehearsals = Array.isArray(plan?.rehearsals) ? plan.rehearsals : [];
+  const assets = Array.isArray(plan?.assets) ? plan.assets : [];
+  const minutes = sceneMinutes(scenes);
+  const summary = String(scriptData?.summary || '').trim();
+
   const stats = [
     { icon: ICONS.doc, label: '场次', value: scenes.length },
     { icon: ICONS.people, label: '角色', value: characters.length },
     { icon: ICONS.clipboard, label: '待处理', value: pendingCount, alert: pendingCount > 0 },
-    { icon: ICONS.clock, label: '版本', value: versions.length || 1 },
+    { icon: ICONS.clock, label: '预计时长', value: minutes, unit: '分钟' },
   ];
 
-  const chain = ['作品', '拆解', '排演', '交付'];
+  const chainSteps = [
+    { label: '作品', state: scenes.length ? 'done' : 'todo' },
+    {
+      label: '拆解',
+      state: briefs.length || segments.length ? 'done' : scenes.length ? 'active' : 'todo',
+    },
+    { label: '排演', state: placements.length || rehearsals.length ? 'done' : 'todo' },
+    { label: '交付', state: plan?.style || assets.length ? 'done' : 'todo' },
+  ];
 
   const todos = [];
   if (reviewBriefs.length) todos.push({ label: '待核实部门需求', meta: '部门·需求', id: 'briefs' });
@@ -68,6 +83,7 @@ export default function ProjectOverview({ scriptData, plan, versions = [], onNav
             />
           </svg>
         </h1>
+        {summary && <p className="ov2-summary">{summary}</p>}
       </header>
 
       <div className="ov2-stats">
@@ -77,7 +93,10 @@ export default function ProjectOverview({ scriptData, plan, versions = [], onNav
               <Icon path={stat.icon} />
             </span>
             <span className="ov2-stat-label">{stat.label}</span>
-            <b>{stat.value}</b>
+            <b>
+              {stat.value}
+              {stat.unit && <small className="ov2-stat-unit">{stat.unit}</small>}
+            </b>
           </div>
         ))}
       </div>
@@ -85,16 +104,16 @@ export default function ProjectOverview({ scriptData, plan, versions = [], onNav
       <div className="ov2-card">
         <div className="ov2-card-head">
           <b>制作链路</b>
-          <span>从剧本到舞台，让每一步都有回响</span>
+          <span>从剧本到舞台，按实际进度推进</span>
         </div>
         <div className="ov2-chain">
-          {chain.map((step, index) => (
-            <div className="ov2-chain-node" key={step}>
-              <span className="ov2-chain-dot">
-                <Icon path={ICONS.check} size={16} />
+          {chainSteps.map((step, index) => (
+            <div className={`ov2-chain-node is-${step.state}`} key={step.label}>
+              <span className={`ov2-chain-dot is-${step.state}`}>
+                {step.state === 'done' ? <Icon path={ICONS.check} size={16} /> : step.state === 'active' ? <i className="ov2-chain-current" /> : null}
               </span>
-              <span>{step}</span>
-              {index < chain.length - 1 && <span className="ov2-chain-arrow" aria-hidden="true">→</span>}
+              <span>{step.label}</span>
+              {index < chainSteps.length - 1 && <span className="ov2-chain-arrow" aria-hidden="true">→</span>}
             </div>
           ))}
         </div>

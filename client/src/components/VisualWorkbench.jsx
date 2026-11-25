@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildStylePrompt } from '../data/styles.js';
 import { nextId } from '../store/plan.js';
 import { WORKBENCH_SAMPLES } from '../assets/visual/index.js';
-import { Sparkles, Image as ImageIcon, Palette, Copy, Wand2 } from 'lucide-react';
+import { Sparkles, Image as ImageIcon, Palette, Wand2 } from 'lucide-react';
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -42,41 +42,6 @@ const INSPIRATIONS = [
   '暮色中的木质阁楼，胶片放映机转动，光束里有尘粒',
   '暖光木梁下的空桌椅，煤油灯轻晃，等待一场对话',
 ];
-
-// 结构化提示词（仅可视化预览/复制；实际发送的仍是组装的自然语言）
-function buildPreviewJson(desc, familyName) {
-  const scene = desc.trim() || '黄昏下的老旧戏台，远处是朦胧的山峦与归鸟';
-  return {
-    scene,
-    style: `${familyName}，复古胶片质感`,
-    lighting: '暖金色夕阳光线，侧逆光勾勒轮廓，空气中有轻微烟尘',
-    atmosphere: '怀旧、诗意、略带沧桑',
-    composition: '远景，主体位于画面左侧，右侧留出天空与远山',
-    color_tone: '暖棕、琥珀金、深褐',
-    elements: ['木质戏台', '红色帷幕', '远山', '归鸟', '烟尘'],
-    emotion: '岁月沉淀的故事感',
-  };
-}
-
-function CopyButton({ text, label = '复制' }) {
-  const [copied, setCopied] = useState(false);
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1600);
-    } catch {
-      setCopied(false);
-    }
-  }
-
-  return (
-    <button type="button" className="btn-ghost btn-small" onClick={copy}>
-      <Copy size={14} aria-hidden /> {copied ? '已复制' : label}
-    </button>
-  );
-}
 
 export default function VisualWorkbench({ plan, dispatch, style, onPatchStyle }) {
   const [description, setDescription] = useState('');
@@ -123,12 +88,6 @@ export default function VisualWorkbench({ plan, dispatch, style, onPatchStyle })
         description.trim() || '人物与场景'
       ),
     [style, description]
-  );
-
-  // 结构化 JSON 预览（仅展示/复制）
-  const previewJson = useMemo(
-    () => JSON.stringify(buildPreviewJson(description, style.familyName), null, 2),
-    [description, style.familyName]
   );
 
   function fillInspiration() {
@@ -346,14 +305,6 @@ export default function VisualWorkbench({ plan, dispatch, style, onPatchStyle })
           </div>
         </section>
       )}
-
-      <div className="prompt-preview visual-prompt-preview">
-        <div className="prompt-preview-head">
-          <span className="field-label">结构化提示词</span>
-          <CopyButton text={previewJson} label="复制" />
-        </div>
-        <pre>{previewJson}</pre>
-      </div>
     </div>
   );
 }

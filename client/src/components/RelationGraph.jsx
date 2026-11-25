@@ -11,6 +11,11 @@ function scenesForCharacter(name, scenes) {
   return (scenes || []).filter((scene) => (scene.characters || []).includes(name));
 }
 
+function truncate(text, max) {
+  const s = String(text || '');
+  return s.length > max ? `${s.slice(0, max)}…` : s;
+}
+
 function buildOption(scriptData, visibleRelationships, selectedName) {
   const names = Array.from(
     new Set([
@@ -28,7 +33,7 @@ function buildOption(scriptData, visibleRelationships, selectedName) {
       name,
       fullName: name,
       role: profile?.role || '',
-      symbolSize: 82,
+      symbolSize: 72,
       itemStyle: {
         color: '#2f241a',
         borderColor: isSelected ? '#d4af37' : '#86745d',
@@ -37,7 +42,9 @@ function buildOption(scriptData, visibleRelationships, selectedName) {
       label: {
         show: true,
         position: 'inside',
-        formatter: () => `{name|${name}}\n{role|${profile?.role || ''}}`,
+        formatter: profile?.role
+          ? () => `{name|${name}}\n{role|${profile.role}}`
+          : () => `{name|${name}}`,
         rich: {
           name: {
             color: '#f2e6d3',
@@ -55,8 +62,8 @@ function buildOption(scriptData, visibleRelationships, selectedName) {
     source: r.from,
     target: r.to,
     label: {
-      show: true,
-      formatter: r.relation,
+      show: false,
+      formatter: truncate(r.relation, 12),
       color: '#bda98d',
       fontSize: 11,
       backgroundColor: '#211913',
@@ -79,11 +86,14 @@ function buildOption(scriptData, visibleRelationships, selectedName) {
         layout: 'force',
         roam: true,
         draggable: true,
-        force: { repulsion: 420, edgeLength: 150, gravity: 0.12 },
+        force: { repulsion: 760, edgeLength: [140, 200], gravity: 0.08 },
         label: { show: true },
         data: nodes,
         links,
-        emphasis: { focus: 'adjacency' },
+        emphasis: {
+          focus: 'adjacency',
+          edgeLabel: { show: true },
+        },
       },
     ],
   };

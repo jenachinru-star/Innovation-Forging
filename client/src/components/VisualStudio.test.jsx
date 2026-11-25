@@ -112,11 +112,10 @@ describe('VisualStudio', () => {
     );
   });
 
-  it('工作台保留结构化提示词与复制按钮', () => {
+  it('工作台不再展示结构化提示词 JSON 预览', () => {
     render(<Harness />);
     goWorkbench();
-    expect(screen.getByText('结构化提示词')).toBeInTheDocument();
-    expect(screen.getByText('复制')).toBeInTheDocument();
+    expect(screen.queryByText('结构化提示词')).not.toBeInTheDocument();
   });
 
 });
