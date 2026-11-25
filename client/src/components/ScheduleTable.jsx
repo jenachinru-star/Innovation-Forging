@@ -10,7 +10,7 @@ export default function ScheduleTable({ scriptData, onChangeScene }) {
       {scenes.length === 0 ? (
         <p className="muted text-sm">未解析到场次信息。</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="table-card overflow-x-auto">
           <table className="paper-table text-left text-sm">
             <thead>
               <tr>

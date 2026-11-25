@@ -275,4 +275,87 @@ describe('StageBlocking', () => {
     expect(call[0].path.characterId).toBe('老陈');
     expect(call[0].path.points.length).toBeGreaterThan(1);
   });
+
+  const planWithTimeline = {
+    cues: [
+      {
+        id: 'cue-1',
+        department: 'lighting',
+        sceneNumber: 1,
+        content: '定点光',
+        status: 'confirmed',
+        timecode: 35,
+        trigger: { type: 'free', quote: '' },
+      },
+    ],
+    staging: {
+      stage: null,
+      placements: [],
+      objects: [],
+      paths: [
+        {
+          id: 'path-1',
+          sceneNumber: 1,
+          characterId: '老陈',
+          points: [
+            { x: 100, y: 300 },
+            { x: 400, y: 300 },
+            { x: 700, y: 300 },
+          ],
+        },
+      ],
+      notes: [],
+    },
+  };
+
+  function renderTimeline() {
+    return render(
+      <StageBlocking
+        characters={characters}
+        scenes={scenes}
+        sceneNumber={1}
+        plan={planWithTimeline}
+        dispatch={() => {}}
+      />
+    );
+  }
+
+  it('初始时间轴时钟为 00:00 / 05:30，播放按钮为播放态', () => {
+    renderTimeline();
+    expect(screen.getByText('00:00 / 05:30')).toBeInTheDocument();
+    expect(screen.getByLabelText('播放')).toBeInTheDocument();
+  });
+
+  it('点击 +5s 后时钟同步更新到 00:05', () => {
+    renderTimeline();
+    fireEvent.click(screen.getByText('+5s'));
+    expect(screen.getByText('00:05 / 05:30')).toBeInTheDocument();
+  });
+
+  it('拖动进度条越过 Cue 时间码后，该 Cue 标记为已触发', () => {
+    renderTimeline();
+    const cueRow = screen.getByTestId('cue-cue-1');
+    expect(cueRow.classList.contains('is-fired')).toBe(false);
+
+    fireEvent.change(screen.getByLabelText('时间轴进度'), { target: { value: '40' } });
+    expect(screen.getByTestId('cue-cue-1').classList.contains('is-fired')).toBe(true);
+  });
+
+  it('seek 后演员沿记录路径移动到插值位置', () => {
+    renderTimeline();
+    const beforeX = Number(screen.getByTestId('actor-老陈').getAttribute('data-x'));
+
+    fireEvent.change(screen.getByLabelText('时间轴进度'), { target: { value: '165' } });
+    const after = screen.getByTestId('actor-老陈');
+    const afterX = Number(after.getAttribute('data-x'));
+
+    expect(afterX).not.toBe(beforeX);
+    expect(afterX).toBe(400);
+  });
+
+  it('切换到灰白线框模式后画布加 is-wire 类', () => {
+    renderTimeline();
+    fireEvent.click(screen.getByText('灰白线框'));
+    expect(screen.getByTestId('stage-canvas').classList.contains('is-wire')).toBe(true);
+  });
 });

@@ -100,7 +100,7 @@ describe('App 集成', () => {
 
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: '确认，下一步' }));
+    fireEvent.click(await screen.findByRole('button', { name: '没问题，开始排' }));
 
     fireEvent.click(await screen.findByText('排练与影响'));
 

@@ -72,6 +72,40 @@ function BrandMark() {
   );
 }
 
+const STEP_DEFS = [
+  { id: 'input', label: '准备剧本' },
+  { id: 'confirm', label: '校对修改' },
+  { id: 'result', label: '舞台制作' },
+];
+
+function StepBar({ current, reachable, onJump }) {
+  return (
+    <ol className="step-bar" aria-label="制作进度">
+      {STEP_DEFS.map((stepDef, index) => {
+        const state =
+          index < current ? 'is-done' : index === current ? 'is-current' : 'is-todo';
+        return (
+          <li key={stepDef.id} className={`step-item ${state}`}>
+            <button
+              type="button"
+              className="step-link"
+              disabled={!reachable[index]}
+              onClick={() => onJump(index)}
+              aria-current={index === current ? 'step' : undefined}
+            >
+              <span className="step-dot">{index < current ? '✓' : index + 1}</span>
+              <span className="step-label">{stepDef.label}</span>
+            </button>
+            {index < STEP_DEFS.length - 1 && (
+              <span className="step-connector" aria-hidden="true" />
+            )}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 export default function App() {
   const [booted, setBooted] = useState(false);
   const [view, setView] = useState('cover'); // cover | workbench | demo
@@ -347,6 +381,22 @@ export default function App() {
     setResultTab(item.tab || 'schedule');
   }
 
+  function jumpToStep(index) {
+    if (index === 0) {
+      setStep('input');
+      setActiveNav('script');
+    } else if (index === 1) {
+      if (!scriptText) return;
+      setStep('confirm');
+      setActiveNav('script');
+    } else if (index === 2) {
+      if (!scriptData) return;
+      setStep('result');
+      setActiveNav('overview');
+      setResultTab('schedule');
+    }
+  }
+
   function handleReady({ scriptText: text, material: mat, mode }) {
     setScriptText(text);
     setMaterial(mat || '');
@@ -558,10 +608,20 @@ export default function App() {
               </button>
             </div>
           )}
+          <StepBar
+            current={step === 'input' ? 0 : step === 'result' ? 2 : 1}
+            reachable={
+              readOnly
+                ? [false, false, false]
+                : [true, Boolean(scriptText), Boolean(scriptData)]
+            }
+            onJump={jumpToStep}
+          />
           <fieldset className="workspace-paper" disabled={readOnly}>
             {step === 'input' && (
               <InputStep
                 onReady={handleReady}
+                initialText={scriptText}
                 busy={busy}
                 setBusy={setBusy}
                 error={error}
@@ -580,6 +640,7 @@ export default function App() {
                 scriptText={scriptText}
                 onChangeScriptText={setScriptText}
                 canRegenerate={entryMode === 'generate'}
+                onBack={() => setStep('input')}
                 onRegenerate={handleRegenerate}
                 onConfirm={handleConfirm}
                 busy={busy}
@@ -628,44 +689,6 @@ export default function App() {
             )}
           </fieldset>
         </main>
-
-        <aside className="context-rail" aria-label="项目状态">
-          <div className="context-section">
-            <span className="rail-kicker">制作状态</span>
-            <div className="context-stat">
-              <b>{sceneCount || '—'}</b>
-              <span>场次</span>
-            </div>
-            <div className="context-stat">
-              <b>{scriptData?.characters?.length || '—'}</b>
-              <span>人物</span>
-            </div>
-            <div className="context-stat">
-              <b>{plan?.cues?.length || 0}</b>
-              <span>提示</span>
-            </div>
-          </div>
-          <div className="context-section">
-            <span className="rail-kicker">现在要处理</span>
-            {unresolved > 0 ? (
-              <button
-                type="button"
-                className="context-alert"
-                disabled={readOnly}
-                onClick={() => navigate('rehearsal')}
-              >
-                <span>{unresolved}</span>
-                条修改影响等待确认
-              </button>
-            ) : (
-              <p className="context-clear">没有未处理的制作冲突。</p>
-            )}
-          </div>
-          <div className="context-section context-signature">
-            <span className="rail-kicker">工作方法</span>
-            <p>原话留在左侧，决定沉到右侧。任何提示都回到它触发的台词或动作。</p>
-          </div>
-        </aside>
       </div>
 
       <ProjectLibrary

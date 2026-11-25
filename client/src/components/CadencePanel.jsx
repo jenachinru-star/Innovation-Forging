@@ -36,7 +36,7 @@ export default function CadencePanel({ scenes = [], briefs = [], onChange }) {
     .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)));
 
   return (
-    <div>
+    <div className="panel-card">
       <h3 className="mb-3 text-sm font-medium">节奏</h3>
       {list.length === 0 ? (
         <p className="muted text-sm">暂无可展示的场次。</p>

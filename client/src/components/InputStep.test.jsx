@@ -39,7 +39,7 @@ describe('InputStep', () => {
     const props = baseProps();
     render(<InputStep {...props} />);
     fireEvent.change(screen.getByPlaceholderText(/输入/), { target: { value: '素材内容' } });
-    fireEvent.click(screen.getByText('生成剧本'));
+    fireEvent.click(screen.getByText('下一步'));
     await waitFor(() => expect(props.onReady).toHaveBeenCalled());
     expect(props.onReady.mock.calls[0][0]).toMatchObject({ scriptText: '第一场', mode: 'generate' });
   });
@@ -49,7 +49,7 @@ describe('InputStep', () => {
     const props = baseProps();
     render(<InputStep {...props} />);
     fireEvent.change(screen.getByPlaceholderText(/输入/), { target: { value: '太短' } });
-    fireEvent.click(screen.getByText('生成剧本'));
+    fireEvent.click(screen.getByText('下一步'));
     await waitFor(() => expect(screen.getByText(/请补充人物名字/)).toBeInTheDocument());
     expect(props.onReady).not.toHaveBeenCalled();
   });
@@ -67,7 +67,7 @@ describe('InputStep', () => {
   it('离线状态下禁用生成按钮并提示', () => {
     getSourceMode.mockReturnValue('local');
     render(<InputStep {...baseProps()} />);
-    expect(screen.getByText('生成剧本')).toBeDisabled();
+    expect(screen.getByText('下一步')).toBeDisabled();
     expect(
       screen.getByText('离线状态不可用，请使用导入剧本或样例')
     ).toBeInTheDocument();
@@ -83,5 +83,14 @@ describe('InputStep', () => {
   it('未提供 onOpenCompare 时不显示入口', () => {
     render(<InputStep {...baseProps()} />);
     expect(screen.queryByText('剧本版本对照')).not.toBeInTheDocument();
+  });
+
+  it('传入 initialText 时预填剧本、默认粘贴模式并提示', () => {
+    render(<InputStep {...baseProps({ initialText: '第一幕\n老陈：你好' })} />);
+    const ta = screen.getByPlaceholderText(/输入/);
+    expect(ta.value).toBe('第一幕\n老陈：你好');
+    expect(screen.getByText('这是你', { exact: false })).toBeInTheDocument();
+    // 粘贴模式下显示提交按钮
+    expect(screen.getByText('下一步')).toBeInTheDocument();
   });
 });

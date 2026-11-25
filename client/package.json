@@ -12,6 +12,7 @@
   "dependencies": {
     "@director/shared": "*",
     "echarts": "^6.1.0",
+    "gsap": "^3.15.1",
     "mammoth": "^1.13.0",
     "pdfjs-dist": "^6.5.438",
     "react": "^19.3.1",

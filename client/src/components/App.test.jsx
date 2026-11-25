@@ -31,7 +31,7 @@ describe('App 工作台', () => {
 
   it('登录后无作品时渲染素材输入步骤', async () => {
     render(<App />);
-    expect(await screen.findByRole('button', { name: '素材生成' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /AI 生成/ })).toBeInTheDocument();
   });
 
   it('点击剧本版本对照进入版本对照页', async () => {
@@ -70,7 +70,7 @@ describe('App 工作台', () => {
     fireEvent.click(container.querySelector('button.landing-submit'));
 
     // 得到干净的素材输入页，而非残留示例
-    expect(await screen.findByRole('button', { name: '素材生成' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /AI 生成/ })).toBeInTheDocument();
     // 自动保存即使触发，也绝不写入内置演示 id
     await waitFor(() => {
       const savedIds = m.saveProject.mock.calls.map(([id]) => id);
