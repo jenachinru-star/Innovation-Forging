@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { createScriptRouter } from './routes/script.js';
 import { createCharacterRouter } from './routes/character.js';
 import { createVisualRouter } from './routes/visual.js';
+import { createVideoRouter } from './routes/video.js';
 import { createAuthRouter } from './routes/auth.js';
 import { createProjectsRouter } from './routes/projects.js';
 import { createStore } from './services/dataStore.js';
@@ -21,6 +22,7 @@ export async function createApp(deps = {}) {
   app.use('/api/script', createScriptRouter());
   app.use('/api/character', createCharacterRouter());
   app.use('/api/visual', createVisualRouter());
+  app.use('/api/video', createVideoRouter());
 
   const distPath = path.resolve(__dirname, '../dist');
   app.use(express.static(distPath));

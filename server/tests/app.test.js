@@ -43,6 +43,11 @@ describe('createApp', () => {
     expect(res.status).toBe(400);
   });
 
+  it('挂载 /api/video 路由（空请求 400 而非 404）', async () => {
+    const res = await request(app).post('/api/video/tasks').send({});
+    expect(res.status).toBe(400);
+  });
+
   it('挂载 /api/auth 与受保护的 /api/projects', async () => {
     const session = await request(app).get('/api/auth/session');
     expect(session.status).toBe(200);
