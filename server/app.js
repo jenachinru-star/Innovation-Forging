@@ -20,11 +20,11 @@ export async function createApp(deps = {}) {
   app.get('/api/health', (req, res) => res.json({ ok: true }));
   app.use('/api/auth', createAuthRouter({ store }));
   app.use('/api/projects', createProjectsRouter({ store }));
-  app.use('/api/script', createScriptRouter());
-  app.use('/api/character', createCharacterRouter());
-  app.use('/api/visual', createVisualRouter());
-  app.use('/api/video', createVideoRouter());
-  app.use('/api/discussion', createDiscussionRouter());
+  app.use('/api/script', createScriptRouter({ store }));
+  app.use('/api/character', createCharacterRouter({ store }));
+  app.use('/api/visual', createVisualRouter({ store }));
+  app.use('/api/video', createVideoRouter({ store }));
+  app.use('/api/discussion', createDiscussionRouter({ store }));
 
   const distPath = path.resolve(__dirname, '../dist');
   app.use(express.static(distPath));

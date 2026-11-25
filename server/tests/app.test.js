@@ -28,24 +28,24 @@ describe('createApp', () => {
     expect(res.body.ok).toBe(true);
   });
 
-  it('挂载 /api/script 路由（空解析 400 而非 404）', async () => {
+  it('挂载 /api/script 路由（未登录 401 而非 404）', async () => {
     const res = await request(app).post('/api/script/parse').send({});
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(401);
   });
 
-  it('挂载 /api/character 路由（空请求 400 而非 404）', async () => {
+  it('挂载 /api/character 路由（未登录 401 而非 404）', async () => {
     const res = await request(app).post('/api/character/generate-image').send({});
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(401);
   });
 
-  it('挂载 /api/visual 路由（空请求 400 而非 404）', async () => {
+  it('挂载 /api/visual 路由（未登录 401 而非 404）', async () => {
     const res = await request(app).post('/api/visual/generate').send({});
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(401);
   });
 
-  it('挂载 /api/video 路由（空请求 400 而非 404）', async () => {
+  it('挂载 /api/video 路由（未登录 401 而非 404）', async () => {
     const res = await request(app).post('/api/video/tasks').send({});
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(401);
   });
 
   it('挂载 /api/auth 与受保护的 /api/projects', async () => {

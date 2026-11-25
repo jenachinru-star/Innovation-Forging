@@ -7,6 +7,8 @@ import {
   readSessionToken,
   SESSION_MS,
 } from '../services/cookie.js';
+import { validate } from '../middleware/validate.js';
+import { registerSchema, loginSchema } from '../schemas/auth.js';
 
 // 登录限流：同一 IP + 用户名，窗口内连续失败达到阈值后锁定
 const FAIL_WINDOW_MS = 10 * 60 * 1000;
@@ -44,12 +46,6 @@ function clearFailures(key) {
   failTracker.delete(key);
 }
 
-function readCredentials(req) {
-  const username = typeof req.body?.username === 'string' ? req.body.username.trim() : '';
-  const password = typeof req.body?.password === 'string' ? req.body.password : '';
-  return { username, password };
-}
-
 function issueSession(store, res, username) {
   const token = randomBytes(32).toString('hex');
   const now = Date.now();
@@ -61,11 +57,8 @@ export function createAuthRouter(deps = {}) {
   const store = deps.store;
   const router = Router();
 
-  router.post('/register', (req, res) => {
-    const { username, password } = readCredentials(req);
-    if (!username) return res.status(400).json({ error: '请输入用户名' });
-    if (username.length > 32) return res.status(400).json({ error: '用户名过长' });
-    if (password.length < 6) return res.status(400).json({ error: '密码至少 6 位' });
+  router.post('/register', validate(registerSchema), (req, res) => {
+    const { username, password } = req.body;
     if (store.getUser(username)) return res.status(409).json({ error: '该用户名已被注册' });
 
     store.putUser({
@@ -77,8 +70,8 @@ export function createAuthRouter(deps = {}) {
     return res.status(201).json({ user: { username } });
   });
 
-  router.post('/login', (req, res) => {
-    const { username, password } = readCredentials(req);
+  router.post('/login', validate(loginSchema), (req, res) => {
+    const { username, password } = req.body;
     const key = trackerKey(req, username);
     if (isLocked(key)) {
       return res.status(429).json({ error: '失败次数过多，请稍后再试' });

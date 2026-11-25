@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { createRequireAuth } from '../middleware/requireAuth.js';
+import { validate } from '../middleware/validate.js';
+import { projectUpsertSchema } from '../schemas/project.js';
 
 export function createProjectsRouter(deps = {}) {
   const store = deps.store;
@@ -24,16 +26,15 @@ export function createProjectsRouter(deps = {}) {
     return res.json({ project: record });
   });
 
-  router.put('/:id', (req, res) => {
+  router.put('/:id', validate(projectUpsertSchema), (req, res) => {
     const id = req.params.id;
     const existing = store.getProject(id);
     // 已存在但不属于当前用户：按不存在处理，杜绝越权改写/抢占他人作品
     if (existing && existing.userId !== req.user.username) {
       return res.status(404).json({ error: '作品不存在' });
     }
-    const body = req.body && typeof req.body === 'object' ? req.body : {};
-    // 强制归属当前登录用户，忽略任何客户端传入的 userId
-    const record = { ...body, id, userId: req.user.username };
+    // 强制归属当前登录用户，忽略任何客户端传入的 userId；body 已经过 schema 白名单清洗
+    const record = { ...req.body, id, userId: req.user.username };
     store.putProject(id, record);
     return res.json({ project: record });
   });

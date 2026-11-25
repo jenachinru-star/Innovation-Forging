@@ -2,6 +2,9 @@ import { Router } from 'express';
 import multer from 'multer';
 import * as llm from '../services/llm.js';
 import * as extractService from '../services/extract.js';
+import { createRequireAuth } from '../middleware/requireAuth.js';
+import { validate } from '../middleware/validate.js';
+import { scriptGenerateSchema, scriptParseSchema } from '../schemas/ai.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -14,10 +17,10 @@ export function createScriptRouter(deps = {}) {
   const extractText = deps.extractText || extractService.extractText;
 
   const router = Router();
+  if (deps.store) router.use(createRequireAuth(deps.store));
 
-  router.post('/generate', async (req, res) => {
-    const material = typeof req.body?.material === 'string' ? req.body.material.trim() : '';
-    if (!material) return res.status(400).json({ error: '请提供素材内容' });
+  router.post('/generate', validate(scriptGenerateSchema), async (req, res) => {
+    const { material } = req.body;
     try {
       const result = await generateScript(material);
       if (result.needMoreInfo) {
@@ -47,9 +50,8 @@ export function createScriptRouter(deps = {}) {
     });
   });
 
-  router.post('/parse', async (req, res) => {
-    const scriptText = typeof req.body?.scriptText === 'string' ? req.body.scriptText.trim() : '';
-    if (!scriptText) return res.status(400).json({ error: '请提供剧本内容' });
+  router.post('/parse', validate(scriptParseSchema), async (req, res) => {
+    const { scriptText } = req.body;
     try {
       const scriptData = await parseScript(scriptText);
       return res.json({ scriptData });

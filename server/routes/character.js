@@ -1,15 +1,15 @@
 import { Router } from 'express';
 import { generateCharacterImage } from '../services/seedream.js';
+import { createRequireAuth } from '../middleware/requireAuth.js';
+import { validate } from '../middleware/validate.js';
+import { characterImageSchema } from '../schemas/ai.js';
 
 export function createCharacterRouter(deps = {}) {
   const generate = deps.generateCharacterImage || generateCharacterImage;
   const router = Router();
-  router.post('/generate-image', async (req, res) => {
-    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
-    const description = typeof req.body?.description === 'string' ? req.body.description.trim() : '';
-    const stylePrompt =
-      typeof req.body?.stylePrompt === 'string' ? req.body.stylePrompt.trim() : '';
-    if (!name || !description) return res.status(400).json({ error: '缺少人物名称或描述' });
+  if (deps.store) router.use(createRequireAuth(deps.store));
+  router.post('/generate-image', validate(characterImageSchema), async (req, res) => {
+    const { name, description, stylePrompt } = req.body;
     try {
       const imageUrl = await generate(description, { stylePrompt });
       return res.json({ name, imageUrl });
