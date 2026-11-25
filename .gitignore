@@ -27,3 +27,11 @@ dist/
 
 # 本地运行数据（账号/会话/作品）
 server/data/
+
+# 设计稿、原型与过程记录（仅本地保留，不进仓库）
+docs/
+mockups/
+.workbuddy/
+
+# 定妆截图
+relation-final.png

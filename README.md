@@ -50,11 +50,7 @@ npm.cmd run build
 
 ## 设计
 
-设计系统与信息架构见 [docs/design/kaipai/DESIGN.md](docs/design/kaipai/DESIGN.md)，字段和上下游契约见 [docs/design/kaipai/DATA-MODEL.md](docs/design/kaipai/DATA-MODEL.md)。
-
-完整设计交付入口：[docs/design/kaipai/README.md](docs/design/kaipai/README.md)。
-
-视觉方向为“Worklight”：深色制作现场承托明亮工作纸，琥珀色标记 cue，朱红只表示风险或待确认。产品工作流全部使用中文；Fountain、PDF、cue、A/B 等保留必要专业标签。
+视觉方向为”Worklight”：深色制作现场承托明亮工作纸，琥珀色标记 cue，朱红只表示风险或待确认。产品工作流全部使用中文；Fountain、PDF、cue、A/B 等保留必要专业标签。
 
 ## 当前边界
 
