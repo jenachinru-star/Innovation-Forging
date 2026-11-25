@@ -21,10 +21,15 @@ import { DEPARTMENTS, DEPARTMENT_LABELS } from '@director/shared/rules/briefs.js
 import { CUE_STATUS_OPTIONS, CUE_STATUS } from '@director/shared/constants/status.js';
 import { nextId } from '../store/plan.js';
 import { CHARACTER_IMAGE } from '../assets/samples/index.js';
+import {
+  VIEW_W,
+  VIEW_H,
+  clamp,
+  defaultPosition,
+  storedPosition,
+  pointAtProgress,
+} from '../stage/geometry.js';
 
-const VIEW_W = 800;
-const VIEW_H = 480;
-const DEFAULT_Y = Math.round(VIEW_H * 0.62);
 const DURATION = 330; // 时间轴总时长（秒），对齐设计稿 05:30
 
 // 舞台子 Tab：舞台 / 调度 / 灯光 / 音乐 / 道具 / 音效
@@ -44,11 +49,6 @@ const DISPATCH_TABS = [
   { id: 'cue', label: '提示' },
 ];
 
-function clamp(value, min, max) {
-  if (!Number.isFinite(value)) return min;
-  return Math.min(max, Math.max(min, value));
-}
-
 function pad2(value) {
   return String(value).padStart(2, '0');
 }
@@ -60,19 +60,6 @@ function formatTime(sec) {
   const minutes = Math.floor((total % 3600) / 60);
   const seconds = Math.floor(total % 60);
   return `${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`;
-}
-
-// 沿点序列按进度（0~1）取点，线性段插值
-function pointAtProgress(points, progress) {
-  if (!Array.isArray(points) || points.length < 2) return null;
-  const p = clamp(progress, 0, 1);
-  const seg = p * (points.length - 1);
-  const index = Math.min(Math.floor(seg), points.length - 2);
-  const k = seg - index;
-  return {
-    x: points[index].x + (points[index + 1].x - points[index].x) * k,
-    y: points[index].y + (points[index + 1].y - points[index].y) * k,
-  };
 }
 
 function normalizeCharacters(characters) {
@@ -136,27 +123,6 @@ function actorsFor(characters, cast) {
   }
 
   return actors;
-}
-
-function defaultPosition(index, total) {
-  return {
-    x: Math.round((VIEW_W * (index + 1)) / (total + 1)),
-    y: DEFAULT_Y,
-  };
-}
-
-function storedPosition(placements, sceneNumber, characterId) {
-  const list = Array.isArray(placements) ? placements : [];
-  const found = list.find(
-    (item) =>
-      item &&
-      item.characterId === characterId &&
-      Number(item.sceneNumber) === Number(sceneNumber)
-  );
-  if (found && Number.isFinite(found.x) && Number.isFinite(found.y)) {
-    return { x: found.x, y: found.y };
-  }
-  return null;
 }
 
 export default function StageBlocking({
