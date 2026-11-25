@@ -4196,3 +4196,221 @@ svg.is-wire .stage-path-line {
   border-radius: 50%;
   background: var(--accent-seal);
 }
+
+/* ===== 04 场次拆解表 ===== */
+.schedule-table .col-index {
+  width: 4.2rem;
+}
+
+.schedule-table .col-time {
+  width: 8.5rem;
+}
+
+.schedule-table .col-rhythm {
+  width: 6.5rem;
+}
+
+.schedule-row td {
+  vertical-align: middle;
+}
+
+/* 行首展开按钮 + 序号 */
+.row-expand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.25rem;
+  color: var(--ink-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.row-expand:disabled {
+  cursor: default;
+}
+
+.row-expand-chevron {
+  display: inline-grid;
+  width: 1rem;
+  height: 1rem;
+  place-items: center;
+  font-size: 0.9rem;
+  transition: transform 0.15s ease;
+  color: var(--ink-faint);
+}
+
+.row-expand.is-open .row-expand-chevron {
+  transform: rotate(90deg);
+  color: var(--cue);
+}
+
+.row-index-num {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+
+/* 时长：分钟输入 + 分秒预览 */
+.time-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.time-min-input {
+  width: 3.2rem;
+}
+
+.time-clock {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+/* 节奏下拉，按取值着色 */
+.rhythm-select {
+  width: 100%;
+  padding: 0.25rem 0.4rem;
+  color: var(--ink-muted);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-size: 0.76rem;
+}
+
+.rhythm-select.is-rhythm-转折 {
+  color: var(--cue);
+  border-color: rgba(193, 138, 45, 0.55);
+}
+
+.rhythm-select.is-rhythm-铺垫 {
+  color: var(--accent-seal);
+  border-color: rgba(178, 59, 50, 0.5);
+}
+
+.rhythm-select.is-rhythm-结尾 {
+  color: var(--confirmed);
+  border-color: rgba(85, 113, 91, 0.55);
+}
+
+/* 展开的额外字段行 */
+.schedule-extra-row > td {
+  padding: 0;
+  background: var(--paper-deep) !important;
+}
+
+.schedule-extra {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  padding: 0.8rem 1.2rem;
+}
+
+.schedule-extra-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  font-size: 0.78rem;
+  color: var(--ink);
+}
+
+.schedule-extra-summary {
+  grid-column: span 1;
+}
+
+.schedule-extra-label {
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+}
+
+/* ===== 04 剧作节奏节点轴 ===== */
+.cadence-card {
+  padding: 1.3rem 1.5rem 1.1rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.cadence-title {
+  margin: 0 0 1.4rem;
+  color: var(--ink);
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+}
+
+.cadence-axis {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0 0.5rem;
+}
+
+.cadence-rail {
+  position: absolute;
+  top: 0.45rem;
+  right: 3.5rem;
+  left: 0.5rem;
+  height: 1px;
+  background: var(--line);
+}
+
+.cadence-node {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.cadence-dot {
+  width: 0.9rem;
+  height: 0.9rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 0 3px var(--paper-raised);
+}
+
+.cadence-dot.is-empty {
+  background: var(--line);
+  cursor: pointer;
+}
+
+.cadence-node-label {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.cadence-node-label b {
+  color: var(--ink);
+  font-family: var(--font-mono);
+}
+
+.cadence-end {
+  position: absolute;
+  top: 1.6rem;
+  right: 0.2rem;
+  font-size: 0.74rem;
+  color: var(--cue);
+  white-space: nowrap;
+}
+
+.cadence-caption {
+  margin: 1.3rem 0 0;
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 0.74rem;
+}

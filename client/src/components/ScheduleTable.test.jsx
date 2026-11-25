@@ -1,100 +1,111 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import ScheduleTable from './ScheduleTable.jsx';
+import ScheduleTable, { formatClock } from './ScheduleTable.jsx';
 
 const data = {
   summary: '一段关于告别的故事',
   scenes: [
-    { sceneNumber: 1, title: '第一场', location: '医院病房', characters: ['老陈', '老周'], props: ['茶杯'], summary: '重逢', estimatedMinutes: 6 },
+    {
+      sceneNumber: 1,
+      title: '第一场',
+      location: '医院病房',
+      characters: ['老陈', '老周'],
+      presentCharacters: ['老陈', '老周'],
+      props: ['茶杯'],
+      stageDirections: ['（老周坐下）'],
+      summary: '重逢',
+      estimatedMinutes: 6,
+      structure: '铺垫',
+    },
   ],
   characters: [],
   relationships: [],
 };
 
+describe('formatClock', () => {
+  it('整数分钟显示 m00，小数分钟换算秒', () => {
+    expect(formatClock(6)).toBe("6'00\"");
+    expect(formatClock(8.25)).toBe("8'15\"");
+    expect(formatClock(0)).toBe("0'00\"");
+  });
+});
+
 describe('ScheduleTable', () => {
-  it('展示总简介与场次信息', () => {
+  it('展示总简介与场次关键字段', () => {
     render(<ScheduleTable scriptData={data} />);
     expect(screen.getByText('一段关于告别的故事')).toBeInTheDocument();
     expect(screen.getByText('医院病房')).toBeInTheDocument();
     expect(screen.getByText('老陈、老周')).toBeInTheDocument();
     expect(screen.getByText('茶杯')).toBeInTheDocument();
-    expect(screen.getByText('6 分钟')).toBeInTheDocument();
+  });
+
+  it('时长以分秒格式展示', () => {
+    render(<ScheduleTable scriptData={data} />);
+    expect(screen.getByText("6'00\"")).toBeInTheDocument();
   });
 
   it('无场次时显示空态', () => {
-    render(<ScheduleTable scriptData={{ summary: '', scenes: [], characters: [], relationships: [] }} />);
+    render(
+      <ScheduleTable
+        scriptData={{ summary: '', scenes: [], characters: [], relationships: [] }}
+      />,
+    );
     expect(screen.getByText('未解析到场次信息。')).toBeInTheDocument();
   });
 
-  it('字段缺失时不崩溃（characters/props 缺省为空）', () => {
-    render(<ScheduleTable scriptData={{ summary: '', scenes: [{ sceneNumber: 1, title: '第一场', location: '客厅' }], characters: [], relationships: [] }} />);
+  it('字段缺失时不崩溃', () => {
+    render(
+      <ScheduleTable
+        scriptData={{
+          summary: '',
+          scenes: [{ sceneNumber: 1, title: '第一场', location: '客厅' }],
+          characters: [],
+          relationships: [],
+        }}
+      />,
+    );
     expect(screen.getByText('客厅')).toBeInTheDocument();
-    expect(screen.getByText('0 分钟')).toBeInTheDocument();
+    expect(screen.getByText("0'00\"")).toBeInTheDocument();
   });
 
-  it('传入 onChangeScene 时，编辑地点会回调', () => {
+  it('编辑地点会回调', () => {
     const onChangeScene = vi.fn();
     render(<ScheduleTable scriptData={data} onChangeScene={onChangeScene} />);
-    const cell = screen.getByDisplayValue('医院病房');
-    fireEvent.change(cell, { target: { value: '客厅' } });
+    fireEvent.change(screen.getByLabelText('编辑地点'), { target: { value: '客厅' } });
     expect(onChangeScene).toHaveBeenCalledWith(0, { location: '客厅' });
   });
 
-  it('传入 onChangeScene 时，编辑时长触发数值回写', () => {
+  it('编辑时长触发 estimatedMinutes 回写', () => {
     const onChangeScene = vi.fn();
     render(<ScheduleTable scriptData={data} onChangeScene={onChangeScene} />);
-    const cell = screen.getByDisplayValue('6');
-    fireEvent.change(cell, { target: { value: '9' } });
+    fireEvent.change(screen.getByLabelText('编辑时长（分钟）'), { target: { value: '9' } });
     expect(onChangeScene).toHaveBeenCalledWith(0, { estimatedMinutes: 9 });
   });
 
-  it('传入 onChangeScene 时，编辑摘要会回调', () => {
+  it('选择节奏回写 structure', () => {
     const onChangeScene = vi.fn();
     render(<ScheduleTable scriptData={data} onChangeScene={onChangeScene} />);
-    const cell = screen.getByDisplayValue('重逢');
-    fireEvent.change(cell, { target: { value: '争执' } });
-    expect(onChangeScene).toHaveBeenCalledWith(0, { summary: '争执' });
+    fireEvent.change(screen.getByLabelText('选择节奏'), { target: { value: '转折' } });
+    expect(onChangeScene).toHaveBeenCalledWith(0, { structure: '转折' });
   });
 
-  it('展示在场人物、道具、舞台说明三列表头', () => {
+  it('点击展开显示在场人物、舞台说明与剧情摘要', () => {
     render(<ScheduleTable scriptData={data} />);
-    expect(screen.getByText('在场人物')).toBeInTheDocument();
-    expect(screen.getByText('道具')).toBeInTheDocument();
-    expect(screen.getByText('舞台说明')).toBeInTheDocument();
+    // 展开前额外字段不在文档中
+    expect(screen.queryByText('（老周坐下）')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('展开详情'));
+    expect(screen.getByText('（老周坐下）')).toBeInTheDocument();
+    expect(screen.getAllByText('老陈、老周').length).toBeGreaterThan(0);
+    expect(screen.getByText('重逢')).toBeInTheDocument();
   });
 
-  it('在场的道具与舞台说明以顿号连接展示', () => {
-    const withDirections = {
-      summary: '',
-      scenes: [
-        {
-          sceneNumber: 1,
-          title: '第一场',
-          location: '门口',
-          characters: ['阿岚'],
-          presentCharacters: ['阿岚', '老周'],
-          props: ['伞', '钥匙'],
-          stageDirections: ['（阿岚站在门边）', '（雨声渐起）'],
-          summary: '',
-          estimatedMinutes: 3,
-        },
-      ],
-      characters: [],
-      relationships: [],
-    };
-    render(<ScheduleTable scriptData={withDirections} />);
-    expect(screen.getByText('阿岚、老周')).toBeInTheDocument();
-    expect(screen.getByText('伞、钥匙')).toBeInTheDocument();
-    expect(screen.getByText('（阿岚站在门边）、（雨声渐起）')).toBeInTheDocument();
-  });
-
-  it('可编辑模式下字段缺失不会崩溃', () => {
-    render(
-      <ScheduleTable
-        scriptData={{ summary: '', scenes: [{ sceneNumber: 1, title: '第一场' }], characters: [], relationships: [] }}
-        onChangeScene={() => {}}
-      />,
-    );
-    expect(screen.getByText('第一场')).toBeInTheDocument();
+  it('可编辑模式下展开行可编辑剧情摘要', () => {
+    const onChangeScene = vi.fn();
+    render(<ScheduleTable scriptData={data} onChangeScene={onChangeScene} />);
+    fireEvent.click(screen.getByLabelText('展开详情'));
+    fireEvent.change(screen.getByLabelText('编辑剧情摘要'), {
+      target: { value: '争执' },
+    });
+    expect(onChangeScene).toHaveBeenCalledWith(0, { summary: '争执' });
   });
 });

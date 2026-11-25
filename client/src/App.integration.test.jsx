@@ -109,11 +109,12 @@ describe('App 集成', () => {
     ).toBeInTheDocument();
   });
 
-  it('把 plan.briefs 传给节奏时间线', async () => {
+  it('把 plan.briefs 传给部门需求面板', async () => {
     state.initialRecord = {
       id: 'rec-2',
       step: 'result',
-      activeNav: 'rehearsal',
+      activeNav: 'briefs',
+      activeTab: 'briefs',
       scriptText: '',
       scriptData: scriptDataWith('你终于回来了'),
       plan: {
@@ -138,7 +139,7 @@ describe('App 集成', () => {
     };
 
     render(<App />);
-    expect(await screen.findByTestId('cadence-brief')).toHaveTextContent('音乐渐入');
+    expect(await screen.findByText('音乐渐入')).toBeInTheDocument();
   });
 
   it('修改剧本文本后触发保存到后端', async () => {
