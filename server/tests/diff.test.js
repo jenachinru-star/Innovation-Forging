@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { diffScriptData } from '@director/shared/diff.js';
+import { diffScriptData, diffLines, buildSplitRows } from '@director/shared/diff.js';
 
 const a = { scenes: [{ title: '第一场', summary: '旧' }, { title: '第二场', summary: '同' }], characters: [{ name: '甲' }] };
 const b = { scenes: [{ title: '第一场', summary: '新' }, { title: '第三场', summary: '加' }], characters: [{ name: '甲' }, { name: '乙' }] };
@@ -12,5 +12,36 @@ describe('diffScriptData', () => {
     expect(d.changedScenes[0]).toEqual({ title: '第一场', from: '旧', to: '新' });
     expect(d.characterDelta.added).toEqual(['乙']);
     expect(d.characterDelta.removed).toEqual([]);
+  });
+});
+
+describe('diffLines 行级 diff', () => {
+  it('标记相同、新增与删除行', () => {
+    const ops = diffLines('a\nb\nc', 'a\nx\nc');
+    const kinds = ops.map((o) => o.op);
+    expect(kinds).toEqual(['equal', 'remove', 'add', 'equal']);
+    expect(ops.find((o) => o.op === 'add').text).toBe('x');
+  });
+
+  it('完全相同则全部 equal', () => {
+    const ops = diffLines('一\n二', '一\n二');
+    expect(ops.every((o) => o.op === 'equal')).toBe(true);
+  });
+
+  it('处理 CRLF 换行', () => {
+    const ops = diffLines('a\r\nb', 'a\nb');
+    expect(ops.every((o) => o.op === 'equal')).toBe(true);
+  });
+
+  it('空文本不报错', () => {
+    const ops = diffLines('', 'a');
+    expect(ops.map((o) => o.op)).toEqual(['add']);
+  });
+
+  it('buildSplitRows 输出左右对齐且行数一致', () => {
+    const rows = buildSplitRows(diffLines('a\nb', 'a\nc'));
+    expect(rows).toHaveLength(3);
+    expect(rows[1]).toMatchObject({ op: 'remove', left: 'b', right: '' });
+    expect(rows[2]).toMatchObject({ op: 'add', left: '', right: 'c' });
   });
 });
