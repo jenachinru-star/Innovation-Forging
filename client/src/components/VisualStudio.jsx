@@ -8,7 +8,7 @@ const SUB_TABS = [
   { id: 'workbench', label: '生成工作台' },
 ];
 
-export default function VisualStudio({ scriptData, plan, dispatch, readOnly = false }) {
+export default function VisualStudio({ scriptData, plan, dispatch }) {
   const saved = plan?.style || {};
   const [subTab, setSubTab] = useState('bible');
 
@@ -25,7 +25,6 @@ export default function VisualStudio({ scriptData, plan, dispatch, readOnly = fa
   };
 
   function patchStyle(patch) {
-    if (readOnly) return;
     const next = { ...style, ...patch };
     dispatch?.({ type: 'setStyle', style: next });
   }
@@ -48,7 +47,7 @@ export default function VisualStudio({ scriptData, plan, dispatch, readOnly = fa
       </div>
 
       {subTab === 'bible' ? (
-        <StyleBible style={viewStyle} onPatchStyle={patchStyle} readOnly={readOnly} />
+        <StyleBible style={viewStyle} onPatchStyle={patchStyle} />
       ) : (
         <VisualWorkbench
           scriptData={scriptData}
@@ -56,7 +55,6 @@ export default function VisualStudio({ scriptData, plan, dispatch, readOnly = fa
           dispatch={dispatch}
           style={viewStyle}
           onPatchStyle={patchStyle}
-          readOnly={readOnly}
         />
       )}
     </section>

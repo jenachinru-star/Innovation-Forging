@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildStylePrompt } from '../data/styles.js';
 import { nextId } from '../store/plan.js';
-import { SCENE_IMAGES } from '../assets/samples/index.js';
+import { WORKBENCH_SAMPLES } from '../assets/visual/index.js';
+import { Sparkles, Image as ImageIcon, Palette, Copy, Wand2 } from 'lucide-react';
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const ASSET_BADGE = {
-  character: '角色',
+  character: '人物',
   scene: '场景',
   prop: '道具',
   keyframe: '关键帧',
@@ -30,7 +31,34 @@ const VIDEO_STATUS_TEXT = {
   failed: '视频生成失败',
 };
 
-function CopyButton({ text }) {
+// 灵感×光影：点击随机填入一条画面描述
+const INSPIRATIONS = [
+  '黄昏下的老戏台，暖光穿过木梁，尘埃在光柱里浮动',
+  '雨夜巷弄，一盏灯笼摇晃，青石板上倒映着暖橙光',
+  '幽暗室内，一支蜡烛照亮桌上的旧钥匙与信纸',
+  '窗边女子侧影，雨丝落在玻璃上，她低头读一封信',
+  '清晨薄雾的老街，木门吱呀打开，蒸汽从屋内溢出',
+  '复古人物肖像，暖棕背景，柔和侧光勾勒面部轮廓',
+  '暮色中的木质阁楼，胶片放映机转动，光束里有尘粒',
+  '暖光木梁下的空桌椅，煤油灯轻晃，等待一场对话',
+];
+
+// 结构化提示词（仅可视化预览/复制；实际发送的仍是组装的自然语言）
+function buildPreviewJson(desc, familyName) {
+  const scene = desc.trim() || '黄昏下的老旧戏台，远处是朦胧的山峦与归鸟';
+  return {
+    scene,
+    style: `${familyName}，复古胶片质感`,
+    lighting: '暖金色夕阳光线，侧逆光勾勒轮廓，空气中有轻微烟尘',
+    atmosphere: '怀旧、诗意、略带沧桑',
+    composition: '远景，主体位于画面左侧，右侧留出天空与远山',
+    color_tone: '暖棕、琥珀金、深褐',
+    elements: ['木质戏台', '红色帷幕', '远山', '归鸟', '烟尘'],
+    emotion: '岁月沉淀的故事感',
+  };
+}
+
+function CopyButton({ text, label = '复制' }) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
@@ -45,18 +73,12 @@ function CopyButton({ text }) {
 
   return (
     <button type="button" className="btn-ghost btn-small" onClick={copy}>
-      {copied ? '已复制' : '复制提示词'}
+      <Copy size={14} aria-hidden /> {copied ? '已复制' : label}
     </button>
   );
 }
 
-export default function VisualWorkbench({
-  plan,
-  dispatch,
-  style,
-  onPatchStyle,
-  readOnly = false,
-}) {
+export default function VisualWorkbench({ plan, dispatch, style, onPatchStyle }) {
   const [description, setDescription] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -64,7 +86,7 @@ export default function VisualWorkbench({
 
   const spec = TARGET_SPECS[style.targetId] || TARGET_SPECS['scene-plate'];
 
-  // 图片网格：已保存图片资产（排除视频）+ 本地场景兜底，按 id 去重
+  // 图片网格：已保存图片资产（排除视频）+ 内置示例，按 id 去重
   const gridAssets = useMemo(() => {
     const fromPlan = (Array.isArray(plan?.assets) ? plan.assets : [])
       .filter((a) => a?.url && a.type !== 'video')
@@ -75,7 +97,7 @@ export default function VisualWorkbench({
         src: a.url,
       }));
     const used = new Set(fromPlan.map((a) => a.id));
-    const local = SCENE_IMAGES.filter((s) => !used.has(s.id)).map((s) => ({
+    const local = WORKBENCH_SAMPLES.filter((s) => !used.has(s.id)).map((s) => ({
       id: s.id,
       title: s.title,
       badge: s.kind,
@@ -89,6 +111,7 @@ export default function VisualWorkbench({
     [plan?.assets]
   );
 
+  // 实际发送给后端的自然语言提示词
   const promptText = useMemo(
     () =>
       buildStylePrompt(
@@ -101,6 +124,18 @@ export default function VisualWorkbench({
       ),
     [style, description]
   );
+
+  // 结构化 JSON 预览（仅展示/复制）
+  const previewJson = useMemo(
+    () => JSON.stringify(buildPreviewJson(description, style.familyName), null, 2),
+    [description, style.familyName]
+  );
+
+  function fillInspiration() {
+    const pool = INSPIRATIONS.filter((item) => item !== description);
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    setDescription(pick);
+  }
 
   // 轮询单个视频任务，直到终态；卸载或停止时退出
   async function pollVideo(asset) {
@@ -199,7 +234,6 @@ export default function VisualWorkbench({
   }
 
   async function handleGenerate() {
-    if (readOnly) return;
     const desc = description.trim();
     if (!desc || busy) return;
     setError('');
@@ -221,23 +255,21 @@ export default function VisualWorkbench({
   return (
     <div className="visual-workbench">
       <div className="visual-generate-card panel-card">
-        <label htmlFor="visual-style" className="visual-style-label">
-          视觉风格
-        </label>
+        <span className="visual-style-prefix"><Palette size={16} aria-hidden /></span>
         <select
           id="visual-style"
           className="field visual-style-select"
           value={style.familyId}
           onChange={(e) => onPatchStyle({ familyId: e.target.value, directorId: '' })}
-          disabled={readOnly}
         >
           {style.familyOptions.map((item) => (
             <option key={item.id} value={item.id}>
-              {item.name}
+              {item.name}风格
             </option>
           ))}
         </select>
 
+        <span className="visual-desc-prefix"><ImageIcon size={16} aria-hidden /></span>
         <input
           type="text"
           className="field visual-desc-input"
@@ -246,12 +278,7 @@ export default function VisualWorkbench({
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleGenerate();
           }}
-          disabled={readOnly}
-          placeholder={
-            spec.kind === 'video'
-              ? '描述镜头内容，例如：镜头缓缓推向老戏台，人物转身……'
-              : '描述你想要的画面，例如：黄昏下的老戏台，暖光穿过木梁……'
-          }
+          placeholder="请描述你想要生成的画面"
           aria-label="画面描述"
         />
 
@@ -259,11 +286,19 @@ export default function VisualWorkbench({
           type="button"
           className="btn-seal visual-generate-btn"
           onClick={handleGenerate}
-          disabled={readOnly || busy || !description.trim()}
+          disabled={busy || !description.trim()}
         >
+          <Sparkles size={16} aria-hidden />
           {busy ? (spec.kind === 'video' ? '提交中' : '生成中') : '生成'}
         </button>
       </div>
+
+      <p className="visual-helper">
+        <Wand2 size={14} aria-hidden /> 越详细的描述，越能获得精准的画面
+        <button type="button" className="inspiration-btn" onClick={fillInspiration}>
+          <Sparkles size={14} aria-hidden /> 灵感×光影
+        </button>
+      </p>
 
       {error && (
         <p role="alert" className="alert-error">
@@ -315,9 +350,9 @@ export default function VisualWorkbench({
       <div className="prompt-preview visual-prompt-preview">
         <div className="prompt-preview-head">
           <span className="field-label">结构化提示词</span>
-          <CopyButton text={promptText} />
+          <CopyButton text={previewJson} label="复制" />
         </div>
-        <pre>{promptText}</pre>
+        <pre>{previewJson}</pre>
       </div>
     </div>
   );

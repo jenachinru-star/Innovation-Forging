@@ -116,7 +116,7 @@ describe('VisualStudio', () => {
     render(<Harness />);
     goWorkbench();
     expect(screen.getByText('结构化提示词')).toBeInTheDocument();
-    expect(screen.getByText('复制提示词')).toBeInTheDocument();
+    expect(screen.getByText('复制')).toBeInTheDocument();
   });
 
 });

@@ -118,6 +118,6 @@ describe('ResultTabs', () => {
     fireEvent.click(screen.getByRole('tab', { name: '生成工作台' }));
     expect(screen.getByLabelText('画面描述')).toBeInTheDocument();
     expect(screen.getByText('生成').closest('button')).toBeInTheDocument();
-    expect(screen.getByTestId('visual-card-scene-livingroom')).toBeInTheDocument();
+    expect(screen.getByTestId('visual-card-sample-stage')).toBeInTheDocument();
   });
 });

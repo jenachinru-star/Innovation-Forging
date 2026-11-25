@@ -5360,3 +5360,189 @@ svg.is-wire .stage-path-line {
   gap: 0.6rem;
   margin-left: auto;
 }
+
+/* ===== 09 视觉页：暖棕 1:1 重构（折叠区块 + 缩略图 + 灵感） ===== */
+
+/* 可折叠区块 */
+.collapsible-block {
+  padding: 0;
+  overflow: hidden;
+}
+.collapsible-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 1rem 1.2rem;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.collapsible-icon {
+  display: inline-flex;
+  color: var(--cue);
+}
+.collapsible-text {
+  flex: 1;
+  display: grid;
+  gap: 0.18rem;
+}
+.collapsible-text b {
+  color: var(--ink);
+  font-family: var(--font-heading);
+  font-size: 0.98rem;
+}
+.collapsible-text small {
+  color: var(--ink-faint);
+  font-size: 0.68rem;
+}
+.collapsible-chevron {
+  color: var(--ink-muted);
+  transition: transform 0.25s ease;
+}
+.collapsible-block:not(.is-open) .collapsible-chevron {
+  transform: rotate(-90deg);
+}
+.collapsible-body {
+  padding: 0 1.2rem 1.25rem;
+}
+
+/* 风格卡：缩略图贴顶 */
+.style-family-strip {
+  grid-auto-columns: minmax(10.5rem, 1fr);
+}
+.style-family-card {
+  align-content: start;
+  gap: 0.55rem;
+  padding: 0;
+  overflow: hidden;
+}
+.style-family-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+}
+.style-family-card b {
+  padding: 0 0.8rem;
+}
+.style-family-card .style-family-colors {
+  height: 0.5rem;
+  margin: 0 0.8rem 0.85rem;
+}
+
+/* 配色横幅：连续色块 + 下方文字 */
+.palette-banner {
+  display: grid;
+  gap: 0.7rem;
+}
+.palette-banner-swatches {
+  display: flex;
+  height: 2.4rem;
+  overflow: hidden;
+  border-radius: 4px;
+}
+.palette-banner-swatch {
+  flex: 1;
+}
+.palette-banner-labels {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+.palette-banner-item {
+  display: grid;
+  gap: 0.25rem;
+}
+.palette-banner-item b {
+  color: var(--ink);
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+}
+.palette-banner-item b small {
+  margin-left: 0.35rem;
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+}
+.palette-banner-item > span {
+  color: var(--ink-faint);
+  font-size: 0.66rem;
+}
+
+/* 导演卡：缩略图 + 信息 */
+.director-card {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
+}
+.director-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+.director-info {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0 0.9rem 0.95rem;
+}
+.director-info > b {
+  color: var(--ink);
+  font-family: var(--font-heading);
+  font-size: 1.02rem;
+}
+.director-subtitle {
+  color: var(--ink-muted);
+  font-size: 0.7rem;
+}
+.director-info .director-palette {
+  height: 0.5rem;
+}
+.director-note {
+  color: var(--ink-faint);
+  font-size: 0.68rem;
+}
+
+/* 生成条图标前缀 */
+.visual-style-prefix,
+.visual-desc-prefix {
+  display: inline-flex;
+  color: var(--ink-muted);
+}
+
+/* 提示语 + 灵感按钮 */
+.visual-helper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.55rem 0 1.15rem;
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+}
+.inspiration-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  padding: 0.35rem 0.85rem;
+  color: var(--cue);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--cue) 45%, transparent);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+.inspiration-btn:hover {
+  background: color-mix(in srgb, var(--cue) 12%, transparent);
+}
+
+@media (max-width: 900px) {
+  .palette-banner-labels {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
