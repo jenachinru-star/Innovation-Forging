@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import Konva from 'konva';
 import ResultTabs from './ResultTabs.jsx';
+
+const actorInStage = (id) =>
+  Konva.stages[Konva.stages.length - 1].find((node) => node.id() === `actor-${id}`)[0];
 
 const data = {
   summary: '简介', scenes: [], characters: [], relationships: [],
@@ -88,13 +92,13 @@ describe('ResultTabs', () => {
     );
 
     fireEvent.click(screen.getByText('走位与提示'));
-    expect(screen.getByTestId('actor-老陈')).toBeInTheDocument();
-    expect(screen.queryByTestId('actor-阿岚')).not.toBeInTheDocument();
+    expect(actorInStage('老陈')).toBeTruthy();
+    expect(actorInStage('阿岚')).toBeUndefined();
 
     fireEvent.change(screen.getByLabelText('走位场次'), { target: { value: '2' } });
 
-    expect(screen.getByTestId('actor-阿岚')).toBeInTheDocument();
-    expect(screen.queryByTestId('actor-老陈')).not.toBeInTheDocument();
+    expect(actorInStage('阿岚')).toBeTruthy();
+    expect(actorInStage('老陈')).toBeUndefined();
   });
 
   it('切换到视觉制作显示生成条与图片网格', () => {

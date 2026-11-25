@@ -32,7 +32,6 @@ import {
 import { getScene, hasScene, sceneLines, actorsFor } from '../stage/actors.js';
 import StageCanvas from '../stage/StageCanvas.jsx';
 import { mergeStageSettings } from '../stage/stageSettings.js';
-import { readKonvaFlag, writeKonvaFlag } from '../stage/featureFlags.js';
 
 const DURATION = 330; // 时间轴总时长（秒），对齐设计稿 05:30
 
@@ -73,7 +72,6 @@ export default function StageBlocking({
   plan,
   dispatch,
 }) {
-  const svgRef = useRef(null);
   const konvaStageRef = useRef(null);
   const stage3dRef = useRef(null);
   const dragRef = useRef(null);
@@ -263,17 +261,6 @@ export default function StageBlocking({
         };
       });
     }
-  }
-
-  function handlePointerMove(event) {
-    if (!dragRef.current) return;
-    const svg = svgRef.current;
-    if (!svg) return;
-    applyDrag(
-      Number(event.clientX ?? event.nativeEvent?.clientX ?? 0),
-      Number(event.clientY ?? event.nativeEvent?.clientY ?? 0),
-      svg.getBoundingClientRect()
-    );
   }
 
   function handlePointerUp() {
@@ -480,15 +467,6 @@ export default function StageBlocking({
 
   const isWire = viewMode === 'wire';
 
-  // B4 feature flag：localStorage 持久化，默认旧 SVG，临时 UI 开关切换对照。
-  const [useKonvaCanvas, setUseKonvaCanvas] = useState(() => readKonvaFlag());
-  function toggleKonvaCanvas() {
-    setUseKonvaCanvas((prev) => {
-      writeKonvaFlag(!prev);
-      return !prev;
-    });
-  }
-
   // 节点画布的展示数据：位置/尺寸在此算好，StageCanvas 只负责纯渲染。
   const konvaActors = actors.map((actor, index) => {
     const position = renderPosition(actor, index);
@@ -572,24 +550,7 @@ export default function StageBlocking({
         >
           记录走位轨迹
         </button>
-        <button
-          type="button"
-          data-testid="konva-flag-toggle"
-          className={useKonvaCanvas ? 'is-active' : ''}
-          aria-pressed={useKonvaCanvas}
-          title="B 过渡期：切换 Konva 节点画布与旧 SVG，B7 删除"
-          onClick={toggleKonvaCanvas}
-        >
-          节点画布
-        </button>
-        <button
-          type="button"
-          data-testid="export-png"
-          className={useKonvaCanvas ? 'is-active' : ''}
-          disabled={!useKonvaCanvas}
-          title={useKonvaCanvas ? '导出当前画布为 PNG' : '切换到节点画布后可导出'}
-          onClick={handleExportPng}
-        >
+        <button type="button" data-testid="export-png" title="导出当前画布为 PNG" onClick={handleExportPng}>
           导出 PNG
         </button>
         <span>三种视图共享同一组位置数据</span>
@@ -747,7 +708,7 @@ export default function StageBlocking({
                   </div>
                   <p className="stage-3d-caption">灯光为氛围预览 · 拖动演员调整平面位置</p>
                 </div>
-              ) : useKonvaCanvas ? (
+              ) : (
                 <StageCanvas
                   actors={konvaActors}
                   objects={konvaObjects}
@@ -769,169 +730,6 @@ export default function StageBlocking({
                   onObjectDragEnd={handleObjectDragEnd}
                   onObjectClick={handleObjectClick}
                 />
-              ) : (
-                <svg
-                  ref={svgRef}
-                  data-testid="stage-canvas"
-                  viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-                  className={`block h-auto w-full touch-none select-none ${isWire ? 'is-wire' : ''}`}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={handlePointerUp}
-                >
-                  <rect x="0" y="0" width={VIEW_W} height={VIEW_H} className="stage-bg" />
-
-                  <text
-                    x={VIEW_W / 2}
-                    y="24"
-                    textAnchor="middle"
-                    fontSize="15"
-                    className="stage-muted-text"
-                  >
-                    观众方向
-                  </text>
-
-                  <rect
-                    x="60"
-                    y="44"
-                    width="680"
-                    height="400"
-                    rx="10"
-                    strokeWidth="2"
-                    className="stage-frame"
-                  />
-
-                  {scenePaths.map((path) =>
-                    Array.isArray(path.points) && path.points.length > 1 ? (
-                      <polyline
-                        key={path.id}
-                        points={path.points.map((point) => `${point.x},${point.y}`).join(' ')}
-                        fill="none"
-                        className={`stage-path-line ${stageTab === 'block' ? 'is-focus' : ''}`}
-                        strokeWidth="2"
-                        strokeDasharray="6 6"
-                      />
-                    ) : null
-                  )}
-                  {pathDraft.length > 1 && (
-                    <polyline
-                      points={pathDraft.map((point) => `${point.x},${point.y}`).join(' ')}
-                      fill="none"
-                      stroke="var(--cue)"
-                      strokeWidth="3"
-                      strokeDasharray="5 5"
-                    />
-                  )}
-
-                  {sceneObjects.map((object) => {
-                    const position = objectPositionFor(object);
-                    const width = 54 * (object.scale || 1) * (object.kind === 'table' ? 1.5 : 1);
-                    const height = 30 * (object.scale || 1);
-                    return (
-                      <g
-                        key={object.id}
-                        data-testid={`stage-object-${object.id}`}
-                        onPointerDown={(event) => handleObjectPointerDown(event, object, position)}
-                        style={{ cursor: 'grab' }}
-                      >
-                        <rect
-                          x={position.x - width / 2}
-                          y={position.y - height / 2}
-                          width={width}
-                          height={height}
-                          rx="3"
-                          transform={`rotate(${object.rotation || 0} ${position.x} ${position.y})`}
-                          className="stage-object-shape"
-                          stroke={selectedObjectId === object.id ? 'var(--cue)' : undefined}
-                          strokeWidth="2"
-                        />
-                        <text
-                          x={position.x}
-                          y={position.y + 4}
-                          textAnchor="middle"
-                          fontSize="11"
-                          className="stage-object-label"
-                        >
-                          {object.label || object.kind}
-                        </text>
-                      </g>
-                    );
-                  })}
-
-                  <rect x="18" y="200" width="34" height="88" rx="4" className="stage-door" />
-                  <text x="35" y="250" textAnchor="middle" fontSize="12" className="stage-ink-text">
-                    上场口
-                  </text>
-
-                  <rect x="748" y="200" width="34" height="88" rx="4" className="stage-door" />
-                  <text x="765" y="250" textAnchor="middle" fontSize="12" className="stage-ink-text">
-                    下场口
-                  </text>
-
-                  {actors.map((actor, index) => {
-                    const position = renderPosition(actor, index);
-                    const dragging = draggingId === actor.characterId;
-                    const baseName = actor.characterId.split('#')[0];
-                    const imageUrl = CHARACTER_IMAGE[baseName];
-                    const clipId = `clip-${actor.characterId.replace(/[^a-zA-Z0-9一-龥]/g, '')}`;
-                    return (
-                      <g
-                        key={actor.characterId}
-                        data-testid={`actor-${actor.characterId}`}
-                        data-x={position.x}
-                        data-y={position.y}
-                        onPointerDown={(event) => handlePointerDown(event, actor, position)}
-                        style={{ cursor: locked ? 'default' : dragging ? 'grabbing' : 'grab' }}
-                      >
-                        <circle
-                          cx={position.x}
-                          cy={position.y}
-                          r="26"
-                          strokeWidth="2"
-                          className="stage-actor-circle"
-                          style={{
-                            stroke: dragging ? 'var(--accent-seal)' : undefined,
-                          }}
-                        />
-                        {!isWire && imageUrl && (
-                          <>
-                            <clipPath id={clipId}>
-                              <circle cx={position.x} cy={position.y} r="26" />
-                            </clipPath>
-                            <image
-                              href={imageUrl}
-                              x={position.x - 26}
-                              y={position.y - 26}
-                              width="52"
-                              height="52"
-                              clipPath={`url(#${clipId})`}
-                              preserveAspectRatio="xMidYMid slice"
-                            />
-                          </>
-                        )}
-                        {!isWire && !imageUrl && (
-                          <text
-                            x={position.x}
-                            y={position.y + 5}
-                            textAnchor="middle"
-                            fontSize="13"
-                            className="stage-actor-name"
-                          >
-                            {actor.label}
-                          </text>
-                        )}
-                        <text
-                          x={position.x}
-                          y={position.y + 44}
-                          textAnchor="middle"
-                          fontSize="12"
-                          className="stage-actor-caption"
-                        >
-                          {actor.label}
-                        </text>
-                      </g>
-                    );
-                  })}
-                </svg>
               )}
             </div>
 

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { useReducer } from 'react';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, act } from '@testing-library/react';
+import Konva from 'konva';
 import StageBlocking from './StageBlocking.jsx';
 import { createPlan, planReducer } from '../store/plan.js';
 
@@ -26,35 +27,42 @@ function Harness() {
   );
 }
 
-function rect() {
-  return { left: 0, top: 0, width: 800, height: 480, right: 800, bottom: 480 };
+// Konva 节点级断言辅助：角色不再是独立 DOM，统一经 Stage findOne 定位。
+function currentStage() {
+  return Konva.stages[Konva.stages.length - 1];
+}
+function actorNode(id) {
+  return currentStage().find((node) => node.id() === `actor-${id}`)[0];
 }
 
 describe('StageBlocking', () => {
-  it('渲染舞台画布与出场人物名称', () => {
+  it('渲染节点画布与出场人物', () => {
     render(<StageBlocking characters={characters} dispatch={() => {}} />);
 
-    expect(screen.getByTestId('stage-canvas')).toBeInTheDocument();
-    expect(screen.getByTestId('actor-老陈')).toBeInTheDocument();
-    expect(screen.getByTestId('actor-阿岚')).toBeInTheDocument();
-    expect(screen.getByTestId('actor-老陈').textContent).toContain('老陈');
+    expect(screen.getByTestId('konva-stage-wrap')).toBeInTheDocument();
+    const chen = actorNode('老陈');
+    const lan = actorNode('阿岚');
+    expect(chen).toBeTruthy();
+    expect(lan).toBeTruthy();
+    expect(chen.id()).toBe('actor-老陈');
   });
 
-  it('拖动角色后在松手时派发 setPlacement 且坐标有限', () => {
+  it('拖动角色结束派发 setPlacement 且坐标为逻辑坐标', async () => {
     const dispatch = vi.fn();
     render(<StageBlocking characters={characters} dispatch={dispatch} />);
+    const node = actorNode('老陈');
 
-    const svg = screen.getByTestId('stage-canvas');
-    Object.defineProperty(svg, 'getBoundingClientRect', { value: rect });
-
-    fireEvent.pointerDown(screen.getByTestId('actor-老陈'));
-    fireEvent.pointerMove(svg, { clientX: 200, clientY: 100 });
-    fireEvent.pointerUp(svg);
+    await act(async () => {
+      node.fire('dragstart');
+      node.x(200);
+      node.y(100);
+      node.fire('dragend');
+    });
 
     const call = dispatch.mock.calls.find(([action]) => action.type === 'setPlacement');
     expect(call).toBeTruthy();
-    expect(Number.isFinite(call[0].placement.x)).toBe(true);
-    expect(Number.isFinite(call[0].placement.y)).toBe(true);
+    expect(call[0].placement.x).toBe(200);
+    expect(call[0].placement.y).toBe(100);
   });
 
   it('添加提示时派发 addCue 并带上部门', () => {
@@ -136,11 +144,11 @@ describe('StageBlocking', () => {
       />
     );
 
-    expect(screen.getByTestId('actor-老陈#A')).toBeInTheDocument();
-    expect(screen.getByTestId('actor-老陈#B')).toBeInTheDocument();
+    expect(actorNode('老陈#A')).toBeTruthy();
+    expect(actorNode('老陈#B')).toBeTruthy();
   });
 
-  it('切换场次后不复用上一场的拖动坐标，回落到默认位置', () => {
+  it('切换场次后不复用上一场的拖动坐标，回落到默认位置', async () => {
     const twoScenes = [
       { id: 'sc-1', sceneNumber: 1, lines: [] },
       { id: 'sc-2', sceneNumber: 2, lines: [] },
@@ -155,16 +163,17 @@ describe('StageBlocking', () => {
       />
     );
 
-    const svg = screen.getByTestId('stage-canvas');
-    Object.defineProperty(svg, 'getBoundingClientRect', { value: rect });
+    const node = actorNode('老陈');
+    await act(async () => {
+      node.fire('dragstart');
+      node.x(200);
+      node.y(100);
+      node.fire('dragmove');
+      node.fire('dragend');
+    });
 
-    fireEvent.pointerDown(screen.getByTestId('actor-老陈'));
-    fireEvent.pointerMove(svg, { clientX: 200, clientY: 100 });
-    fireEvent.pointerUp(svg);
-
-    const dragged = screen.getByTestId('actor-老陈');
-    expect(Number(dragged.getAttribute('data-x'))).toBe(200);
-    expect(Number(dragged.getAttribute('data-y'))).toBe(100);
+    expect(actorNode('老陈').x()).toBe(200);
+    expect(actorNode('老陈').y()).toBe(100);
 
     rerender(
       <StageBlocking
@@ -175,12 +184,9 @@ describe('StageBlocking', () => {
       />
     );
 
-    const switched = screen.getByTestId('actor-老陈');
-    const switchedX = Number(switched.getAttribute('data-x'));
-    const switchedY = Number(switched.getAttribute('data-y'));
-
-    expect(switchedX).not.toBe(200);
-    expect(switchedY).not.toBe(100);
+    const switched = actorNode('老陈');
+    expect(switched.x()).not.toBe(200);
+    expect(switched.y()).not.toBe(100);
   });
 
   it('场次不匹配任何场时列表为空并说明当前场次无提示', () => {
@@ -261,18 +267,20 @@ describe('StageBlocking', () => {
     expect(call[0].object.sceneNumber).toBe(1);
   });
 
-  it('开启轨迹记录后拖动演员会保存路径点', () => {
+  it('开启轨迹记录后拖动演员会保存路径点', async () => {
     const dispatch = vi.fn();
     render(<StageBlocking characters={characters} dispatch={dispatch} />);
-    const svg = screen.getByTestId('stage-canvas');
-    Object.defineProperty(svg, 'getBoundingClientRect', { value: rect });
     fireEvent.click(screen.getByText('记录走位轨迹'));
-    fireEvent.pointerDown(screen.getByTestId('actor-老陈'));
-    fireEvent.pointerMove(svg, { clientX: 240, clientY: 180 });
-    fireEvent.pointerMove(svg, { clientX: 280, clientY: 210 });
-    fireEvent.pointerUp(svg);
+    const node = actorNode('老陈');
+    await act(async () => {
+      node.fire('dragstart');
+      node.x(240); node.y(180); node.fire('dragmove');
+      node.x(280); node.y(210); node.fire('dragmove');
+      node.fire('dragend');
+    });
 
     const call = dispatch.mock.calls.find(([action]) => action.type === 'addPath');
+    expect(call).toBeTruthy();
     expect(call[0].path.characterId).toBe('老陈');
     expect(call[0].path.points.length).toBeGreaterThan(1);
   });
@@ -360,20 +368,22 @@ describe('StageBlocking', () => {
 
   it('seek 后演员沿记录路径移动到插值位置', () => {
     renderTimeline();
-    const beforeX = Number(screen.getByTestId('actor-老陈').getAttribute('data-x'));
+    const beforeX = actorNode('老陈').x();
 
     fireEvent.change(screen.getByLabelText('时间轴进度'), { target: { value: '165' } });
-    const after = screen.getByTestId('actor-老陈');
-    const afterX = Number(after.getAttribute('data-x'));
+    const afterX = actorNode('老陈').x();
 
     expect(afterX).not.toBe(beforeX);
     expect(afterX).toBe(400);
   });
 
-  it('切换到白模模式后画布加 is-wire 类', () => {
+  it('切换到白模模式后角色底盘改为透明线框', () => {
     renderTimeline();
+    const circle = () => actorNode('老陈').find('Circle')[0];
+    expect(circle().fill()).not.toBe('transparent');
+
     fireEvent.click(screen.getByText('白模', { selector: 'button' }));
-    expect(screen.getByTestId('stage-canvas').classList.contains('is-wire')).toBe(true);
+    expect(circle().fill()).toBe('transparent');
   });
 
   it('渲染六个舞台子 Tab，点击后切换激活态', () => {
@@ -443,14 +453,9 @@ describe('StageBlocking', () => {
         dispatch={dispatch}
       />
     );
-    const svg = screen.getByTestId('stage-canvas');
-    Object.defineProperty(svg, 'getBoundingClientRect', { value: rect });
-
     fireEvent.click(screen.getByLabelText('锁定'));
-    fireEvent.pointerDown(screen.getByTestId('actor-老陈'));
-    fireEvent.pointerMove(svg, { clientX: 200, clientY: 100 });
-    fireEvent.pointerUp(svg);
-
+    const node = actorNode('老陈');
+    expect(node.draggable()).toBe(false);
     expect(dispatch.mock.calls.some(([action]) => action.type === 'setPlacement')).toBe(false);
   });
 });
