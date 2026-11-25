@@ -109,6 +109,34 @@ describe('toHtml', () => {
     expect(html).toContain('class="style-band"');
     expect(html).toContain('#2f6450');
   });
+
+  it('讨论与复盘纪要进入导出 HTML', () => {
+    const html = toHtml({
+      scriptData,
+      plan: {
+        ...plan,
+        discussions: [
+          {
+            id: 'disc-1',
+            title: '灯光讨论',
+            kind: 'text',
+            createdAt: '2026-11-23T10:30:00',
+            transcript: '决定开场改暖光。',
+            summary: {
+              overview: '确定开场灯光',
+              decisions: ['开场改暖光'],
+              todos: [],
+              changes: [],
+              questions: [],
+            },
+          },
+        ],
+      },
+    });
+    expect(html).toContain('讨论与复盘纪要');
+    expect(html).toContain('灯光讨论');
+    expect(html).toContain('开场改暖光');
+  });
 });
 
 describe('toCsv', () => {

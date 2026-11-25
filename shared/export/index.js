@@ -167,6 +167,39 @@ function stagingSection(plan) {
     </section>`;
 }
 
+function discussionSection(discussions) {
+  const list = asArray(discussions);
+  if (!list.length) return '';
+
+  const miniList = (label, items) =>
+    asArray(items).length
+      ? `<p class="muted">${esc(label)}</p><ul class="items">${asArray(items)
+          .map((x) => `<li>${esc(x)}</li>`)
+          .join('')}</ul>`
+      : '';
+
+  const blocks = list.map((d) => {
+    const s = d?.summary && typeof d.summary === 'object' ? d.summary : {};
+    return `
+      <div class="disc">
+        <h3>${esc(d.title || '讨论')}</h3>
+        <p class="muted">${esc(formatNow(d.createdAt))}</p>
+        ${d.transcript ? `<p>${esc(d.transcript)}</p>` : ''}
+        ${s.overview ? `<p>${esc(s.overview)}</p>` : ''}
+        ${miniList('决策', s.decisions)}
+        ${miniList('待办', s.todos)}
+        ${miniList('变更', s.changes)}
+        ${miniList('待确认', s.questions)}
+      </div>`;
+  }).join('');
+
+  return `
+    <section>
+      <h2>讨论与复盘纪要</h2>
+      ${blocks}
+    </section>`;
+}
+
 const STYLE = `
     :root { color-scheme: light; }
     * { box-sizing: border-box; }
@@ -266,6 +299,7 @@ export function toHtml({ title, scriptData, plan, now } = {}) {
     ${sceneSection(scenes)}
     ${briefSection(plan?.briefs)}
     ${stagingSection(plan)}
+    ${discussionSection(plan?.discussions)}
   </main>
 </body>
 </html>`;
