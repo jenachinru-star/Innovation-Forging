@@ -453,44 +453,4 @@ describe('StageBlocking', () => {
 
     expect(dispatch.mock.calls.some(([action]) => action.type === 'setPlacement')).toBe(false);
   });
-
-  it('只读模式下写操作按钮禁用、视图浏览控件仍可用', () => {
-    render(
-      <StageBlocking
-        characters={characters}
-        scenes={scenes}
-        sceneNumber={1}
-        readOnly
-        dispatch={() => {}}
-      />
-    );
-
-    expect(screen.getByText('添加提示').closest('button').disabled).toBe(true);
-    expect(screen.getByText('记录走位轨迹').closest('button').disabled).toBe(true);
-
-    // 视图切换属于浏览，只读下仍可用
-    fireEvent.click(screen.getByText('3D', { selector: 'button' }));
-    expect(screen.getByLabelText('三维白模预览')).toBeInTheDocument();
-  });
-
-  it('只读模式下拖动演员不派发 setPlacement', () => {
-    const dispatch = vi.fn();
-    render(
-      <StageBlocking
-        characters={characters}
-        scenes={scenes}
-        sceneNumber={1}
-        readOnly
-        dispatch={dispatch}
-      />
-    );
-    const svg = screen.getByTestId('stage-canvas');
-    Object.defineProperty(svg, 'getBoundingClientRect', { value: rect });
-
-    fireEvent.pointerDown(screen.getByTestId('actor-老陈'));
-    fireEvent.pointerMove(svg, { clientX: 200, clientY: 100 });
-    fireEvent.pointerUp(svg);
-
-    expect(dispatch.mock.calls.some(([action]) => action.type === 'setPlacement')).toBe(false);
-  });
 });

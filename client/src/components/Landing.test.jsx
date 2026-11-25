@@ -22,24 +22,17 @@ describe('Landing 封面', () => {
     vi.clearAllMocks();
   });
 
-  it('未登录展示品牌、登录表单与只读演示入口', () => {
+  it('未登录展示品牌、登录表单与注册入口', () => {
     render(<Landing />);
     expect(screen.getByRole('heading', { name: '开排' })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: '登录' })).toHaveLength(2);
-    expect(screen.getByRole('button', { name: /不登录，先看只读演示/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /注册并开始/ })).toBeInTheDocument();
   });
 
   it('切换到注册标签', () => {
     render(<Landing />);
     fireEvent.click(screen.getByRole('button', { name: '注册' }));
     expect(screen.getByRole('button', { name: '注册并进入' })).toBeInTheDocument();
-  });
-
-  it('点只读演示触发 onTryDemo', () => {
-    const onTryDemo = vi.fn();
-    render(<Landing onTryDemo={onTryDemo} />);
-    fireEvent.click(screen.getByRole('button', { name: '不登录，先看只读演示' }));
-    expect(onTryDemo).toHaveBeenCalledTimes(1);
   });
 
   it('登录失败显示错误且不触发 onAuth', async () => {

@@ -30,7 +30,6 @@ export default function ResultTabs({
   briefs = [],
   plan,
   dispatch,
-  readOnly = false,
   activeTab,
   onTabChange,
   showTabs = true,
@@ -156,7 +155,6 @@ export default function ResultTabs({
               sceneNumber={stageSceneNumber}
               plan={plan}
               dispatch={dispatch}
-              readOnly={readOnly}
             />
           </>
         )}

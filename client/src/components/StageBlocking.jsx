@@ -164,7 +164,6 @@ export default function StageBlocking({
   sceneNumber = 1,
   plan,
   dispatch,
-  readOnly = false,
 }) {
   const svgRef = useRef(null);
   const stage3dRef = useRef(null);
@@ -299,7 +298,7 @@ export default function StageBlocking({
   }
 
   function handlePointerDown(event, actor, position) {
-    if (locked || readOnly) return;
+    if (locked) return;
     event.preventDefault?.();
     dragRef.current = {
       kind: 'actor',
@@ -316,7 +315,7 @@ export default function StageBlocking({
   }
 
   function handleObjectPointerDown(event, object, position) {
-    if (locked || readOnly) return;
+    if (locked) return;
     event.preventDefault?.();
     setSelectedObjectId(object.id);
     dragRef.current = {
@@ -475,7 +474,6 @@ export default function StageBlocking({
       label: '锁定',
       onClick: () => setLocked((v) => !v),
       active: locked,
-      disabled: readOnly,
     },
   ];
 
@@ -498,7 +496,6 @@ export default function StageBlocking({
           type="button"
           className={recordPath ? 'is-active' : ''}
           aria-pressed={recordPath}
-          disabled={readOnly}
           onClick={() => setRecordPath((value) => !value)}
         >
           记录走位轨迹
@@ -583,7 +580,6 @@ export default function StageBlocking({
                 <button
                   type="button"
                   className="btn-ghost btn-small"
-                  disabled={readOnly}
                   onClick={handleAddObject}
                 >
                   放入舞台
@@ -892,7 +888,6 @@ export default function StageBlocking({
             <button
               type="button"
               onClick={() => setShowForm((value) => !value)}
-              disabled={readOnly}
               className="btn-seal px-3 py-1 text-xs"
             >
               添加提示
@@ -958,7 +953,7 @@ export default function StageBlocking({
               <button
                 type="button"
                 onClick={handleAddCue}
-                disabled={readOnly || !content.trim()}
+                disabled={!content.trim()}
                 className="btn-seal"
               >
                 确认添加
@@ -991,7 +986,6 @@ export default function StageBlocking({
                         <select
                           aria-label={`提示状态 ${cue.content}`}
                           value={cue.status || 'draft'}
-                          disabled={readOnly}
                           onChange={(event) =>
                             dispatch?.({ type: 'updateCue', id: cue.id, patch: { status: event.target.value } })
                           }
@@ -1004,7 +998,6 @@ export default function StageBlocking({
                         <button
                           type="button"
                           onClick={() => dispatch?.({ type: 'removeCue', id: cue.id })}
-                          disabled={readOnly}
                           className="text-action"
                         >
                           删除

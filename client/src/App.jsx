@@ -16,7 +16,7 @@ import {
   removeProject,
 } from './api/projects.js';
 import { findImpacts } from '@director/shared/rules/impact.js';
-import { demoProject } from './fixtures/demoProject.js';
+import OnboardingGuide, { hasSeenOnboarding } from './components/OnboardingGuide.jsx';
 
 const NAV_ITEMS = [
   { id: 'overview', mark: '00', label: '项目总览', phase: '作品' },
@@ -108,9 +108,10 @@ function StepBar({ current, reachable, onJump }) {
 
 export default function App() {
   const [booted, setBooted] = useState(false);
-  const [view, setView] = useState('cover'); // cover | workbench | demo
+  const [view, setView] = useState('cover'); // cover | workbench
   const [hydrated, setHydrated] = useState(false);
   const [user, setUser] = useState(null);
+  const [showGuide, setShowGuide] = useState(false);
 
   const [step, setStep] = useState('input');
   const [material, setMaterial] = useState('');
@@ -131,7 +132,6 @@ export default function App() {
   const [error, setError] = useState('');
   const [saveStatus, setSaveStatus] = useState('saved');
 
-  const readOnly = view === 'demo';
   const projectName = plan?.name || '我的舞台方案';
   const sceneCount = Array.isArray(scriptData?.scenes) ? scriptData.scenes.length : 0;
   const unresolved = plan?.impacts?.filter((item) => item.status === 'open').length || 0;
@@ -178,8 +178,6 @@ export default function App() {
   // 自动保存：工作台且已恢复后，debounce 写入后端
   useEffect(() => {
     if (view !== 'workbench' || !hydrated) return undefined;
-    // 纵深防御：内置演示作品绝不写入用户账号
-    if (projectId === demoProject.id) return undefined;
     setSaveStatus('saving');
     const timer = setTimeout(() => {
       const record = {
@@ -326,16 +324,13 @@ export default function App() {
     setUser(u);
     const list = await listProjects();
     setProjects(list);
-    // 以服务端数据为准：有作品恢复最新一条，否则给干净空白项目，避免 demo 残留
+    // 以服务端数据为准：有作品恢复最新一条，否则给干净空白项目
     if (list[0]) applyRecord(list[0]);
     else resetProject();
     setHydrated(true);
     setView('workbench');
-  }
-
-  function handleTryDemo() {
-    applyRecord(demoProject);
-    setView('demo');
+    // 首次登录且未看过指引时弹出新手指引
+    if (!hasSeenOnboarding()) setShowGuide(true);
   }
 
   function handleResume() {
@@ -351,8 +346,6 @@ export default function App() {
   }
 
   function handleBackToCover() {
-    // 从只读演示退出时清掉示例数据；工作台返回则保留已保存内容
-    if (view === 'demo') resetProject();
     setView('cover');
   }
 
@@ -485,7 +478,6 @@ export default function App() {
       <Landing
         user={user}
         onAuth={handleAuth}
-        onTryDemo={handleTryDemo}
         onResume={handleResume}
         onLogout={handleLogout}
       />
@@ -511,7 +503,6 @@ export default function App() {
             className="project-context-name"
             aria-label="作品名"
             value={projectName}
-            disabled={readOnly}
             onChange={(event) => dispatch({ type: 'renamePlan', name: event.target.value })}
             onBlur={(event) => {
               if (!event.currentTarget.value.trim()) {
@@ -519,45 +510,38 @@ export default function App() {
               }
             }}
           />
-          {!readOnly && (
-            <button
-              type="button"
-              className="project-switch-button"
-              aria-label="打开作品库"
-              onClick={() => setLibraryOpen(true)}
-            >
-              ⌄
-            </button>
-          )}
+          <button
+            type="button"
+            className="project-switch-button"
+            aria-label="打开作品库"
+            onClick={() => setLibraryOpen(true)}
+          >
+            ⌄
+          </button>
           <span className="project-context-version">剧本工作版</span>
         </div>
         <div className="topbar-actions">
           <span className={`save-state is-${saveStatus}`}>
             <i />
-            {readOnly && '只读演示'}
-            {!readOnly && saveStatus === 'saving' && '正在保存'}
-            {!readOnly && saveStatus === 'saved' && '本地已保存'}
-            {!readOnly && saveStatus === 'error' && '保存失败'}
+            {saveStatus === 'saving' && '正在保存'}
+            {saveStatus === 'saved' && '本地已保存'}
+            {saveStatus === 'error' && '保存失败'}
           </span>
-          {!readOnly && (
-            <>
-              <button
-                type="button"
-                className="btn-ghost btn-small"
-                onClick={() => setLibraryOpen(true)}
-              >
-                作品库
-              </button>
-              <button
-                type="button"
-                className="btn-primary btn-small"
-                disabled={!scriptData}
-                onClick={() => navigate('export')}
-              >
-                导出材料
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            className="btn-ghost btn-small"
+            onClick={() => setLibraryOpen(true)}
+          >
+            作品库
+          </button>
+          <button
+            type="button"
+            className="btn-primary btn-small"
+            disabled={!scriptData}
+            onClick={() => navigate('export')}
+          >
+            导出材料
+          </button>
         </div>
       </header>
 
@@ -573,54 +557,33 @@ export default function App() {
           <nav aria-label="项目工作区" className="phase-nav">
             {navGroupsMarkup()}
           </nav>
-          {!readOnly && (
-            <button
-              type="button"
-              className="rail-library-link"
-              onClick={() => setLibraryOpen(true)}
-            >
-              <span>打开本地作品库</span>
-              <span aria-hidden="true">↗</span>
-            </button>
-          )}
+          <button
+            type="button"
+            className="rail-library-link"
+            onClick={() => setLibraryOpen(true)}
+          >
+            <span>打开本地作品库</span>
+            <span aria-hidden="true">↗</span>
+          </button>
           <div className="rail-account">
             <span className="rail-kicker">当前身份</span>
-            <b className="rail-account-name">
-              {readOnly ? '体验用户（只读）' : user?.username}
-            </b>
+            <b className="rail-account-name">{user?.username}</b>
             <button type="button" className="rail-account-link" onClick={handleBackToCover}>
               返回封面
             </button>
-            {!readOnly && (
-              <button type="button" className="rail-account-link" onClick={handleLogout}>
-                退出登录
-              </button>
-            )}
+            <button type="button" className="rail-account-link" onClick={handleLogout}>
+              退出登录
+            </button>
           </div>
         </aside>
 
         <main id="workspace-main" className="workspace-main">
-          {readOnly && (
-            <div className="demo-banner">
-              <span>只读演示：可浏览各模块，注册/登录后即可编辑与保存</span>
-              <button type="button" onClick={handleBackToCover}>
-                去注册/登录
-              </button>
-            </div>
-          )}
           <StepBar
             current={step === 'input' ? 0 : step === 'result' ? 2 : 1}
-            reachable={
-              readOnly
-                ? [false, false, false]
-                : [true, Boolean(scriptText), Boolean(scriptData)]
-            }
+            reachable={[true, Boolean(scriptText), Boolean(scriptData)]}
             onJump={jumpToStep}
           />
-          <fieldset
-            className="workspace-paper"
-            disabled={readOnly && !(step === 'result' && activeNav === 'stage')}
-          >
+          <fieldset className="workspace-paper">
             {step === 'input' && (
               <InputStep
                 onReady={handleReady}
@@ -672,7 +635,6 @@ export default function App() {
                   briefs={plan?.briefs ?? []}
                   plan={plan}
                   dispatch={dispatch}
-                  readOnly={readOnly}
                   activeTab={resultTab}
                   onTabChange={(tab) => {
                     setResultTab(tab);
@@ -707,6 +669,8 @@ export default function App() {
         onDelete={handleDeleteProject}
         onDuplicate={handleDuplicateProject}
       />
+
+      {showGuide && <OnboardingGuide onClose={() => setShowGuide(false)} />}
     </div>
   );
 

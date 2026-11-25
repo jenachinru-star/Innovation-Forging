@@ -3,13 +3,24 @@ import { login, register } from '../api/auth.js';
 
 const NAV_ITEMS = ['创作', '编排', '排练', '资料库', '灵感集'];
 
-export default function Landing({ user, onAuth, onTryDemo, onResume, onLogout }) {
+export default function Landing({ user, onAuth, onResume, onLogout }) {
   const [mode, setMode] = useState('login'); // login | register
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const signedIn = Boolean(user);
+
+  // 未登录主按钮：切到注册并滚动、聚焦到登录卡片
+  function goRegister() {
+    setMode('register');
+    const card = document.querySelector('.landing-auth-card');
+    card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    window.setTimeout(
+      () => document.querySelector('.landing-auth-card input')?.focus(),
+      300
+    );
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -60,8 +71,8 @@ export default function Landing({ user, onAuth, onTryDemo, onResume, onLogout })
                 进入工作台 →
               </button>
             ) : (
-              <button type="button" className="btn-seal landing-main-cta" onClick={onTryDemo}>
-                一键体验 →
+              <button type="button" className="btn-seal landing-main-cta" onClick={goRegister}>
+                注册并开始 →
               </button>
             )}
           </div>
@@ -143,9 +154,6 @@ export default function Landing({ user, onAuth, onTryDemo, onResume, onLogout })
                 </button>
               </form>
 
-              <button type="button" className="text-action landing-guest" onClick={onTryDemo}>
-                不登录，先看只读演示
-              </button>
               <p className="landing-local-note">
                 账号与作品由本地服务端保存，清除服务数据将丢失。
               </p>

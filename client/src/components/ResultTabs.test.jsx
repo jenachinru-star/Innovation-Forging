@@ -112,6 +112,10 @@ describe('ResultTabs', () => {
       />
     );
     fireEvent.click(screen.getByText('视觉制作'));
+    // 默认进入视觉圣经
+    expect(screen.getByText('视觉风格')).toBeInTheDocument();
+    // 切到生成工作台
+    fireEvent.click(screen.getByRole('tab', { name: '生成工作台' }));
     expect(screen.getByLabelText('画面描述')).toBeInTheDocument();
     expect(screen.getByText('生成').closest('button')).toBeInTheDocument();
     expect(screen.getByTestId('visual-card-scene-livingroom')).toBeInTheDocument();
