@@ -1,3 +1,5 @@
+import { uid } from './id.js';
+
 function toStr(v) {
   return typeof v === 'string' ? v : v == null ? '' : String(v);
 }
@@ -50,7 +52,7 @@ export function createEmptyScriptData() {
 export function normalizeLine(raw, index = 0) {
   const r = raw && typeof raw === 'object' ? raw : {};
   return {
-    id: toStr(r.id) || `ln-${index + 1}`,
+    id: toStr(r.id) || uid(),
     speaker: toStr(r.speaker),
     text: toStr(r.text),
     offset: Number.isFinite(r.offset) ? r.offset : null,
@@ -61,7 +63,7 @@ export function normalizeScene(raw) {
   const r = raw && typeof raw === 'object' ? raw : {};
   const sceneNumber = toNum(r.sceneNumber);
   return {
-    id: toStr(r.id) || `sc-${sceneNumber}`,
+    id: toStr(r.id) || uid(),
     sceneNumber,
     title: toStr(r.title),
     location: toStr(r.location),
@@ -82,7 +84,7 @@ export function normalizeCharacter(raw) {
   const r = raw && typeof raw === 'object' ? raw : {};
   const name = toStr(r.name);
   return {
-    id: toStr(r.id) || `ch-${name}`,
+    id: toStr(r.id) || uid(),
     name,
     description: toStr(r.description),
     aliases: toStrArray(r.aliases),
@@ -92,7 +94,7 @@ export function normalizeCharacter(raw) {
 export function normalizeRelationship(raw) {
   const r = raw && typeof raw === 'object' ? raw : {};
   return {
-    id: toStr(r.id),
+    id: toStr(r.id) || uid(),
     from: toStr(r.from),
     to: toStr(r.to),
     relation: toStr(r.relation),
@@ -104,7 +106,7 @@ export function normalizeRelationship(raw) {
 export function normalizeAct(raw) {
   const r = raw && typeof raw === 'object' ? raw : {};
   return {
-    id: toStr(r.id),
+    id: toStr(r.id) || uid(),
     actNumber: toNum(r.actNumber),
     title: toStr(r.title),
     sceneIds: toStrArray(r.sceneIds),

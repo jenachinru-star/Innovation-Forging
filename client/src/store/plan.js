@@ -36,12 +36,11 @@ function patchById(list, id, patch) {
   return asArray(list).map((item) => (item && item.id === id ? { ...item, ...asObject(patch) } : item));
 }
 
-function toSceneNumber(value, fallbackId) {
+function toSceneNumber(value) {
   if (value != null && value !== '' && Number.isFinite(Number(value))) {
     return Number(value);
   }
-  const match = fallbackId == null ? null : String(fallbackId).match(/(\d+)/);
-  return match ? Number(match[1]) : null;
+  return null;
 }
 
 function normalizeStaging(staging) {
@@ -139,7 +138,7 @@ export function planReducer(state, action) {
             id: cue.id || nextId('cue', cues),
             department: cue.department || 'lighting',
             sceneId,
-            sceneNumber: toSceneNumber(cue.sceneNumber, sceneId),
+            sceneNumber: toSceneNumber(cue.sceneNumber),
             anchor: cue.anchor || null,
             trigger: cue.trigger || { type: 'free', quote: '', offset: null },
             content: cue.content || '',
@@ -173,7 +172,7 @@ export function planReducer(state, action) {
             id: brief.id || nextId('brief', briefs),
             department: brief.department || 'lighting',
             sceneId,
-            sceneNumber: toSceneNumber(brief.sceneNumber, sceneId),
+            sceneNumber: toSceneNumber(brief.sceneNumber),
             cueId: brief.cueId ?? null,
             original: brief.original || '',
             items: asArray(brief.items),
@@ -233,7 +232,7 @@ export function planReducer(state, action) {
               id: object.id || nextId('object', staging.objects),
               kind: object.kind || 'table',
               label: object.label || '道具',
-              sceneNumber: toSceneNumber(object.sceneNumber, object.sceneNumber),
+              sceneNumber: toSceneNumber(object.sceneNumber),
               x: Number.isFinite(object.x) ? object.x : 400,
               y: Number.isFinite(object.y) ? object.y : 260,
               rotation: Number.isFinite(object.rotation) ? object.rotation : 0,

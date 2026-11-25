@@ -30,14 +30,14 @@ describe('planReducer', () => {
     expect(state.cues).toHaveLength(0);
   });
 
-  it('addCue 缺少 sceneNumber 时从 sceneId 推导，sceneId 缺失时为空串', () => {
+  it('addCue 缺少 sceneNumber 时不从 sceneId 反推编号，sceneNumber 为 null', () => {
     const state = createPlan('stage', '方案');
     const next = planReducer(state, {
       type: 'addCue',
       cue: { department: 'music', sceneId: 'sc-7', content: '音乐起' },
     });
 
-    expect(next.cues[0].sceneNumber).toBe(7);
+    expect(next.cues[0].sceneNumber).toBeNull();
     expect(next.cues[0].sceneId).toBe('sc-7');
 
     const withoutScene = planReducer(state, {

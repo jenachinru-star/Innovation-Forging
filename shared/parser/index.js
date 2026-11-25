@@ -1,4 +1,5 @@
 import { normalizeScriptData } from '../index.js';
+import { uid } from '../id.js';
 
 const ACT_RE = /^第[一二三四五六七八九十百\d]+幕/;
 const SCENE_RE = /^第[一二三四五六七八九十百\d]+场\s*(.*)$/;
@@ -165,7 +166,7 @@ export function parseScriptOffline(text) {
         actCounter = actNumber;
       }
       const title = t.slice(actMatch[0].length).trim();
-      currentAct = { id: `act-${actNumber}`, actNumber, title, sceneIds: [] };
+      currentAct = { id: uid(), actNumber, title, sceneIds: [] };
       acts.push(currentAct);
       continue;
     }
@@ -183,7 +184,7 @@ export function parseScriptOffline(text) {
       usedSceneNumbers.add(sceneNumber);
       const location = sceneMatch[1].trim();
       currentScene = {
-        id: `sc-${sceneNumber}`,
+        id: uid(),
         sceneNumber,
         title: t,
         location,
@@ -227,7 +228,7 @@ export function parseScriptOffline(text) {
         currentScene._speakers.push(name);
       }
       currentScene.lines.push({
-        id: `ln-${currentScene.lines.length + 1}`,
+        id: uid(),
         speaker: name,
         text: dialogue,
         offset: line.start,

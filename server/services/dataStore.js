@@ -2,6 +2,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { migrateScriptDataIds, remapSceneReferences } from '@director/shared/migration/ids.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_FILE = path.resolve(__dirname, '../data/store.json');
@@ -12,6 +13,37 @@ function emptyData() {
     sessions: Object.create(null),
     projects: Object.create(null),
   };
+}
+
+/**
+ * 一次性把项目内剧本层的旧临时 id 迁移为稳定 UUID，并同步 plan 场景引用。
+ * 幂等：已是 UUID 的记录不重复生成。返回 { record, changed }。
+ */
+function migrateProjectIds(record) {
+  if (!record || typeof record !== 'object') return { record, changed: false };
+  let changed = false;
+  const next = { ...record };
+
+  if (record.scriptData && typeof record.scriptData === 'object') {
+    const { data, maps } = migrateScriptDataIds(record.scriptData);
+    next.scriptData = data;
+    const hasLegacy =
+      Object.keys(maps.scenes).length > 0 ||
+      Object.keys(maps.characters).length > 0 ||
+      Object.keys(maps.acts).length > 0;
+    if (hasLegacy) changed = true;
+    if (record.plan) next.plan = remapSceneReferences(record.plan, maps.scenes);
+  }
+
+  if (Array.isArray(record.scriptVersions)) {
+    next.scriptVersions = record.scriptVersions.map((version) => {
+      if (!version || !version.data) return version;
+      const { data } = migrateScriptDataIds(version.data);
+      return { ...version, data };
+    });
+  }
+
+  return { record: next, changed };
 }
 
 export function createStore(filePath = DEFAULT_FILE) {
@@ -33,6 +65,18 @@ export function createStore(filePath = DEFAULT_FILE) {
       if (err.code !== 'ENOENT') throw err;
       data = emptyData();
     }
+
+    // 加载时一次性迁移剧本层旧临时 id 为稳定 UUID，有变更则回写
+    let migrated = false;
+    for (const [id, record] of Object.entries(data.projects)) {
+      const { record: next, changed } = migrateProjectIds(record);
+      if (changed) {
+        data.projects[id] = next;
+        migrated = true;
+      }
+    }
+    if (migrated) await persist();
+
     loaded = true;
   }
 

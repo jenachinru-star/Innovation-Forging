@@ -54,7 +54,8 @@ describe('ScriptData v2 缺省字段', () => {
     expect(out.acts).toEqual([]);
     expect(out.meta).toEqual({ source: 'upload', importedAt: '', parser: 'offline' });
     expect(out.meta.parser).toBe('offline');
-    expect(out.scenes[0].id).toBe('sc-1');
+    expect(typeof out.scenes[0].id).toBe('string');
+    expect(out.scenes[0].id).toBeTruthy();
     expect(out.scenes[0].presentCharacters).toEqual([]);
     expect(out.scenes[0].stageDirections).toEqual([]);
     expect(out.scenes[0].rawRange).toBeNull();
@@ -65,9 +66,11 @@ describe('ScriptData v2 缺省字段', () => {
     const out = normalizeScriptData({
       acts: [{ actNumber: '1', title: '第一幕', sceneIds: ['sc-1', ''] }],
     });
-    expect(out.acts).toEqual([
-      { id: '', actNumber: 1, title: '第一幕', sceneIds: ['sc-1'] },
-    ]);
+    expect(out.acts[0].actNumber).toBe(1);
+    expect(out.acts[0].title).toBe('第一幕');
+    expect(out.acts[0].sceneIds).toEqual(['sc-1']);
+    expect(typeof out.acts[0].id).toBe('string');
+    expect(out.acts[0].id).toBeTruthy();
   });
 
   it('meta 已传入的合法字段保留，缺失字段补齐', () => {
@@ -99,7 +102,8 @@ describe('normalizeScene', () => {
       rawRange: { start: 10, end: 20 },
       actId: 'act-1',
     });
-    expect(out.id).toBe('sc-3');
+    expect(typeof out.id).toBe('string');
+    expect(out.id).toBeTruthy();
     expect(out.presentCharacters).toEqual(['阿岚']);
     expect(out.stageDirections).toEqual(['灯亮']);
     expect(out.rawRange).toEqual({ start: 10, end: 20 });
@@ -126,11 +130,12 @@ describe('normalizeScene', () => {
         { speaker: '阿岚', text: '无偏移', offset: 'x' },
       ],
     });
-    expect(out.lines).toEqual([
-      { id: 'ln-1', speaker: '老陈', text: '你终于回来了。', offset: null },
-      { id: 'ln-2', speaker: '阿岚', text: '爸，我回来了。', offset: 42 },
-      { id: 'ln-3', speaker: '阿岚', text: '无偏移', offset: null },
-    ]);
+    expect(out.lines.map((l) => l.speaker)).toEqual(['老陈', '阿岚', '阿岚']);
+    expect(out.lines.map((l) => l.text)).toEqual(['你终于回来了。', '爸，我回来了。', '无偏移']);
+    expect(out.lines.map((l) => l.offset)).toEqual([null, 42, null]);
+    const lineIds = out.lines.map((l) => l.id);
+    expect(lineIds.every((id) => typeof id === 'string' && id)).toBe(true);
+    expect(new Set(lineIds).size).toBe(3);
   });
 
   it('lines 缺省为空数组，不抛错', () => {
@@ -141,12 +146,12 @@ describe('normalizeScene', () => {
 
 describe('normalizeCharacter', () => {
   it('补 id 与 aliases', () => {
-    expect(normalizeCharacter({ name: '老陈' })).toEqual({
-      id: 'ch-老陈',
-      name: '老陈',
-      description: '',
-      aliases: [],
-    });
+    const character = normalizeCharacter({ name: '老陈' });
+    expect(character.name).toBe('老陈');
+    expect(character.description).toBe('');
+    expect(character.aliases).toEqual([]);
+    expect(typeof character.id).toBe('string');
+    expect(character.id).toBeTruthy();
   });
 
   it('显式 id 与 aliases 归一化', () => {
@@ -170,14 +175,13 @@ describe('normalizeRelationship', () => {
       relation: 'friends',
       evidence: { sceneId: 'sc-1', quote: '你好' },
     });
-    expect(out).toEqual({
-      id: '',
-      from: 'a',
-      to: 'b',
-      relation: 'friends',
-      needsReview: false,
-      evidence: { sceneId: 'sc-1', quote: '你好' },
-    });
+    expect(out.from).toBe('a');
+    expect(out.to).toBe('b');
+    expect(out.relation).toBe('friends');
+    expect(out.needsReview).toBe(false);
+    expect(out.evidence).toEqual({ sceneId: 'sc-1', quote: '你好' });
+    expect(typeof out.id).toBe('string');
+    expect(out.id).toBeTruthy();
   });
 
   it('evidence 缺省为 null', () => {

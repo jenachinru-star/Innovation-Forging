@@ -13,6 +13,8 @@
     "./rules/impact.js": "./rules/impact.js",
     "./samples/oneAct.js": "./samples/oneAct.js",
     "./export/index.js": "./export/index.js",
-    "./constants/status.js": "./constants/status.js"
+    "./constants/status.js": "./constants/status.js",
+    "./id.js": "./id.js",
+    "./migration/ids.js": "./migration/ids.js"
   }
 }

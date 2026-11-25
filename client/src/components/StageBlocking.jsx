@@ -447,7 +447,7 @@ export default function StageBlocking({
       note: '',
       anchor: {
         kind: quoteText ? 'line' : actionText ? 'action' : 'scene',
-        sceneId: `sc-${sceneNumber}`,
+        sceneId: currentScene?.id || '',
         quote: quoteText || actionText,
       },
     };
