@@ -29,6 +29,9 @@ import {
   storedPosition,
   pointAtProgress,
 } from '../stage/geometry.js';
+import { getScene, hasScene, sceneLines, actorsFor } from '../stage/actors.js';
+import StageCanvas from '../stage/StageCanvas.jsx';
+import { mergeStageSettings } from '../stage/stageSettings.js';
 
 const DURATION = 330; // 时间轴总时长（秒），对齐设计稿 05:30
 
@@ -62,69 +65,6 @@ function formatTime(sec) {
   return `${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`;
 }
 
-function normalizeCharacters(characters) {
-  const list = Array.isArray(characters) ? characters : [];
-  return list
-    .map((item) => {
-      if (!item) return null;
-      if (typeof item === 'string') return { id: `ch-${item}`, name: item };
-      const name = item.name || item.id || '';
-      if (!name) return null;
-      return { id: item.id || `ch-${name}`, name };
-    })
-    .filter(Boolean);
-}
-
-function getScene(scenes, sceneNumber) {
-  const list = Array.isArray(scenes) ? scenes : [];
-  if (list.length === 0) return null;
-  return list.find((scene) => Number(scene?.sceneNumber) === Number(sceneNumber)) || list[0];
-}
-
-function hasScene(scenes, sceneNumber) {
-  const list = Array.isArray(scenes) ? scenes : [];
-  return list.some((scene) => Number(scene?.sceneNumber) === Number(sceneNumber));
-}
-
-function sceneLines(scenes, sceneNumber) {
-  const scene = getScene(scenes, sceneNumber);
-  const raw = scene?.lines ?? scene?.dialogue ?? scene?.quotes ?? [];
-  const list = Array.isArray(raw) ? raw : [];
-  const seen = new Set();
-  const lines = [];
-  for (const item of list) {
-    const speaker = typeof item === 'object' && item ? String(item.speaker ?? '').trim() : '';
-    const text = String(
-      typeof item === 'string' ? item : (item?.text ?? item?.quote ?? item?.content ?? '')
-    ).trim();
-    if (!text || seen.has(text)) continue;
-    seen.add(text);
-    lines.push({ speaker, text });
-  }
-  return lines;
-}
-
-function actorsFor(characters, cast) {
-  const base = normalizeCharacters(characters);
-  const castMap = cast && typeof cast === 'object' && !Array.isArray(cast) ? cast : {};
-  const actors = [];
-
-  for (const character of base) {
-    const players = Array.isArray(castMap[character.name]) ? castMap[character.name] : [];
-    if (players.length > 1) {
-      players.forEach((player, index) => {
-        const suffix = String.fromCharCode(65 + index);
-        const characterId = `${character.name}#${suffix}`;
-        actors.push({ characterId, label: `${character.name}（${suffix}）` });
-      });
-    } else {
-      actors.push({ characterId: character.name, label: character.name });
-    }
-  }
-
-  return actors;
-}
-
 export default function StageBlocking({
   characters,
   scenes,
@@ -133,6 +73,7 @@ export default function StageBlocking({
   dispatch,
 }) {
   const svgRef = useRef(null);
+  const konvaStageRef = useRef(null);
   const stage3dRef = useRef(null);
   const dragRef = useRef(null);
   const pathRef = useRef([]);
@@ -426,6 +367,40 @@ export default function StageBlocking({
   }
 
   const isWire = viewMode === 'wire';
+
+  // B3 临时开关：默认仍走旧 SVG；B4 替换为读取 localStorage 的 feature flag。
+  const useKonvaCanvas = false;
+
+  // 节点画布的展示数据：位置/尺寸在此算好，StageCanvas 只负责纯渲染。
+  const konvaActors = actors.map((actor, index) => {
+    const position = renderPosition(actor, index);
+    const baseName = actor.characterId.split('#')[0];
+    return {
+      id: actor.characterId,
+      label: actor.label,
+      x: position.x,
+      y: position.y,
+      imageUrl: CHARACTER_IMAGE[baseName],
+      dragging: draggingId === actor.characterId,
+    };
+  });
+  const konvaObjects = sceneObjects.map((object) => {
+    const position = objectPositionFor(object);
+    const scale = object.scale || 1;
+    return {
+      id: object.id,
+      label: object.label,
+      kind: object.kind,
+      x: position.x,
+      y: position.y,
+      width: 54 * scale * (object.kind === 'table' ? 1.5 : 1),
+      height: 30 * scale,
+      rotation: object.rotation,
+      selected: selectedObjectId === object.id,
+    };
+  });
+  const stageSettings = mergeStageSettings(plan?.staging?.stage);
+
   const viewButtons = [
     { id: 'plan', label: '2D' },
     { id: '3d', label: '3D' },
@@ -622,6 +597,19 @@ export default function StageBlocking({
                   </div>
                   <p className="stage-3d-caption">灯光为氛围预览 · 拖动演员调整平面位置</p>
                 </div>
+              ) : useKonvaCanvas ? (
+                <StageCanvas
+                  actors={konvaActors}
+                  objects={konvaObjects}
+                  paths={scenePaths}
+                  draftPoints={pathDraft}
+                  settings={stageSettings}
+                  isWire={isWire}
+                  focusPath={stageTab === 'block'}
+                  stageEditable={false}
+                  stageRef={konvaStageRef}
+                  locked={locked}
+                />
               ) : (
                 <svg
                   ref={svgRef}

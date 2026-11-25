@@ -6,6 +6,7 @@ import {
   ASSET_STATUS,
   DISCUSSION_STATUS,
 } from '@director/shared/constants/status.js';
+import { mergeStageSettings, normalizeRect } from '../stage/stageSettings.js';
 
 export function createPlan(type, name) {
   return createEmptyProductionPlan(type, name);
@@ -46,7 +47,7 @@ function toSceneNumber(value) {
 function normalizeStaging(staging) {
   const base = asObject(staging);
   return {
-    stage: base.stage ?? null,
+    stage: mergeStageSettings(base.stage),
     placements: asArray(base.placements),
     objects: asArray(base.objects),
     paths: asArray(base.paths),
@@ -265,6 +266,35 @@ export function planReducer(state, action) {
           objects: staging.objects.filter((object) => object?.id !== action.id),
         },
       };
+    }
+
+    case 'updateStageSettings': {
+      const staging = normalizeStaging(current.staging);
+      const prev = staging.stage;
+      const patch = asObject(action.patch);
+      const next = { ...prev };
+
+      if (patch.frame) next.frame = normalizeRect(patch.frame, prev.frame);
+
+      if (patch.doors) {
+        const doorPatch = asObject(patch.doors);
+        next.doors = {
+          up: doorPatch.up ? normalizeRect(doorPatch.up, prev.doors.up) : prev.doors.up,
+          down: doorPatch.down ? normalizeRect(doorPatch.down, prev.doors.down) : prev.doors.down,
+        };
+      }
+
+      if (patch.grid) {
+        const gridPatch = asObject(patch.grid);
+        const spacing = Number(gridPatch.spacing);
+        next.grid = {
+          showGrid:
+            gridPatch.showGrid === undefined ? prev.grid.showGrid : gridPatch.showGrid === true,
+          spacing: Number.isFinite(spacing) && spacing > 0 ? spacing : prev.grid.spacing,
+        };
+      }
+
+      return { ...current, staging: { ...staging, stage: next } };
     }
 
     case 'addRehearsal': {
