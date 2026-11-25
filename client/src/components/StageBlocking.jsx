@@ -388,6 +388,47 @@ export default function StageBlocking({
     setSelectedObjectId(object.id);
   }
 
+  // 舞台框/上下场口拖拽结束，回写 plan.stage。
+  function handleFrameDragEnd(event) {
+    dispatch?.({
+      type: 'updateStageSettings',
+      patch: {
+        frame: {
+          x: clamp(event.target.x(), 0, VIEW_W),
+          y: clamp(event.target.y(), 0, VIEW_H),
+        },
+      },
+    });
+  }
+
+  function handleDoorDragEnd(which, event) {
+    dispatch?.({
+      type: 'updateStageSettings',
+      patch: {
+        doors: {
+          [which]: {
+            x: clamp(event.target.x(), 0, VIEW_W),
+            y: clamp(event.target.y(), 0, VIEW_H),
+          },
+        },
+      },
+    });
+  }
+
+  // 导出当前画布为 2 倍像素 PNG。
+  function handleExportPng() {
+    const stage = konvaStageRef.current;
+    if (!stage) return;
+    const url = stage.toDataURL({ pixelRatio: 2 });
+    const link = document.createElement('a');
+    const safeName = String(plan?.name || '舞台').replace(/[\\/:*?"<>|]/g, '_');
+    link.href = url;
+    link.download = `${safeName}-场景${sceneNumber}.png`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+
   function handleAddObject() {
     const labels = { table: '桌', chair: '椅', entrance: '门口', prop: '道具' };
     dispatch?.({
@@ -484,7 +525,19 @@ export default function StageBlocking({
     { id: 'wire', label: '白模' },
   ];
   const toolButtons = [
-    { icon: Grid3x3, label: '网格', onClick: () => setStageTab('stage'), disabled: false },
+    {
+      icon: Grid3x3,
+      label: '网格',
+      onClick: () => {
+        setStageTab('stage');
+        dispatch?.({
+          type: 'updateStageSettings',
+          patch: { grid: { showGrid: !stageSettings.grid.showGrid } },
+        });
+      },
+      active: stageSettings.grid.showGrid,
+      disabled: false,
+    },
     { icon: Box, label: '对象', onClick: () => setStageTab('prop'), disabled: false },
     { icon: ListIcon, label: '列表', onClick: () => setShowForm((v) => !v), disabled: false },
     { icon: Pencil, label: '编辑', onClick: () => setShowForm((v) => !v), disabled: false },
@@ -528,6 +581,16 @@ export default function StageBlocking({
           onClick={toggleKonvaCanvas}
         >
           节点画布
+        </button>
+        <button
+          type="button"
+          data-testid="export-png"
+          className={useKonvaCanvas ? 'is-active' : ''}
+          disabled={!useKonvaCanvas}
+          title={useKonvaCanvas ? '导出当前画布为 PNG' : '切换到节点画布后可导出'}
+          onClick={handleExportPng}
+        >
+          导出 PNG
         </button>
         <span>三种视图共享同一组位置数据</span>
       </div>
@@ -693,9 +756,11 @@ export default function StageBlocking({
                   settings={stageSettings}
                   isWire={isWire}
                   focusPath={stageTab === 'block'}
-                  stageEditable={false}
+                  stageEditable={stageTab === 'stage'}
                   stageRef={konvaStageRef}
                   locked={locked}
+                  onFrameDragEnd={handleFrameDragEnd}
+                  onDoorDragEnd={handleDoorDragEnd}
                   onActorDragStart={handleActorDragStart}
                   onActorDragMove={handleActorDragMove}
                   onActorDragEnd={handleActorDragEnd}
