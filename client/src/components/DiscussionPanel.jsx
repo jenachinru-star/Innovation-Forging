@@ -17,6 +17,7 @@ import useRecorder, { formatClock } from '../hooks/useRecorder.js';
 import { nextId } from '../store/plan.js';
 import { splitBrief } from '@director/shared/rules/briefs.js';
 import { SAMPLE_DISCUSSION } from '../data/sampleDiscussion.js';
+import CollectionPanel from './CollectionPanel.jsx';
 
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
@@ -430,6 +431,8 @@ export default function DiscussionPanel({ open, onClose, plan, dispatch }) {
               ))
             )}
           </div>
+
+          <CollectionPanel plan={plan} dispatch={dispatch} />
         </div>
       </aside>
     </>
