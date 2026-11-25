@@ -227,4 +227,31 @@ describe('DiscussionPanel 抽屉', () => {
     expect(screen.getByText(/已转入排练待办/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /转为排练待办/ })).not.toBeInTheDocument();
   });
+
+  it('点击加载示例，离线插入完整纪要', () => {
+    const { dispatch } = renderPanel();
+    fireEvent.click(screen.getByRole('button', { name: '加载示例' }));
+    const add = dispatch.mock.calls.find((c) => c[0].type === 'addDiscussion');
+    expect(add[0].discussion.summary.decisions.length).toBeGreaterThan(0);
+    expect(add[0].discussion.status).toBe('done');
+  });
+
+  it('不支持录音时显示降级并引导改用文字', () => {
+    renderPanel();
+    fireEvent.click(screen.getByText('录音讨论'));
+    expect(screen.getByText(/当前环境不支持录音/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '改用文字记录' }));
+    expect(screen.getByPlaceholderText(/记录想法/)).toBeInTheDocument();
+  });
+
+  it('服务不可达时提交显示友好提示', async () => {
+    global.fetch = vi.fn(async () => {
+      throw new TypeError('Failed to fetch');
+    });
+    renderPanel();
+    fireEvent.click(screen.getByText('文字记录'));
+    fireEvent.change(screen.getByPlaceholderText(/记录想法/), { target: { value: 'x' } });
+    fireEvent.click(screen.getByRole('button', { name: '提交并梳理' }));
+    expect(await screen.findByText(/无法连接服务/)).toBeInTheDocument();
+  });
 });

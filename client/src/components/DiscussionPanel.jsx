@@ -16,6 +16,7 @@ import {
 import useRecorder, { formatClock } from '../hooks/useRecorder.js';
 import { nextId } from '../store/plan.js';
 import { splitBrief } from '@director/shared/rules/briefs.js';
+import { SAMPLE_DISCUSSION } from '../data/sampleDiscussion.js';
 
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
@@ -59,6 +60,17 @@ function DiscussionComposer({ recorder, mode, setMode, onSubmitAudio, onSubmitTe
   if (mode === 'record') {
     const recording = recorder.status === 'recording';
     const paused = recorder.status === 'paused';
+    if (!recorder.supported) {
+      return (
+        <div className="disc-composer disc-unsupported">
+          <Mic size={22} />
+          <p>当前环境不支持录音，需在 https 或 localhost 安全上下文下使用。</p>
+          <button type="button" className="btn-seal btn-small" onClick={() => setMode('text')}>
+            改用文字记录
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="disc-composer disc-recorder">
         <div className={`disc-recorder-dial ${recorder.status !== 'idle' ? 'is-live' : ''}`}>
@@ -150,11 +162,16 @@ export default function DiscussionPanel({ open, onClose, plan, dispatch }) {
   }, [open]);
 
   async function analyze(payload) {
-    const res = await fetch('/api/discussion/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+    let res;
+    try {
+      res = await fetch('/api/discussion/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      throw new Error('无法连接服务：AI 梳理需联网或后端支持，可先查看历史或加载示例');
+    }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || '分析失败，请稍后再试');
     return data;
@@ -275,6 +292,10 @@ export default function DiscussionPanel({ open, onClose, plan, dispatch }) {
     });
   }
 
+  function loadSampleDiscussion() {
+    dispatch({ type: 'addDiscussion', discussion: { ...SAMPLE_DISCUSSION } });
+  }
+
   function removeDiscussion(id) {
     if (window.confirm('删除这条讨论记录？')) {
       dispatch({ type: 'removeDiscussion', id });
@@ -313,9 +334,14 @@ export default function DiscussionPanel({ open, onClose, plan, dispatch }) {
           )}
 
           <div className="disc-history">
-            <h3 className="disc-history-title">
-              <StickyNote size={15} /> 历史讨论（{discussions.length}）
-            </h3>
+            <div className="disc-history-head">
+              <h3 className="disc-history-title">
+                <StickyNote size={15} /> 历史讨论（{discussions.length}）
+              </h3>
+              <button type="button" className="disc-sample-btn" onClick={loadSampleDiscussion}>
+                加载示例
+              </button>
+            </div>
             {discussions.length === 0 ? (
               <p className="disc-empty">还没有讨论记录，从上方开始一条吧。</p>
             ) : (
