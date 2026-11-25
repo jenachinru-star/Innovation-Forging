@@ -97,7 +97,7 @@ describe('ResultTabs', () => {
     expect(screen.queryByTestId('actor-老陈')).not.toBeInTheDocument();
   });
 
-  it('切换到视觉制作显示视觉族与导演库', () => {
+  it('切换到视觉制作显示生成条与图片网格', () => {
     render(
       <ResultTabs
         scriptData={{
@@ -112,7 +112,8 @@ describe('ResultTabs', () => {
       />
     );
     fireEvent.click(screen.getByText('视觉制作'));
-    expect(screen.getByText('先锁定世界观，再生成资产')).toBeInTheDocument();
-    expect(screen.getByText('冷调惊悚')).toBeInTheDocument();
+    expect(screen.getByLabelText('画面描述')).toBeInTheDocument();
+    expect(screen.getByText('生成').closest('button')).toBeInTheDocument();
+    expect(screen.getByTestId('visual-card-scene-livingroom')).toBeInTheDocument();
   });
 });

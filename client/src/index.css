@@ -1939,6 +1939,142 @@ p {
   line-height: 1.7;
 }
 
+/* ===== 09 视觉制作：顶部生成卡片 ===== */
+.visual-generate-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.2rem;
+}
+
+.visual-style-label {
+  flex: 0 0 auto;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+}
+
+.visual-style-select {
+  flex: 0 0 13rem;
+  min-height: 2.4rem;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.78rem;
+}
+
+.visual-desc-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.4rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.visual-generate-btn {
+  flex: 0 0 auto;
+  min-width: 5.2rem;
+  min-height: 2.4rem;
+  padding: 0.3rem 1.1rem;
+}
+
+/* ===== 09 图片网格 ===== */
+.visual-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.2rem;
+}
+
+.visual-card {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.visual-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.visual-card:hover .visual-card-img {
+  transform: scale(1.04);
+}
+
+.visual-card-title {
+  position: absolute;
+  bottom: 0.7rem;
+  left: 0.85rem;
+  color: #f2ece2;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.75);
+}
+
+.visual-card-badge {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0.7rem;
+  padding: 0.12rem 0.5rem;
+  color: #d8cfc1;
+  background: rgba(20, 17, 14, 0.62);
+  border: 1px solid rgba(216, 207, 193, 0.25);
+  border-radius: 5px;
+  font-size: 0.62rem;
+}
+
+/* loading 卡片 */
+.visual-card.is-loading {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.8rem;
+  border-style: dashed;
+  border-color: var(--line);
+}
+
+.visual-loader {
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 3px solid rgba(193, 138, 45, 0.25);
+  border-top-color: var(--cue);
+  border-radius: 50%;
+  animation: visual-spin 0.9s linear infinite;
+}
+
+@keyframes visual-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.visual-loading-text {
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+}
+
+.visual-prompt-preview {
+  margin-top: 0;
+}
+
+@media (max-width: 1080px) {
+  .visual-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .visual-generate-card {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 680px) {
+  .visual-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Project library */
 .library-backdrop {
   position: fixed;

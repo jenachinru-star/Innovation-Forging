@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createScriptRouter } from './routes/script.js';
 import { createCharacterRouter } from './routes/character.js';
+import { createVisualRouter } from './routes/visual.js';
 import { createAuthRouter } from './routes/auth.js';
 import { createProjectsRouter } from './routes/projects.js';
 import { createStore } from './services/dataStore.js';
@@ -19,6 +20,7 @@ export async function createApp(deps = {}) {
   app.use('/api/projects', createProjectsRouter({ store }));
   app.use('/api/script', createScriptRouter());
   app.use('/api/character', createCharacterRouter());
+  app.use('/api/visual', createVisualRouter());
 
   const distPath = path.resolve(__dirname, '../dist');
   app.use(express.static(distPath));
