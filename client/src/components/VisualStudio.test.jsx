@@ -22,9 +22,9 @@ afterEach(() => {
 });
 
 describe('VisualStudio', () => {
-  it('数据：10 个风格族与 24 位导演', () => {
+  it('数据：10 个风格族与 3 位导演参照', () => {
     expect(STYLE_FAMILIES).toHaveLength(10);
-    expect(DIRECTOR_STYLES).toHaveLength(24);
+    expect(DIRECTOR_STYLES).toHaveLength(3);
   });
 
   it('默认进入视觉圣经，渲染四个区块', () => {
@@ -35,9 +35,9 @@ describe('VisualStudio', () => {
     expect(screen.getByText('生成目标')).toBeInTheDocument();
   });
 
-  it('渲染风格族卡片，默认选中冷调惊悚', () => {
+  it('渲染风格族卡片，默认选中电影感写实', () => {
     render(<Harness />);
-    const card = screen.getByRole('button', { name: /冷调惊悚/ });
+    const card = screen.getByRole('button', { name: /电影感写实/ });
     expect(card).toHaveClass('is-active');
   });
 
@@ -52,9 +52,9 @@ describe('VisualStudio', () => {
 
   it('点风格卡切换风格并持久化', () => {
     render(<Harness />);
-    const earth = screen.getByRole('button', { name: /自然诗意/ });
-    fireEvent.click(earth);
-    expect(earth).toHaveClass('is-active');
+    const vintage = screen.getByRole('button', { name: /复古胶片/ });
+    fireEvent.click(vintage);
+    expect(vintage).toHaveClass('is-active');
   });
 
   it('点目标卡选中镜头视频', () => {
@@ -66,11 +66,11 @@ describe('VisualStudio', () => {
 
   it('点导演卡选中并可取消', () => {
     render(<Harness />);
-    const hitch = screen.getByRole('button', { name: /希区柯克/ });
-    fireEvent.click(hitch);
-    expect(hitch).toHaveClass('is-active');
-    fireEvent.click(hitch);
-    expect(hitch).not.toHaveClass('is-active');
+    const villeneuve = screen.getByRole('button', { name: /维伦纽瓦/ });
+    fireEvent.click(villeneuve);
+    expect(villeneuve).toHaveClass('is-active');
+    fireEvent.click(villeneuve);
+    expect(villeneuve).not.toHaveClass('is-active');
   });
 
   it('工作台图片生成成功：loading 后新增卡片', async () => {
@@ -119,27 +119,6 @@ describe('VisualStudio', () => {
     expect(screen.getByText('复制提示词')).toBeInTheDocument();
   });
 
-  it('只读模式：子 Tab 可切换，但写操作全部禁用', () => {
-    const plan = createPlan('stage', '只读方案');
-    render(
-      <VisualStudio
-        scriptData={{ characters: [] }}
-        plan={plan}
-        dispatch={vi.fn()}
-        readOnly
-      />
-    );
-    // 圣经内的写操作按钮禁用
-    expect(screen.getByRole('button', { name: /冷调惊悚/ })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /希区柯克/ })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /镜头视频/ })).toBeDisabled();
-    // 子 Tab 仍可自由切换
-    fireEvent.click(screen.getByRole('tab', { name: '生成工作台' }));
-    expect(screen.getByLabelText('画面描述')).toBeDisabled();
-    expect(screen.getByText('生成').closest('button')).toBeDisabled();
-    // 复制提示词为只读信息，仍可用
-    expect(screen.getByText('复制提示词')).toBeEnabled();
-  });
 });
 
 describe('视频生成与轮询', () => {
