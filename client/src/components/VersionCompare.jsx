@@ -14,21 +14,55 @@ const SAMPLE_NEW = `第一场 书房
 第二场 庭院
 林导演：这里加一个追光。`;
 
-export default function VersionCompare({ onBack, aiEnabled = false }) {
+function versionLabel(version) {
+  const time = version.createdAt ? String(version.createdAt) : '';
+  const source = version.source ? ` · ${version.source}` : '';
+  return `${time}${source}`.trim() || version.id;
+}
+
+export default function VersionCompare({ onBack, aiEnabled = false, versions = [], currentText = '' }) {
   void aiEnabled;
-  const [oldText, setOldText] = useState('');
-  const [newText, setNewText] = useState('');
+
+  const history = [...versions].reverse();
+  const options = [
+    { id: '__current', label: '当前版本', text: currentText || '' },
+    ...history.map((version) => ({
+      id: version.id,
+      label: versionLabel(version),
+      text: version.text || '',
+    })),
+  ];
+
+  const [oldVersionId, setOldVersionId] = useState(() => history[0]?.id || '');
+  const [newVersionId, setNewVersionId] = useState('__current');
+  const [oldText, setOldText] = useState(() => history[0]?.text || '');
+  const [newText, setNewText] = useState(() => currentText || '');
   const [rows, setRows] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  async function load(file, setter) {
+  function applyVersion(side, optionId) {
+    const option = options.find((item) => item.id === optionId);
+    const text = option?.text || '';
+    if (side === 'old') {
+      setOldVersionId(optionId);
+      setOldText(text);
+    } else {
+      setNewVersionId(optionId);
+      setNewText(text);
+    }
+    setRows(null);
+  }
+
+  async function load(file, setter, side) {
     setBusy(true);
     setError('');
     setRows(null);
     try {
       const { scriptText } = await extractUpload(file);
       setter(scriptText);
+      if (side === 'old') setOldVersionId('');
+      else setNewVersionId('');
     } catch (e) {
       setError(String(e.message || e));
     } finally {
@@ -44,6 +78,8 @@ export default function VersionCompare({ onBack, aiEnabled = false }) {
   function loadSample() {
     setOldText(SAMPLE_OLD);
     setNewText(SAMPLE_NEW);
+    setOldVersionId('');
+    setNewVersionId('');
     setRows(null);
     setError('');
   }
@@ -62,13 +98,41 @@ export default function VersionCompare({ onBack, aiEnabled = false }) {
         )}
       </div>
 
+      {options.length > 1 && (
+        <div className="card rounded p-3 mb-3">
+          <p className="muted mb-2">作品内版本（默认当前 vs 上一版）</p>
+          <div className="vc-version-grid">
+            <label className="vc-version-field">
+              <span className="muted text-xs">旧版本</span>
+              <select value={oldVersionId} onChange={(e) => applyVersion('old', e.target.value)}>
+                {options.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="vc-version-field">
+              <span className="muted text-xs">新版本</span>
+              <select value={newVersionId} onChange={(e) => applyVersion('new', e.target.value)}>
+                {options.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
+      )}
+
       <div className="vc-upload-grid">
         <div className="card rounded p-3">
           <p className="muted mb-2">旧版本（上传）</p>
           <input
             type="file"
             accept=".txt,.md,.fountain,.docx,.pdf"
-            onChange={(e) => e.target.files?.[0] && load(e.target.files[0], setOldText)}
+            onChange={(e) => e.target.files?.[0] && load(e.target.files[0], setOldText, 'old')}
           />
           <p className="muted mt-2 text-xs">{oldText ? `已加载 ${oldText.split('\n').length} 行` : '未加载'}</p>
         </div>
@@ -77,7 +141,7 @@ export default function VersionCompare({ onBack, aiEnabled = false }) {
           <input
             type="file"
             accept=".txt,.md,.fountain,.docx,.pdf"
-            onChange={(e) => e.target.files?.[0] && load(e.target.files[0], setNewText)}
+            onChange={(e) => e.target.files?.[0] && load(e.target.files[0], setNewText, 'new')}
           />
           <p className="muted mt-2 text-xs">{newText ? `已加载 ${newText.split('\n').length} 行` : '未加载'}</p>
         </div>

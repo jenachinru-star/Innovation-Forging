@@ -13,6 +13,23 @@ describe('diffScriptData', () => {
     expect(d.characterDelta.added).toEqual(['乙']);
     expect(d.characterDelta.removed).toEqual([]);
   });
+
+  it('场景按稳定 id 匹配，标题变化仍判为同一场景', () => {
+    const old = { scenes: [{ id: 'uuid-1', title: '书房', summary: '旧' }], characters: [] };
+    const next = { scenes: [{ id: 'uuid-1', title: '客厅', summary: '新' }], characters: [] };
+    const d = diffScriptData(old, next);
+    expect(d.addedScenes).toEqual([]);
+    expect(d.removedScenes).toEqual([]);
+    expect(d.changedScenes).toEqual([{ title: '书房', from: '旧', to: '新' }]);
+  });
+
+  it('角色按稳定 id 匹配，名字变化仍判为同一角色', () => {
+    const old = { scenes: [], characters: [{ id: 'c-1', name: '甲' }] };
+    const next = { scenes: [], characters: [{ id: 'c-1', name: '甲乙' }] };
+    const d = diffScriptData(old, next);
+    expect(d.characterDelta.added).toEqual([]);
+    expect(d.characterDelta.removed).toEqual([]);
+  });
 });
 
 describe('diffLines 行级 diff', () => {

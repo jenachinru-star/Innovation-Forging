@@ -1,30 +1,44 @@
+import { diffLines as jsDiffLines, diffWords as jsDiffWords } from 'diff';
+
+function sceneKey(scene) {
+  return scene?.id || scene?.title || '';
+}
+
+function characterKey(character) {
+  return character?.id || character?.name || '';
+}
+
 export function diffScriptData(a, b) {
   const sa = a?.scenes || [];
   const sb = b?.scenes || [];
-  const mapA = new Map(sa.map((s) => [s.title, s]));
-  const mapB = new Map(sb.map((s) => [s.title, s]));
+  const mapA = new Map(sa.map((s) => [sceneKey(s), s]));
+  const mapB = new Map(sb.map((s) => [sceneKey(s), s]));
 
-  const addedScenes = [...mapB.keys()].filter((t) => !mapA.has(t));
-  const removedScenes = [...mapA.keys()].filter((t) => !mapB.has(t));
+  const addedScenes = [];
+  const removedScenes = [];
   const changedScenes = [];
-  for (const [title, sa1] of mapA) {
-    const sb1 = mapB.get(title);
+
+  for (const [key, sb1] of mapB) {
+    if (!mapA.has(key)) addedScenes.push(sb1.title || sb1.id || key);
+  }
+  for (const [key, sa1] of mapA) {
+    if (!mapB.has(key)) removedScenes.push(sa1.title || sa1.id || key);
+  }
+  for (const [key, sa1] of mapA) {
+    const sb1 = mapB.get(key);
     if (sb1 && sa1.summary !== sb1.summary) {
-      changedScenes.push({ title, from: sa1.summary, to: sb1.summary });
+      changedScenes.push({ title: sa1.title || sb1.title || key, from: sa1.summary, to: sb1.summary });
     }
   }
 
-  const ca = new Set((a?.characters || []).map((c) => c.name));
-  const cb = new Set((b?.characters || []).map((c) => c.name));
-  return {
-    addedScenes,
-    removedScenes,
-    changedScenes,
-    characterDelta: {
-      added: [...cb].filter((n) => !ca.has(n)),
-      removed: [...ca].filter((n) => !cb.has(n)),
-    },
+  const ca = new Map((a?.characters || []).map((c) => [characterKey(c), c]));
+  const cb = new Map((b?.characters || []).map((c) => [characterKey(c), c]));
+  const characterDelta = {
+    added: [...cb.keys()].filter((k) => !ca.has(k)).map((k) => cb.get(k).name || k),
+    removed: [...ca.keys()].filter((k) => !cb.has(k)).map((k) => ca.get(k).name || k),
   };
+
+  return { addedScenes, removedScenes, changedScenes, characterDelta };
 }
 
 export function splitLines(text) {
@@ -33,46 +47,43 @@ export function splitLines(text) {
   return normalized.split('\n');
 }
 
-// 基于 LCS 的行级 diff：返回 [{op:'equal'|'add'|'remove', text, oldIndex, newIndex}]
+function normalize(text) {
+  return String(text || '').replace(/\r\n?/g, '\n');
+}
+
+// 行级 diff：返回 [{op:'equal'|'add'|'remove', text, oldIndex, newIndex}]
 export function diffLines(oldText, newText) {
-  const left = splitLines(oldText);
-  const right = splitLines(newText);
-  const m = left.length;
-  const n = right.length;
-
-  const table = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
-  for (let i = m - 1; i >= 0; i -= 1) {
-    for (let j = n - 1; j >= 0; j -= 1) {
-      if (left[i] === right[j]) table[i][j] = table[i + 1][j + 1] + 1;
-      else table[i][j] = Math.max(table[i + 1][j], table[i][j + 1]);
-    }
-  }
-
+  const chunks = jsDiffLines(normalize(oldText), normalize(newText));
   const ops = [];
-  let i = 0;
-  let j = 0;
-  while (i < m && j < n) {
-    if (left[i] === right[j]) {
-      ops.push({ op: 'equal', text: left[i], oldIndex: i, newIndex: j });
-      i += 1;
-      j += 1;
-    } else if (table[i + 1][j] >= table[i][j + 1]) {
-      ops.push({ op: 'remove', text: left[i], oldIndex: i, newIndex: -1 });
-      i += 1;
-    } else {
-      ops.push({ op: 'add', text: right[j], oldIndex: -1, newIndex: j });
-      j += 1;
+  let oldIndex = 0;
+  let newIndex = 0;
+
+  for (const chunk of chunks) {
+    const lines = String(chunk.value || '').split('\n');
+    if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+    for (const text of lines) {
+      if (chunk.removed) {
+        ops.push({ op: 'remove', text, oldIndex, newIndex: -1 });
+        oldIndex += 1;
+      } else if (chunk.added) {
+        ops.push({ op: 'add', text, oldIndex: -1, newIndex });
+        newIndex += 1;
+      } else {
+        ops.push({ op: 'equal', text, oldIndex, newIndex });
+        oldIndex += 1;
+        newIndex += 1;
+      }
     }
-  }
-  while (i < m) {
-    ops.push({ op: 'remove', text: left[i], oldIndex: i, newIndex: -1 });
-    i += 1;
-  }
-  while (j < n) {
-    ops.push({ op: 'add', text: right[j], oldIndex: -1, newIndex: j });
-    j += 1;
   }
   return ops;
+}
+
+// 词级 diff：返回 [{op:'equal'|'add'|'remove', text}]，供富文本高亮使用
+export function diffWords(oldText, newText) {
+  return jsDiffWords(normalize(oldText), normalize(newText)).map((chunk) => ({
+    op: chunk.removed ? 'remove' : chunk.added ? 'add' : 'equal',
+    text: chunk.value || '',
+  }));
 }
 
 // 把行级 ops 整理为左右对齐的双栏行：{op, left, right}

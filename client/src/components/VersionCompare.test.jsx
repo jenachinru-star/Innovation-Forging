@@ -37,4 +37,16 @@ describe('VersionCompare 双栏逐行 diff', () => {
     fireEvent.click(screen.getByRole('button', { name: '返回' }));
     expect(onBack).toHaveBeenCalledTimes(1);
   });
+
+  it('传入作品内版本时渲染两个版本下拉，默认当前 vs 上一版', () => {
+    const versions = [
+      { id: 'v1', source: 'local', text: '旧剧本', createdAt: '2026-11-24' },
+      { id: 'v2', source: 'local', text: '新剧本', createdAt: '2026-11-25' },
+    ];
+    render(<VersionCompare versions={versions} currentText="当前剧本" />);
+    const selects = screen.getAllByRole('combobox');
+    expect(selects).toHaveLength(2);
+    expect(selects[1].value).toBe('__current');
+    expect(selects[0].value).toBe('v2');
+  });
 });

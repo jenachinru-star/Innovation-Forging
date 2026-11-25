@@ -711,6 +711,8 @@ export default function App() {
             {step === 'compare' && (
               <VersionCompare
                 aiEnabled={Boolean(plan?.aiConsent?.text)}
+                versions={scriptVersions}
+                currentText={scriptText}
                 onBack={() => {
                   setStep(compareReturnStep);
                   setActiveNav('script');
