@@ -137,6 +137,34 @@ describe('toHtml', () => {
     expect(html).toContain('灯光讨论');
     expect(html).toContain('开场改暖光');
   });
+
+  it('手动复盘与资料收藏进入导出 HTML', () => {
+    const html = toHtml({
+      scriptData,
+      plan: {
+        ...plan,
+        review: {
+          goal: '走完开场走位',
+          wentWell: '',
+          improve: '灯光切换偏慢',
+          nextActions: '',
+          conclusion: '整体达标',
+        },
+        collections: [
+          { id: 'coll-1', text: '参考色卡 https://example.com' },
+          { id: 'coll-2', text: '暖棕备注' },
+        ],
+      },
+    });
+
+    expect(html).toContain('手动复盘');
+    expect(html).toContain('走完开场走位');
+    expect(html).toContain('灯光切换偏慢');
+    expect(html).not.toContain('做得好的：');
+    expect(html).toContain('资料收藏');
+    expect(html).toContain('参考色卡 https://example.com');
+    expect(html).toContain('暖棕备注');
+  });
 });
 
 describe('toCsv', () => {

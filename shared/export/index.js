@@ -200,6 +200,39 @@ function discussionSection(discussions) {
     </section>`;
 }
 
+function reviewSection(review) {
+  if (!review || typeof review !== 'object') return '';
+  const fields = [
+    ['goal', '本次目标'],
+    ['wentWell', '做得好的'],
+    ['improve', '待改进'],
+    ['nextActions', '下次行动'],
+    ['conclusion', '结论'],
+  ];
+  const rows = fields
+    .filter(([key]) => text(review[key]).trim())
+    .map(([key, label]) => `<p><b>${esc(label)}：</b>${esc(review[key])}</p>`)
+    .join('');
+  if (!rows) return '';
+  return `
+    <section>
+      <h2>手动复盘</h2>
+      ${rows}
+    </section>`;
+}
+
+function collectionSection(collections) {
+  const list = asArray(collections);
+  if (!list.length) return '';
+  return `
+    <section>
+      <h2>资料收藏</h2>
+      <ul class="items">${list
+        .map((item) => `<li>${esc(item.text)}</li>`)
+        .join('')}</ul>
+    </section>`;
+}
+
 const STYLE = `
     :root { color-scheme: light; }
     * { box-sizing: border-box; }
@@ -300,6 +333,8 @@ export function toHtml({ title, scriptData, plan, now } = {}) {
     ${briefSection(plan?.briefs)}
     ${stagingSection(plan)}
     ${discussionSection(plan?.discussions)}
+    ${reviewSection(plan?.review)}
+    ${collectionSection(plan?.collections)}
   </main>
 </body>
 </html>`;
