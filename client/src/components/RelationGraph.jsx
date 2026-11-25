@@ -30,8 +30,8 @@ function buildOption(scriptData, visibleRelationships, selectedName) {
       role: profile?.role || '',
       symbolSize: 82,
       itemStyle: {
-        color: '#221e19',
-        borderColor: isSelected ? '#c18a2d' : '#8a7a5e',
+        color: '#2f241a',
+        borderColor: isSelected ? '#d4af37' : '#86745d',
         borderWidth: isSelected ? 2.4 : 1.4,
       },
       label: {
@@ -40,12 +40,12 @@ function buildOption(scriptData, visibleRelationships, selectedName) {
         formatter: () => `{name|${name}}\n{role|${profile?.role || ''}}`,
         rich: {
           name: {
-            color: '#e4dbce',
+            color: '#f2e6d3',
             fontSize: 15,
             fontFamily: 'var(--font-heading)',
             lineHeight: 21,
           },
-          role: { color: '#c18a2d', fontSize: 11, lineHeight: 16 },
+          role: { color: '#d4af37', fontSize: 11, lineHeight: 16 },
         },
       },
     };
@@ -57,14 +57,14 @@ function buildOption(scriptData, visibleRelationships, selectedName) {
     label: {
       show: true,
       formatter: r.relation,
-      color: '#b0a495',
+      color: '#bda98d',
       fontSize: 11,
-      backgroundColor: '#161310',
+      backgroundColor: '#211913',
       padding: [2, 6],
       borderRadius: 3,
     },
     lineStyle: {
-      color: r.needsReview ? '#b23b32' : '#7d7266',
+      color: r.needsReview ? '#a8332a' : '#86745d',
       width: r.needsReview ? 2 : 1.4,
       type: r.needsReview ? 'dashed' : 'solid',
       curveness: 0.12,

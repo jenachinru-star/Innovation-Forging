@@ -8,32 +8,34 @@
 :root[data-theme="theatre"],
 [data-theme="theatre"] {
   color-scheme: dark;
-  --stage-950: #11100e;
-  --stage-900: #181613;
-  --stage-850: #201d19;
-  --stage-800: #292520;
-  --stage-line: #3a342c;
-  --stage-text: #d8cfc1;
-  --stage-muted: #978d7f;
-  /* 语义变量深色化：纸=深底，墨=浅字；组件无需逐个改色 */
-  --paper: #161310;
-  --paper-raised: #221e19;
-  --paper-deep: #2b2620;
-  --ink: #e4dbce;
-  --ink-muted: #9b9184;
-  --ink-faint: #6f675c;
-  --line: #3b352d;
-  --line-soft: #2b2620;
-  --media-bg: #14110f;
-  --media-raised: #241f1a;
-  --media-ink: #f4eee4;
-  --media-muted: #b0a495;
-  --accent-seal: #b23b32;
-  --cue: #c18a2d;
-  --confirmed: #55715b;
-  --state-open: #b23b32;
-  --state-doing: #a77a22;
-  --state-done: #55715b;
+  /* 暖棕金背景层级（由深到浅，带棕调） */
+  --stage-950: #1a1410;
+  --stage-900: #221a14;
+  --stage-850: #2b211a;
+  --stage-800: #35281e;
+  --stage-line: #4a3828;
+  --stage-text: #ede0cb;
+  --stage-muted: #b39f86;
+  /* 语义变量：纸=暖棕深底，墨=暖米白；组件无需逐个改色 */
+  --paper: #211913;
+  --paper-raised: #2f241a;
+  --paper-deep: #3b2c1f;
+  --ink: #f2e6d3;
+  --ink-muted: #bda98d;
+  --ink-faint: #86745d;
+  --line: #4d3a28;
+  --line-soft: #33271d;
+  --media-bg: #18110d;
+  --media-raised: #302419;
+  --media-ink: #f7ede0;
+  --media-muted: #b8a58c;
+  /* 强调色：暖绛红 + 亮金 + 暖绿 */
+  --accent-seal: #a8332a;
+  --cue: #d4af37;
+  --confirmed: #5f7d63;
+  --state-open: #a8332a;
+  --state-doing: #c08a2e;
+  --state-done: #5f7d63;
   --font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   --font-heading: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", Georgia, serif;
   --font-mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
@@ -286,8 +288,8 @@ p {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #7ea287;
-  box-shadow: 0 0 0 4px rgba(85, 113, 91, 0.12);
+  background: #6f9174;
+  box-shadow: 0 0 0 4px rgba(95, 125, 99, 0.14);
 }
 
 .save-state.is-saving i {
@@ -1581,8 +1583,8 @@ p {
   overflow: hidden;
   color: var(--media-ink);
   background:
-    radial-gradient(circle at 50% 12%, rgba(193, 138, 45, 0.16), transparent 42%),
-    #11100e;
+    radial-gradient(circle at 50% 12%, rgba(212, 175, 55, 0.18), transparent 42%),
+    #18110d;
   perspective: 900px;
 }
 
@@ -1616,7 +1618,7 @@ p {
   background:
     linear-gradient(rgba(216, 201, 177, 0.12) 1px, transparent 1px) 0 0 / 10% 10%,
     linear-gradient(90deg, rgba(216, 201, 177, 0.12) 1px, transparent 1px) 0 0 / 10% 10%,
-    #27221d;
+    #302419;
   border: 1px solid #65543f;
   box-shadow: 0 34px 70px rgba(0, 0, 0, 0.55);
 }
@@ -4010,7 +4012,7 @@ svg.is-wire .stage-path-line {
 
 .hl-tag.is-char {
   color: #f4ece1;
-  background: #b23b32;
+  background: #a8332a;
 }
 
 /* 工具栏：幕下拉 + 图标 */
@@ -5269,8 +5271,8 @@ svg.is-wire .stage-path-line {
   width: min(34rem, 100%);
   padding: 2.4rem 2.4rem 1.8rem;
   text-align: center;
-  background: var(--paper-raised, #221e19);
-  border: 1px solid var(--line, #3b352d);
+  background: var(--paper-raised, #2f241a);
+  border: 1px solid var(--line, #4d3a28);
   border-radius: 0.9rem;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
 }
@@ -5284,14 +5286,14 @@ svg.is-wire .stage-path-line {
   justify-content: center;
   width: 2rem;
   height: 2rem;
-  color: var(--ink-muted, #9b9184);
+  color: var(--ink-muted, #bda98d);
   background: transparent;
   border: 0;
   border-radius: 0.4rem;
   cursor: pointer;
 }
 .onboarding-close:hover {
-  color: var(--ink, #e4dbce);
+  color: var(--ink, #f2e6d3);
 }
 
 .onboarding-progress {
@@ -5304,15 +5306,15 @@ svg.is-wire .stage-path-line {
   width: 1.8rem;
   height: 0.25rem;
   border-radius: 999px;
-  background: var(--line, #3b352d);
+  background: var(--line, #4d3a28);
   transition: background 0.25s;
 }
 .onboarding-progress span.is-done {
-  background: var(--cue, #c18a2d);
+  background: var(--cue, #d4af37);
   opacity: 0.55;
 }
 .onboarding-progress span.is-current {
-  background: var(--cue, #c18a2d);
+  background: var(--cue, #d4af37);
 }
 
 .onboarding-icon {
@@ -5322,9 +5324,9 @@ svg.is-wire .stage-path-line {
   width: 4rem;
   height: 4rem;
   margin-bottom: 1rem;
-  color: var(--cue, #c18a2d);
-  background: color-mix(in srgb, var(--cue, #c18a2d) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--cue, #c18a2d) 38%, transparent);
+  color: var(--cue, #d4af37);
+  background: color-mix(in srgb, var(--cue, #d4af37) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cue, #d4af37) 38%, transparent);
   border-radius: 0.8rem;
 }
 
@@ -5332,18 +5334,18 @@ svg.is-wire .stage-path-line {
   margin: 0 0 0.4rem;
   font-size: 0.78rem;
   letter-spacing: 0.08em;
-  color: var(--ink-muted, #9b9184);
+  color: var(--ink-muted, #bda98d);
 }
 .onboarding-title {
   margin: 0 0 0.7rem;
   font-family: var(--font-heading, serif);
   font-size: 1.45rem;
-  color: var(--ink, #e4dbce);
+  color: var(--ink, #f2e6d3);
 }
 .onboarding-body {
   margin: 0 0 1.8rem;
   line-height: 1.7;
-  color: var(--ink-muted, #9b9184);
+  color: var(--ink-muted, #bda98d);
   font-size: 0.92rem;
 }
 
