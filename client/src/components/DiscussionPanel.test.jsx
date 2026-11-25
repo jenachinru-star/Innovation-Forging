@@ -135,4 +135,96 @@ describe('DiscussionPanel 抽屉', () => {
     expect(screen.getByText('开场改为暖光')).toBeInTheDocument();
     expect(screen.getByText('周五前确认服装')).toBeInTheDocument();
   });
+
+  it('待办转为排练待办，合并并保留已有项', () => {
+    const plan = {
+      rehearsals: [
+        { notes: '', decisions: [], openQuestions: [], todos: [{ text: '已有待办', done: false }] },
+      ],
+      discussions: [
+        {
+          id: 'disc-a',
+          title: 't',
+          kind: 'text',
+          createdAt: new Date().toISOString(),
+          status: 'done',
+          summary: { overview: '', decisions: [], todos: ['新待办'], changes: [], questions: [] },
+        },
+      ],
+    };
+    const { dispatch } = renderPanel(plan);
+    fireEvent.click(screen.getByRole('button', { name: /转为排练待办/ }));
+
+    const rehCall = dispatch.mock.calls.find((c) => c[0].type === 'setRehearsalNotes');
+    expect(rehCall[0].payload.todos.map((t) => t.text)).toEqual(['已有待办', '新待办']);
+    const mark = dispatch.mock.calls.find((c) => c[0].type === 'updateDiscussion');
+    expect(mark[0].patch.converted.todos).toBe(true);
+  });
+
+  it('转换待办时对重复项去重', () => {
+    const plan = {
+      rehearsals: [{ todos: [{ text: '重复待办', done: false }] }],
+      discussions: [
+        {
+          id: 'disc-b',
+          title: 't',
+          kind: 'text',
+          createdAt: new Date().toISOString(),
+          status: 'done',
+          summary: { overview: '', decisions: [], todos: ['重复待办'], changes: [], questions: [] },
+        },
+      ],
+    };
+    const { dispatch } = renderPanel(plan);
+    fireEvent.click(screen.getByRole('button', { name: /转为排练待办/ }));
+    const rehCall = dispatch.mock.calls.find((c) => c[0].type === 'setRehearsalNotes');
+    expect(rehCall[0].payload.todos).toHaveLength(1);
+  });
+
+  it('变更转为部门需求并按关键词推断部门', () => {
+    const plan = {
+      briefs: [],
+      discussions: [
+        {
+          id: 'disc-c',
+          title: 'c',
+          kind: 'text',
+          createdAt: new Date().toISOString(),
+          status: 'done',
+          summary: {
+            overview: '',
+            decisions: [],
+            todos: [],
+            changes: ['开场灯光改成暖金色'],
+            questions: [],
+          },
+        },
+      ],
+    };
+    const { dispatch } = renderPanel(plan);
+    fireEvent.click(screen.getByRole('button', { name: /转为部门需求/ }));
+
+    const addCalls = dispatch.mock.calls.filter((c) => c[0].type === 'addBrief');
+    expect(addCalls.length).toBeGreaterThan(0);
+    expect(addCalls[0][0].brief.department).toBe('lighting');
+  });
+
+  it('已转换的分组显示已转入且不再出现按钮', () => {
+    const plan = {
+      discussions: [
+        {
+          id: 'disc-d',
+          title: 't',
+          kind: 'text',
+          createdAt: new Date().toISOString(),
+          status: 'done',
+          converted: { todos: true },
+          summary: { overview: '', decisions: [], todos: ['x'], changes: [], questions: [] },
+        },
+      ],
+    };
+    renderPanel(plan);
+    expect(screen.getByText(/已转入排练待办/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /转为排练待办/ })).not.toBeInTheDocument();
+  });
 });

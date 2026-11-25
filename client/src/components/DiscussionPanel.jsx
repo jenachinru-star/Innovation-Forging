@@ -10,9 +10,12 @@ import {
   Loader,
   Trash2,
   RotateCcw,
+  ListChecks,
+  ArrowRight,
 } from 'lucide-react';
 import useRecorder, { formatClock } from '../hooks/useRecorder.js';
 import { nextId } from '../store/plan.js';
+import { splitBrief } from '@director/shared/rules/briefs.js';
 
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
@@ -222,6 +225,56 @@ export default function DiscussionPanel({ open, onClose, plan, dispatch }) {
     }
   }
 
+  function convertTodos(item) {
+    const todos = Array.isArray(item.summary?.todos) ? item.summary.todos : [];
+    if (!todos.length || item.converted?.todos) return;
+
+    const first = Array.isArray(plan.rehearsals) ? plan.rehearsals[0] : null;
+    const currentTodos = Array.isArray(first?.todos) ? first.todos : [];
+    const existing = new Set(currentTodos.map((t) => t?.text));
+    const merged = [...currentTodos];
+    for (const text of todos) {
+      if (!existing.has(text)) {
+        merged.push({ text, done: false });
+        existing.add(text);
+      }
+    }
+    dispatch({
+      type: 'setRehearsalNotes',
+      payload: {
+        notes: first?.notes ?? '',
+        decisions: first?.decisions ?? [],
+        openQuestions: first?.openQuestions ?? [],
+        todos: merged,
+      },
+    });
+    dispatch({
+      type: 'updateDiscussion',
+      id: item.id,
+      patch: { converted: { ...item.converted, todos: true } },
+    });
+  }
+
+  function convertChanges(item) {
+    const changes = Array.isArray(item.summary?.changes) ? item.summary.changes : [];
+    if (!changes.length || item.converted?.changes) return;
+
+    const existing = new Set((Array.isArray(plan.briefs) ? plan.briefs : []).map((b) => b?.original));
+    for (const change of changes) {
+      for (const brief of splitBrief(change)) {
+        if (!existing.has(brief.original)) {
+          dispatch({ type: 'addBrief', brief });
+          existing.add(brief.original);
+        }
+      }
+    }
+    dispatch({
+      type: 'updateDiscussion',
+      id: item.id,
+      patch: { converted: { ...item.converted, changes: true } },
+    });
+  }
+
   function removeDiscussion(id) {
     if (window.confirm('删除这条讨论记录？')) {
       dispatch({ type: 'removeDiscussion', id });
@@ -291,20 +344,57 @@ export default function DiscussionPanel({ open, onClose, plan, dispatch }) {
                   )}
                   {item.status === 'processing' && <p className="disc-item-state">分析中……</p>}
                   {item.status === 'error' && <p className="disc-item-state is-error">分析失败</p>}
-                  {item.summary?.overview && (
+                  {item.summary &&
+                    (item.summary.overview ||
+                      (item.summary.decisions || []).length ||
+                      (item.summary.todos || []).length ||
+                      (item.summary.changes || []).length ||
+                      (item.summary.questions || []).length) && (
                     <div className="disc-summary">
-                      <p className="disc-summary-overview">{item.summary.overview}</p>
+                      {item.summary.overview && (
+                        <p className="disc-summary-overview">{item.summary.overview}</p>
+                      )}
                       {['decisions', 'todos', 'changes', 'questions'].map((key) =>
                         (item.summary[key] || []).length ? (
                           <div key={key} className="disc-summary-group">
                             <span className={`disc-summary-tag tag-${key}`}>
                               { { decisions: '决策', todos: '待办', changes: '变更', questions: '问题' }[key] }
                             </span>
-                            <ul>
-                              {item.summary[key].map((entry, i) => (
-                                <li key={i}>{entry}</li>
-                              ))}
-                            </ul>
+                            <div className="disc-summary-content">
+                              <ul>
+                                {item.summary[key].map((entry, i) => (
+                                  <li key={i}>{entry}</li>
+                                ))}
+                              </ul>
+                              {key === 'todos' &&
+                                (item.converted?.todos ? (
+                                  <span className="disc-convert is-done">
+                                    <ListChecks size={13} /> 已转入排练待办
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="disc-convert"
+                                    onClick={() => convertTodos(item)}
+                                  >
+                                    <ListChecks size={13} /> 转为排练待办
+                                  </button>
+                                ))}
+                              {key === 'changes' &&
+                                (item.converted?.changes ? (
+                                  <span className="disc-convert is-done">
+                                    <ArrowRight size={13} /> 已转入部门需求
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="disc-convert"
+                                    onClick={() => convertChanges(item)}
+                                  >
+                                    <ArrowRight size={13} /> 转为部门需求
+                                  </button>
+                                ))}
+                            </div>
                           </div>
                         ) : null
                       )}

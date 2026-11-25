@@ -5894,6 +5894,32 @@ svg.is-wire .stage-path-line {
   gap: 0.5rem;
   align-items: start;
 }
+.disc-summary-content {
+  display: grid;
+  gap: 0.4rem;
+}
+.disc-convert {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  justify-self: start;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.7rem;
+  color: var(--cue);
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid color-mix(in srgb, var(--cue) 40%, transparent);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.disc-convert:hover {
+  background: rgba(212, 175, 55, 0.2);
+}
+.disc-convert.is-done {
+  color: var(--confirmed);
+  background: rgba(95, 125, 99, 0.14);
+  border-color: color-mix(in srgb, var(--confirmed) 40%, transparent);
+  cursor: default;
+}
 .disc-summary-tag {
   padding: 0.12rem 0.5rem;
   font-size: 0.68rem;
