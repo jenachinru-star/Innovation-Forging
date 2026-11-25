@@ -16,6 +16,7 @@ import {
   removeProject,
 } from './api/projects.js';
 import { findImpacts } from '@director/shared/rules/impact.js';
+import { IMPACT_STATUS } from '@director/shared/constants/status.js';
 import OnboardingGuide, { hasSeenOnboarding } from './components/OnboardingGuide.jsx';
 import FilmCameraIcon from './components/FilmCameraIcon.jsx';
 import DiscussionPanel from './components/DiscussionPanel.jsx';
@@ -194,7 +195,8 @@ export default function App() {
 
   const projectName = plan?.name || '我的舞台方案';
   const sceneCount = Array.isArray(scriptData?.scenes) ? scriptData.scenes.length : 0;
-  const unresolved = plan?.impacts?.filter((item) => item.status === 'open').length || 0;
+  const unresolved =
+    plan?.impacts?.filter((item) => item.status === IMPACT_STATUS.OPEN).length || 0;
 
   function applyRecord(record) {
     setProjectId(record.id);

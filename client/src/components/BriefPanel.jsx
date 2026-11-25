@@ -1,13 +1,12 @@
 import { useMemo, useState } from 'react';
 import { splitBrief, DEPARTMENTS, DEPARTMENT_LABELS } from '@director/shared/rules/briefs.js';
+import {
+  BRIEF_STATUS_OPTIONS,
+  BRIEF_STATUS,
+  isBriefDone,
+} from '@director/shared/constants/status.js';
 
-const STATUS_OPTIONS = [
-  ['draft', '草稿'],
-  ['submitted', '已提交'],
-  ['confirmed', '已确认'],
-  ['implemented', '已实施'],
-  ['needsReview', '待确认'],
-];
+const STATUS_OPTIONS = BRIEF_STATUS_OPTIONS;
 
 const GROUP_ORDER = [...DEPARTMENTS, 'uncertain'];
 const GROUP_LABELS = { ...DEPARTMENT_LABELS, uncertain: '待确认' };
@@ -146,7 +145,7 @@ export default function BriefPanel({ scenes = [], plan, dispatch }) {
                     const statusId = `brief-status-${brief.id}`;
                     const dueId = `brief-due-${brief.id}`;
                     const cueId = `brief-cue-${brief.id}`;
-                    const done = brief.status === 'confirmed' || brief.status === 'implemented';
+                    const done = isBriefDone(brief.status);
                     const sceneCues = cues.filter(
                       (cue) => cue && Number(cue.sceneNumber) === Number(brief.sceneNumber)
                     );
@@ -172,7 +171,7 @@ export default function BriefPanel({ scenes = [], plan, dispatch }) {
                           <label htmlFor={statusId}>状态</label>
                           <select
                             id={statusId}
-                            value={brief.status || 'draft'}
+                            value={brief.status || BRIEF_STATUS.DRAFT}
                             onChange={(e) =>
                               dispatch?.({
                                 type: 'updateBrief',

@@ -18,6 +18,7 @@ import {
   Clapperboard,
 } from 'lucide-react';
 import { DEPARTMENTS, DEPARTMENT_LABELS } from '@director/shared/rules/briefs.js';
+import { CUE_STATUS_OPTIONS, CUE_STATUS } from '@director/shared/constants/status.js';
 import { nextId } from '../store/plan.js';
 import { CHARACTER_IMAGE } from '../assets/samples/index.js';
 
@@ -442,7 +443,7 @@ export default function StageBlocking({
           ? { type: 'action', quote: actionText }
           : { type: 'free', quote: '' },
       content: text,
-      status: 'draft',
+      status: CUE_STATUS.DRAFT,
       note: '',
       anchor: {
         kind: quoteText ? 'line' : actionText ? 'action' : 'scene',
@@ -985,15 +986,17 @@ export default function StageBlocking({
                       <div className="cue-row-actions">
                         <select
                           aria-label={`提示状态 ${cue.content}`}
-                          value={cue.status || 'draft'}
+                          value={cue.status || CUE_STATUS.DRAFT}
                           onChange={(event) =>
                             dispatch?.({ type: 'updateCue', id: cue.id, patch: { status: event.target.value } })
                           }
                           className="cue-status-select"
                         >
-                          <option value="draft">草案</option>
-                          <option value="review">待复核</option>
-                          <option value="confirmed">已确认</option>
+                          {CUE_STATUS_OPTIONS.map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
                         </select>
                         <button
                           type="button"

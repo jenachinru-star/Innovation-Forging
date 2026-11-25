@@ -1,4 +1,11 @@
 import { createEmptyProductionPlan } from '@director/shared';
+import {
+  BRIEF_STATUS,
+  CUE_STATUS,
+  IMPACT_STATUS,
+  ASSET_STATUS,
+  DISCUSSION_STATUS,
+} from '@director/shared/constants/status.js';
 
 export function createPlan(type, name) {
   return createEmptyProductionPlan(type, name);
@@ -93,7 +100,7 @@ export function planReducer(state, action) {
         ...current,
         assets: asArray(current.assets).map((asset) => ({
           ...asset,
-          status: 'stale',
+          status: ASSET_STATUS.STALE,
           staleReason: String(action.reason || '上游剧本已修改'),
         })),
       };
@@ -136,7 +143,7 @@ export function planReducer(state, action) {
             anchor: cue.anchor || null,
             trigger: cue.trigger || { type: 'free', quote: '', offset: null },
             content: cue.content || '',
-            status: cue.status || 'draft',
+            status: cue.status || CUE_STATUS.DRAFT,
             note: cue.note || '',
           },
         ],
@@ -173,7 +180,7 @@ export function planReducer(state, action) {
             uncertain: asArray(brief.uncertain),
             priority: brief.priority || 'medium',
             dueDate: brief.dueDate ?? null,
-            status: brief.status || 'draft',
+            status: brief.status || BRIEF_STATUS.DRAFT,
             owner: brief.owner || '',
             note: brief.note || '',
           },
@@ -320,7 +327,7 @@ export function planReducer(state, action) {
         const duplicate = impacts.some(
           (item) =>
             item &&
-            item.status === 'open' &&
+            item.status === IMPACT_STATUS.OPEN &&
             item.target &&
             item.target.kind === target.kind &&
             item.target.refId === target.refId
@@ -342,7 +349,7 @@ export function planReducer(state, action) {
             target,
             reason: impact.reason || '',
             suggestion: impact.suggestion || '',
-            status: impact.status || 'open',
+            status: impact.status || IMPACT_STATUS.OPEN,
           },
         ],
       };
@@ -370,7 +377,7 @@ export function planReducer(state, action) {
             durationSec: Number.isFinite(discussion.durationSec) ? discussion.durationSec : 0,
             audioUrl: discussion.audioUrl || '',
             transcript: discussion.transcript || '',
-            status: discussion.status || 'draft',
+            status: discussion.status || DISCUSSION_STATUS.DRAFT,
             summary: asObject(discussion.summary),
           },
           ...discussions,

@@ -1,10 +1,7 @@
 import { useState } from 'react';
+import { IMPACT_ACTION_OPTIONS, isImpactSettled } from '@director/shared/constants/status.js';
 
-const IMPACT_ACTIONS = [
-  ['accepted', '更新'],
-  ['keptOld', '保留旧版'],
-  ['dismissed', '暂缓'],
-];
+const IMPACT_ACTIONS = IMPACT_ACTION_OPTIONS;
 
 const TODO_FILTERS = [
   ['all', '全部'],
@@ -236,7 +233,7 @@ export default function RehearsalPanel({ plan, dispatch, scenes }) {
         ) : (
           <ul className="space-y-2">
             {impacts.map((impact) => {
-              const settled = impact.status && impact.status !== 'open';
+              const settled = isImpactSettled(impact.status);
               return (
                 <li
                   key={impact.id}

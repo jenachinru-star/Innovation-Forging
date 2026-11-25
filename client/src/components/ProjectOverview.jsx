@@ -1,3 +1,5 @@
+import { BRIEF_STATUS, IMPACT_STATUS } from '@director/shared/constants/status.js';
+
 function Icon({ path, size = 22 }) {
   return (
     <svg
@@ -31,9 +33,11 @@ function sceneMinutes(scenes) {
 export default function ProjectOverview({ scriptData, plan, versions = [], onNavigate }) {
   const scenes = Array.isArray(scriptData?.scenes) ? scriptData.scenes : [];
   const characters = Array.isArray(scriptData?.characters) ? scriptData.characters : [];
-  const impacts = Array.isArray(plan?.impacts) ? plan.impacts.filter((item) => item.status === 'open') : [];
+  const impacts = Array.isArray(plan?.impacts)
+    ? plan.impacts.filter((item) => item.status === IMPACT_STATUS.OPEN)
+    : [];
   const briefs = Array.isArray(plan?.briefs) ? plan.briefs : [];
-  const reviewBriefs = briefs.filter((item) => item.status === 'review');
+  const reviewBriefs = briefs.filter((item) => item.status === BRIEF_STATUS.NEEDS_REVIEW);
   const pendingCount = impacts.length + reviewBriefs.length;
 
   const segments = Array.isArray(plan?.segments) ? plan.segments : [];

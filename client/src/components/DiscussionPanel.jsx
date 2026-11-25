@@ -16,6 +16,7 @@ import {
 import useRecorder, { formatClock } from '../hooks/useRecorder.js';
 import { nextId } from '../store/plan.js';
 import { splitBrief } from '@director/shared/rules/briefs.js';
+import { DISCUSSION_STATUS } from '@director/shared/constants/status.js';
 import { SAMPLE_DISCUSSION } from '../data/sampleDiscussion.js';
 import CollectionPanel from './CollectionPanel.jsx';
 
@@ -193,7 +194,7 @@ export default function DiscussionPanel({ open, onClose, plan, dispatch }) {
         title: `录音讨论 · ${formatClock(rec.seconds)}`,
         durationSec: rec.seconds,
         audioUrl: result.url,
-        status: 'processing',
+        status: DISCUSSION_STATUS.PROCESSING,
       },
     });
     try {
@@ -207,12 +208,12 @@ export default function DiscussionPanel({ open, onClose, plan, dispatch }) {
       dispatch({
         type: 'updateDiscussion',
         id,
-        patch: { transcript: data.transcript, summary: data.summary, status: 'done' },
+        patch: { transcript: data.transcript, summary: data.summary, status: DISCUSSION_STATUS.DONE },
       });
       setMode('menu');
     } catch (e) {
       setError(String(e?.message || e));
-      dispatch({ type: 'updateDiscussion', id, patch: { status: 'error' } });
+      dispatch({ type: 'updateDiscussion', id, patch: { status: DISCUSSION_STATUS.ERROR } });
     } finally {
       setBusy(false);
     }
@@ -225,19 +226,19 @@ export default function DiscussionPanel({ open, onClose, plan, dispatch }) {
     const id = nextId('disc', discussions);
     dispatch({
       type: 'addDiscussion',
-      discussion: { id, kind: 'text', title: text.slice(0, 12), transcript: text, status: 'processing' },
+      discussion: { id, kind: 'text', title: text.slice(0, 12), transcript: text, status: DISCUSSION_STATUS.PROCESSING },
     });
     try {
       const data = await analyze({ kind: 'text', text });
       dispatch({
         type: 'updateDiscussion',
         id,
-        patch: { summary: data.summary, status: 'done' },
+        patch: { summary: data.summary, status: DISCUSSION_STATUS.DONE },
       });
       setMode('menu');
     } catch (e) {
       setError(String(e?.message || e));
-      dispatch({ type: 'updateDiscussion', id, patch: { status: 'error' } });
+      dispatch({ type: 'updateDiscussion', id, patch: { status: DISCUSSION_STATUS.ERROR } });
     } finally {
       setBusy(false);
     }
@@ -369,8 +370,12 @@ export default function DiscussionPanel({ open, onClose, plan, dispatch }) {
                   {item.transcript && (
                     <p className="disc-transcript">{item.transcript}</p>
                   )}
-                  {item.status === 'processing' && <p className="disc-item-state">分析中……</p>}
-                  {item.status === 'error' && <p className="disc-item-state is-error">分析失败</p>}
+                  {item.status === DISCUSSION_STATUS.PROCESSING && (
+                    <p className="disc-item-state">分析中……</p>
+                  )}
+                  {item.status === DISCUSSION_STATUS.ERROR && (
+                    <p className="disc-item-state is-error">分析失败</p>
+                  )}
                   {item.summary &&
                     (item.summary.overview ||
                       (item.summary.decisions || []).length ||

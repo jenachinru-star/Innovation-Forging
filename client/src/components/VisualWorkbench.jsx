@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildStylePrompt } from '../data/styles.js';
 import { nextId } from '../store/plan.js';
+import { ASSET_STATUS } from '@director/shared/constants/status.js';
 import { WORKBENCH_SAMPLES } from '../assets/visual/index.js';
 import { Sparkles, Image as ImageIcon, Palette, Wand2 } from 'lucide-react';
 
@@ -163,7 +164,7 @@ export default function VisualWorkbench({ plan, dispatch, style, onPatchStyle })
         id: nextId('asset', plan?.assets),
         type: spec.assetType,
         title: desc.slice(0, 10),
-        status: 'selected',
+        status: ASSET_STATUS.SELECTED,
         url: data.imageUrl,
         updatedAt: new Date().toISOString(),
       },

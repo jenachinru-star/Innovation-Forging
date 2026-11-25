@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ASSET_STATUS } from '@director/shared/constants/status.js';
 import { buildStylePrompt } from '../data/styles.js';
 
 export default function CharacterGallery({ characters, styleProfile, assets = [], dispatch }) {
@@ -32,7 +33,7 @@ export default function CharacterGallery({ characters, styleProfile, assets = []
           id: `character-${c.id || c.name}`,
           type: 'character',
           characterName: c.name,
-          status: 'selected',
+          status: ASSET_STATUS.SELECTED,
           url: data.imageUrl,
           styleProfile: styleProfile || null,
           updatedAt: new Date().toISOString(),
@@ -72,7 +73,9 @@ export default function CharacterGallery({ characters, styleProfile, assets = []
               </div>
               <div className="character-asset-title">
                 <p className="font-serif mt-2">{c.name}</p>
-                {asset?.status === 'stale' && <span className="status-stamp status-review">待更新</span>}
+                {asset?.status === ASSET_STATUS.STALE && (
+                  <span className="status-stamp status-review">待更新</span>
+                )}
               </div>
               <p className="media-muted line-clamp-2 text-xs">{c.description}</p>
               <button
@@ -81,7 +84,11 @@ export default function CharacterGallery({ characters, styleProfile, assets = []
                 disabled={busyName === c.name}
                 className="btn-media mt-2 w-full py-1 text-xs"
               >
-                {busyName === c.name ? '生成中…' : asset?.status === 'stale' ? '重新生成' : '生成形象'}
+                {busyName === c.name
+                  ? '生成中…'
+                  : asset?.status === ASSET_STATUS.STALE
+                    ? '重新生成'
+                    : '生成形象'}
               </button>
             </div>
           );
