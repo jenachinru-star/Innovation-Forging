@@ -32,6 +32,7 @@ import {
 import { getScene, hasScene, sceneLines, actorsFor } from '../stage/actors.js';
 import StageCanvas from '../stage/StageCanvas.jsx';
 import { mergeStageSettings } from '../stage/stageSettings.js';
+import { readKonvaFlag, writeKonvaFlag } from '../stage/featureFlags.js';
 
 const DURATION = 330; // 时间轴总时长（秒），对齐设计稿 05:30
 
@@ -368,8 +369,14 @@ export default function StageBlocking({
 
   const isWire = viewMode === 'wire';
 
-  // B3 临时开关：默认仍走旧 SVG；B4 替换为读取 localStorage 的 feature flag。
-  const useKonvaCanvas = false;
+  // B4 feature flag：localStorage 持久化，默认旧 SVG，临时 UI 开关切换对照。
+  const [useKonvaCanvas, setUseKonvaCanvas] = useState(() => readKonvaFlag());
+  function toggleKonvaCanvas() {
+    setUseKonvaCanvas((prev) => {
+      writeKonvaFlag(!prev);
+      return !prev;
+    });
+  }
 
   // 节点画布的展示数据：位置/尺寸在此算好，StageCanvas 只负责纯渲染。
   const konvaActors = actors.map((actor, index) => {
@@ -441,6 +448,16 @@ export default function StageBlocking({
           onClick={() => setRecordPath((value) => !value)}
         >
           记录走位轨迹
+        </button>
+        <button
+          type="button"
+          data-testid="konva-flag-toggle"
+          className={useKonvaCanvas ? 'is-active' : ''}
+          aria-pressed={useKonvaCanvas}
+          title="B 过渡期：切换 Konva 节点画布与旧 SVG，B7 删除"
+          onClick={toggleKonvaCanvas}
+        >
+          节点画布
         </button>
         <span>三种视图共享同一组位置数据</span>
       </div>
