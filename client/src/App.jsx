@@ -617,7 +617,10 @@ export default function App() {
             }
             onJump={jumpToStep}
           />
-          <fieldset className="workspace-paper" disabled={readOnly}>
+          <fieldset
+            className="workspace-paper"
+            disabled={readOnly && !(step === 'result' && activeNav === 'stage')}
+          >
             {step === 'input' && (
               <InputStep
                 onReady={handleReady}
@@ -669,6 +672,7 @@ export default function App() {
                   briefs={plan?.briefs ?? []}
                   plan={plan}
                   dispatch={dispatch}
+                  readOnly={readOnly}
                   activeTab={resultTab}
                   onTabChange={(tab) => {
                     setResultTab(tab);

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { useReducer } from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import StageBlocking from './StageBlocking.jsx';
 import { createPlan, planReducer } from '../store/plan.js';
 
@@ -92,7 +92,7 @@ describe('StageBlocking', () => {
     fireEvent.click(screen.getByText('确认添加'));
 
     expect(screen.getByTestId('cue-cue-1')).toBeInTheDocument();
-    expect(screen.getByText('加定点')).toBeInTheDocument();
+    expect(screen.getByTestId('cue-cue-1').textContent).toContain('加定点');
     expect(screen.getByText('删除')).toBeInTheDocument();
   });
 
@@ -210,9 +210,9 @@ describe('StageBlocking', () => {
     expect(screen.getByText('当前场次无提示')).toBeInTheDocument();
   });
 
-  it('可切换到共享位置数据的 3D 白模视图', () => {
+  it('可切换到共享位置数据的 3D 视图', () => {
     render(<StageBlocking characters={characters} dispatch={() => {}} />);
-    fireEvent.click(screen.getByText('3D 白模'));
+    fireEvent.click(screen.getByText('3D', { selector: 'button' }));
     expect(screen.getByTestId('actor-3d-老陈')).toBeInTheDocument();
     expect(screen.getByTestId('actor-3d-阿岚')).toBeInTheDocument();
     expect(screen.getByLabelText('三维白模预览')).toBeInTheDocument();
@@ -250,9 +250,10 @@ describe('StageBlocking', () => {
     });
   });
 
-  it('可以向当前场次添加可编辑白模对象', () => {
+  it('道具子 Tab 下可向当前场次添加可编辑白模对象', () => {
     const dispatch = vi.fn();
     render(<StageBlocking characters={characters} scenes={scenes} sceneNumber={1} dispatch={dispatch} />);
+    fireEvent.click(screen.getByRole('tab', { name: /道具/ }));
     fireEvent.change(screen.getByLabelText('添加白模对象'), { target: { value: 'chair' } });
     fireEvent.click(screen.getByText('放入舞台'));
     const call = dispatch.mock.calls.find(([action]) => action.type === 'addStageObject');
@@ -287,6 +288,15 @@ describe('StageBlocking', () => {
         timecode: 35,
         trigger: { type: 'free', quote: '' },
       },
+      {
+        id: 'cue-2',
+        department: 'music',
+        sceneNumber: 1,
+        content: '背景音乐起',
+        status: 'draft',
+        timecode: 70,
+        trigger: { type: 'free', quote: '' },
+      },
     ],
     staging: {
       stage: null,
@@ -300,7 +310,7 @@ describe('StageBlocking', () => {
           points: [
             { x: 100, y: 300 },
             { x: 400, y: 300 },
-            { x: 700, y: 300 },
+            { x: 700, y:300 },
           ],
         },
       ],
@@ -308,11 +318,18 @@ describe('StageBlocking', () => {
     },
   };
 
+  const sceneWithDirections = {
+    id: 'sc-1',
+    sceneNumber: 1,
+    lines: [],
+    stageDirections: ['老陈走向门口', '阿岚转身'],
+  };
+
   function renderTimeline() {
     return render(
       <StageBlocking
         characters={characters}
-        scenes={scenes}
+        scenes={[sceneWithDirections]}
         sceneNumber={1}
         plan={planWithTimeline}
         dispatch={() => {}}
@@ -320,16 +337,16 @@ describe('StageBlocking', () => {
     );
   }
 
-  it('初始时间轴时钟为 00:00 / 05:30，播放按钮为播放态', () => {
+  it('初始时间轴时钟为 hh:mm:ss，播放按钮为播放态', () => {
     renderTimeline();
-    expect(screen.getByText('00:00 / 05:30')).toBeInTheDocument();
+    expect(screen.getByText('00:00:00 / 00:05:30')).toBeInTheDocument();
     expect(screen.getByLabelText('播放')).toBeInTheDocument();
   });
 
-  it('点击 +5s 后时钟同步更新到 00:05', () => {
+  it('点击前进5秒后时钟同步更新到 00:00:05', () => {
     renderTimeline();
-    fireEvent.click(screen.getByText('+5s'));
-    expect(screen.getByText('00:05 / 05:30')).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('前进5秒'));
+    expect(screen.getByText('00:00:05 / 00:05:30')).toBeInTheDocument();
   });
 
   it('拖动进度条越过 Cue 时间码后，该 Cue 标记为已触发', () => {
@@ -353,9 +370,127 @@ describe('StageBlocking', () => {
     expect(afterX).toBe(400);
   });
 
-  it('切换到灰白线框模式后画布加 is-wire 类', () => {
+  it('切换到白模模式后画布加 is-wire 类', () => {
     renderTimeline();
-    fireEvent.click(screen.getByText('灰白线框'));
+    fireEvent.click(screen.getByText('白模', { selector: 'button' }));
     expect(screen.getByTestId('stage-canvas').classList.contains('is-wire')).toBe(true);
+  });
+
+  it('渲染六个舞台子 Tab，点击后切换激活态', () => {
+    renderTimeline();
+    const labels = ['舞台', '调度', '灯光', '音乐', '道具', '音效'];
+    for (const label of labels) {
+      expect(screen.getByRole('tab', { name: new RegExp(label) })).toBeInTheDocument();
+    }
+    const lightTab = screen.getByRole('tab', { name: /灯光/ });
+    fireEvent.click(lightTab);
+    expect(lightTab.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('渲染五个工具图标按钮', () => {
+    renderTimeline();
+    for (const label of ['网格', '对象', '列表', '编辑', '锁定']) {
+      expect(screen.getByLabelText(label)).toBeInTheDocument();
+    }
+  });
+
+  it('灯光/音乐子 Tab 过滤 Cue，数据不删除', () => {
+    renderTimeline();
+    expect(screen.getByTestId('cue-cue-1')).toBeInTheDocument();
+    expect(screen.getByTestId('cue-cue-2')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /灯光/ }));
+    expect(screen.getByTestId('cue-cue-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('cue-cue-2')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /音乐/ }));
+    expect(screen.queryByTestId('cue-cue-1')).not.toBeInTheDocument();
+    expect(screen.getByTestId('cue-cue-2')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /舞台/ }));
+    expect(screen.getByTestId('cue-cue-1')).toBeInTheDocument();
+    expect(screen.getByTestId('cue-cue-2')).toBeInTheDocument();
+  });
+
+  it('底部调度卡片在动作/走位/提示间切换并显示对应条目', () => {
+    const { container } = renderTimeline();
+    const card = container.querySelector('.dispatch-card');
+    // 默认提示
+    expect(card.textContent).toContain('定点光');
+
+    fireEvent.click(screen.getByRole('tab', { name: /^动作$/ }));
+    expect(within(card).getByText('老陈走向门口')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /^走位$/ }));
+    expect(within(card).getByText(/老陈 走位/)).toBeInTheDocument();
+  });
+
+  it('3D 视图渲染灯光氛围元素', () => {
+    const { container } = renderTimeline();
+    fireEvent.click(screen.getByText('3D', { selector: 'button' }));
+    expect(container.querySelectorAll('.stage-light').length).toBe(2);
+    expect(container.querySelectorAll('.stage-footlight').length).toBe(2);
+    expect(container.querySelector('.stage-light-wash')).toBeTruthy();
+  });
+
+  it('锁定后拖动演员不派发 setPlacement', () => {
+    const dispatch = vi.fn();
+    render(
+      <StageBlocking
+        characters={characters}
+        scenes={scenes}
+        sceneNumber={1}
+        dispatch={dispatch}
+      />
+    );
+    const svg = screen.getByTestId('stage-canvas');
+    Object.defineProperty(svg, 'getBoundingClientRect', { value: rect });
+
+    fireEvent.click(screen.getByLabelText('锁定'));
+    fireEvent.pointerDown(screen.getByTestId('actor-老陈'));
+    fireEvent.pointerMove(svg, { clientX: 200, clientY: 100 });
+    fireEvent.pointerUp(svg);
+
+    expect(dispatch.mock.calls.some(([action]) => action.type === 'setPlacement')).toBe(false);
+  });
+
+  it('只读模式下写操作按钮禁用、视图浏览控件仍可用', () => {
+    render(
+      <StageBlocking
+        characters={characters}
+        scenes={scenes}
+        sceneNumber={1}
+        readOnly
+        dispatch={() => {}}
+      />
+    );
+
+    expect(screen.getByText('添加提示').closest('button').disabled).toBe(true);
+    expect(screen.getByText('记录走位轨迹').closest('button').disabled).toBe(true);
+
+    // 视图切换属于浏览，只读下仍可用
+    fireEvent.click(screen.getByText('3D', { selector: 'button' }));
+    expect(screen.getByLabelText('三维白模预览')).toBeInTheDocument();
+  });
+
+  it('只读模式下拖动演员不派发 setPlacement', () => {
+    const dispatch = vi.fn();
+    render(
+      <StageBlocking
+        characters={characters}
+        scenes={scenes}
+        sceneNumber={1}
+        readOnly
+        dispatch={dispatch}
+      />
+    );
+    const svg = screen.getByTestId('stage-canvas');
+    Object.defineProperty(svg, 'getBoundingClientRect', { value: rect });
+
+    fireEvent.pointerDown(screen.getByTestId('actor-老陈'));
+    fireEvent.pointerMove(svg, { clientX: 200, clientY: 100 });
+    fireEvent.pointerUp(svg);
+
+    expect(dispatch.mock.calls.some(([action]) => action.type === 'setPlacement')).toBe(false);
   });
 });
