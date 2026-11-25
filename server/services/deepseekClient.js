@@ -1,5 +1,5 @@
 export async function chatComplete(messages, { jsonMode = false } = {}) {
-  const BASE = process.env.DEEPSEEK_BASE_URL || 'http://120.77.217.118:33334/v1';
+  const BASE = process.env.DEEPSEEK_BASE_URL || 'https://sub2.denglink.cn/v1';
   const MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-flash';
   const KEY = process.env.DEEPSEEK_API_KEY || '';
 
