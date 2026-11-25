@@ -392,6 +392,46 @@ export function planReducer(state, action) {
         ),
       };
 
+    case 'setReview': {
+      const payload = asObject(action.payload);
+      return {
+        ...current,
+        review: {
+          goal: String(payload.goal ?? ''),
+          wentWell: String(payload.wentWell ?? ''),
+          improve: String(payload.improve ?? ''),
+          nextActions: String(payload.nextActions ?? ''),
+          conclusion: String(payload.conclusion ?? ''),
+          updatedAt: new Date().toISOString(),
+        },
+      };
+    }
+
+    case 'addCollection': {
+      const collections = asArray(current.collections);
+      const text = String(action.text ?? '').trim();
+      if (!text) return current;
+      return {
+        ...current,
+        collections: [
+          {
+            id: nextId('coll', collections),
+            text,
+            createdAt: new Date().toISOString(),
+          },
+          ...collections,
+        ],
+      };
+    }
+
+    case 'removeCollection':
+      return {
+        ...current,
+        collections: asArray(current.collections).filter(
+          (item) => !item || item.id !== action.id
+        ),
+      };
+
     default:
       return current;
   }

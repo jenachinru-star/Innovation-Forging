@@ -25,6 +25,7 @@ export default function BriefPanel({ scenes = [], plan, dispatch }) {
   const [sceneId, setSceneId] = useState(list[0]?.id || '');
   const [original, setOriginal] = useState('');
   const [lastOriginal, setLastOriginal] = useState('');
+  const [activeDept, setActiveDept] = useState('all');
 
   const grouped = useMemo(() => {
     const map = new Map();
@@ -36,6 +37,10 @@ export default function BriefPanel({ scenes = [], plan, dispatch }) {
     }
     return GROUP_ORDER.filter((key) => map.has(key)).map((key) => [key, map.get(key)]);
   }, [briefs]);
+
+  const totalCount = briefs.length;
+  const visibleGroups =
+    activeDept === 'all' ? grouped : grouped.filter(([key]) => key === activeDept);
 
   function handleSplit() {
     const text = original.trim();
@@ -49,6 +54,7 @@ export default function BriefPanel({ scenes = [], plan, dispatch }) {
       dispatch?.({ type: 'addBrief', brief });
     }
     setLastOriginal(text);
+    setActiveDept('all');
   }
 
   return (
@@ -103,107 +109,131 @@ export default function BriefPanel({ scenes = [], plan, dispatch }) {
       {grouped.length === 0 ? (
         <p className="muted mt-4 text-sm">暂无需求条目，先输入导演原话并拆分。</p>
       ) : (
-        <div className="mt-4 space-y-5">
-          {grouped.map(([department, items]) => (
-            <section key={department} data-testid={`brief-group-${department}`}>
-              <h4 className="mb-2 text-sm font-medium">
-                {GROUP_LABELS[department] || department}
-              </h4>
-              <ul
-                className="zebra overflow-hidden rounded-md border"
-                style={{ borderColor: 'var(--line)' }}
+        <>
+          <div className="dept-tabs mt-4" role="tablist" aria-label="部门筛选">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeDept === 'all'}
+              onClick={() => setActiveDept('all')}
+              className={`dept-tab ${activeDept === 'all' ? 'is-active' : ''}`}
+            >
+              全部 <span className="dept-tab-count">{totalCount}</span>
+            </button>
+            {grouped.map(([department, items]) => (
+              <button
+                key={department}
+                type="button"
+                role="tab"
+                aria-selected={activeDept === department}
+                onClick={() => setActiveDept(department)}
+                className={`dept-tab ${activeDept === department ? 'is-active' : ''}`}
               >
-                {items.map((brief) => {
-                  const statusId = `brief-status-${brief.id}`;
-                  const dueId = `brief-due-${brief.id}`;
-                  const cueId = `brief-cue-${brief.id}`;
-                  const done = brief.status === 'confirmed' || brief.status === 'implemented';
-                  const sceneCues = cues.filter(
-                    (cue) => cue && Number(cue.sceneNumber) === Number(brief.sceneNumber)
-                  );
-                  return (
-                    <li
-                      key={brief.id}
-                      className="border-b px-3 py-2"
-                      style={{ borderColor: 'var(--line)' }}
-                    >
-                      <p className="flex items-start gap-2 text-sm">
-                        <span
-                          className={`state-dot mt-1.5 ${done ? 'state-done' : 'state-open'}`}
-                        />
-                        <span>{brief.original}</span>
-                      </p>
-                      {Array.isArray(brief.items) && brief.items.length > 0 && (
-                        <p className="muted mt-1 text-xs">条目：{brief.items.join('；')}</p>
-                      )}
-                      {Array.isArray(brief.uncertain) && brief.uncertain.length > 0 && (
-                        <p className="state-open mt-1 text-xs">待确认：{brief.uncertain.join('；')}</p>
-                      )}
-                      <div className="muted mt-2 flex flex-wrap items-center gap-2 text-xs">
-                        <label htmlFor={statusId}>状态</label>
-                        <select
-                          id={statusId}
-                          value={brief.status || 'draft'}
-                          onChange={(e) =>
-                            dispatch?.({
-                              type: 'updateBrief',
-                              id: brief.id,
-                              patch: { status: e.target.value },
-                            })
-                          }
-                          className="field px-1 py-0.5 text-xs"
-                        >
-                          {STATUS_OPTIONS.map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
+                {GROUP_LABELS[department] || department}
+                <span className="dept-tab-count">{items.length}</span>
+              </button>
+            ))}
+          </div>
 
-                        <label htmlFor={dueId}>截止</label>
-                        <input
-                          id={dueId}
-                          type="date"
-                          value={brief.dueDate || ''}
-                          onChange={(e) =>
-                            dispatch?.({
-                              type: 'updateBrief',
-                              id: brief.id,
-                              patch: { dueDate: e.target.value || null },
-                            })
-                          }
-                          className="field px-1 py-0.5 text-xs"
-                        />
-                      </div>
-                      <div className="muted mt-2 flex flex-wrap items-center gap-2 text-xs">
-                        <label htmlFor={cueId}>关联提示</label>
-                        <select
-                          id={cueId}
-                          value={brief.cueId || ''}
-                          onChange={(e) =>
-                            dispatch?.({
-                              type: 'updateBrief',
-                              id: brief.id,
-                              patch: { cueId: e.target.value || null },
-                            })
-                          }
-                          className="field px-1 py-0.5 text-xs"
-                        >
-                          <option value="">不关联</option>
-                          {sceneCues.map((cue) => (
-                            <option key={cue.id} value={cue.id}>
-                              [{DEPARTMENT_LABELS[cue.department] || cue.department}] {cue.content}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          ))}
-        </div>
+          <div className="mt-4 space-y-5">
+            {visibleGroups.map(([department, items]) => (
+              <section key={department} data-testid={`brief-group-${department}`}>
+                <h4 className="mb-2 text-sm font-medium">
+                  {GROUP_LABELS[department] || department}
+                </h4>
+                <div className="brief-card-grid">
+                  {items.map((brief) => {
+                    const statusId = `brief-status-${brief.id}`;
+                    const dueId = `brief-due-${brief.id}`;
+                    const cueId = `brief-cue-${brief.id}`;
+                    const done = brief.status === 'confirmed' || brief.status === 'implemented';
+                    const sceneCues = cues.filter(
+                      (cue) => cue && Number(cue.sceneNumber) === Number(brief.sceneNumber)
+                    );
+                    return (
+                      <article
+                        key={brief.id}
+                        data-testid={`brief-card-${brief.id}`}
+                        className={`brief-card ${done ? 'is-done' : ''}`}
+                      >
+                        <p className="flex items-start gap-2 text-sm">
+                          <span
+                            className={`state-dot mt-1.5 ${done ? 'state-done' : 'state-open'}`}
+                          />
+                          <span>{brief.original}</span>
+                        </p>
+                        {Array.isArray(brief.items) && brief.items.length > 0 && (
+                          <p className="muted mt-1 text-xs">条目：{brief.items.join('；')}</p>
+                        )}
+                        {Array.isArray(brief.uncertain) && brief.uncertain.length > 0 && (
+                          <p className="state-open mt-1 text-xs">待确认：{brief.uncertain.join('；')}</p>
+                        )}
+                        <div className="muted mt-2 flex flex-wrap items-center gap-2 text-xs">
+                          <label htmlFor={statusId}>状态</label>
+                          <select
+                            id={statusId}
+                            value={brief.status || 'draft'}
+                            onChange={(e) =>
+                              dispatch?.({
+                                type: 'updateBrief',
+                                id: brief.id,
+                                patch: { status: e.target.value },
+                              })
+                            }
+                            className="field px-1 py-0.5 text-xs"
+                          >
+                            {STATUS_OPTIONS.map(([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+
+                          <label htmlFor={dueId}>截止</label>
+                          <input
+                            id={dueId}
+                            type="date"
+                            value={brief.dueDate || ''}
+                            onChange={(e) =>
+                              dispatch?.({
+                                type: 'updateBrief',
+                                id: brief.id,
+                                patch: { dueDate: e.target.value || null },
+                              })
+                            }
+                            className="field px-1 py-0.5 text-xs"
+                          />
+                        </div>
+                        <div className="muted mt-2 flex flex-wrap items-center gap-2 text-xs">
+                          <label htmlFor={cueId}>关联提示</label>
+                          <select
+                            id={cueId}
+                            value={brief.cueId || ''}
+                            onChange={(e) =>
+                              dispatch?.({
+                                type: 'updateBrief',
+                                id: brief.id,
+                                patch: { cueId: e.target.value || null },
+                              })
+                            }
+                            className="field px-1 py-0.5 text-xs"
+                          >
+                            <option value="">不关联</option>
+                            {sceneCues.map((cue) => (
+                              <option key={cue.id} value={cue.id}>
+                                [{DEPARTMENT_LABELS[cue.department] || cue.department}] {cue.content}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

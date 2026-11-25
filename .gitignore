@@ -33,7 +33,5 @@ docs/
 mockups/
 .workbuddy/
 
-# 定妆截图
-relation-final.png
-stage-*.png
-visual-*.png
+# 定妆截图（根目录 png 不跟踪，过程截图见 docs/audit/screenshots/，docs/ 已整体忽略）
+/*.png

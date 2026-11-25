@@ -6,6 +6,12 @@ const IMPACT_ACTIONS = [
   ['dismissed', '暂缓'],
 ];
 
+const TODO_FILTERS = [
+  ['all', '全部'],
+  ['active', '未完成'],
+  ['done', '已完成'],
+];
+
 export function organizeNotes(text) {
   const decisions = [];
   const openQuestions = [];
@@ -26,6 +32,32 @@ export function organizeNotes(text) {
   }
 
   return { decisions, openQuestions, todos };
+}
+
+export function buildActivityLog(discussions) {
+  const list = Array.isArray(discussions) ? discussions : [];
+  return list
+    .filter((item) => item && item.id)
+    .map((item) => ({
+      id: item.id,
+      title: item.title || '未命名讨论',
+      kind: item.kind === 'audio' ? 'audio' : 'text',
+      createdAt: item.createdAt || '',
+      status: item.status || 'draft',
+    }))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+function formatLogTime(value) {
+  if (!value) return '时间未知';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '时间未知';
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
 }
 
 function ListSection({ title, testId, items, emptyText }) {
@@ -54,6 +86,7 @@ export default function RehearsalPanel({ plan, dispatch, scenes }) {
   void scenes;
   const saved = Array.isArray(plan?.rehearsals) && plan.rehearsals[0] ? plan.rehearsals[0] : null;
   const [notes, setNotes] = useState(typeof saved?.notes === 'string' ? saved.notes : '');
+  const [todoFilter, setTodoFilter] = useState('all');
   const [organized, setOrganized] = useState(() => ({
     decisions: Array.isArray(saved?.decisions) ? saved.decisions : [],
     openQuestions: Array.isArray(saved?.openQuestions) ? saved.openQuestions : [],
@@ -61,6 +94,16 @@ export default function RehearsalPanel({ plan, dispatch, scenes }) {
   }));
 
   const impacts = Array.isArray(plan?.impacts) ? plan.impacts : [];
+  const activities = buildActivityLog(plan?.discussions);
+
+  const totalTodos = organized.todos.length;
+  const doneTodos = organized.todos.filter((todo) => todo.done).length;
+  const percent = totalTodos === 0 ? 0 : Math.round((doneTodos / totalTodos) * 100);
+  const visibleTodos = organized.todos.filter((todo) => {
+    if (todoFilter === 'active') return !todo.done;
+    if (todoFilter === 'done') return todo.done;
+    return true;
+  });
 
   function persist(next, nextNotes = notes) {
     dispatch?.({
@@ -81,10 +124,14 @@ export default function RehearsalPanel({ plan, dispatch, scenes }) {
   }
 
   function toggleTodo(index) {
+    const realIndex = organized.todos.findIndex(
+      (todo) => todo === visibleTodos[index]
+    );
+    const target = realIndex >= 0 ? realIndex : index;
     const next = {
       ...organized,
       todos: organized.todos.map((todo, i) =>
-        i === index ? { ...todo, done: !todo.done } : todo
+        i === target ? { ...todo, done: !todo.done } : todo
       ),
     };
     setOrganized(next);
@@ -128,17 +175,40 @@ export default function RehearsalPanel({ plan, dispatch, scenes }) {
           emptyText="暂无待确认问题"
         />
         <section data-testid="rehearsal-todos" className="card rounded p-3">
-          <h4 className="mb-2 text-sm font-medium">待办</h4>
-          {organized.todos.length === 0 ? (
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h4 className="text-sm font-medium">待办</h4>
+            <span data-testid="todo-rate" className="muted text-xs">
+              {doneTodos}/{totalTodos} · {percent}%
+            </span>
+          </div>
+          <div className="progress-track mb-2" aria-hidden="true">
+            <div className="progress-fill" style={{ width: `${percent}%` }} />
+          </div>
+          <div className="filter-group mb-2" role="group" aria-label="待办筛选">
+            {TODO_FILTERS.map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={todoFilter === value}
+                onClick={() => setTodoFilter(value)}
+                className={`filter-chip ${todoFilter === value ? 'is-active' : ''}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {totalTodos === 0 ? (
             <p className="muted text-xs">暂无待办</p>
+          ) : visibleTodos.length === 0 ? (
+            <p className="muted text-xs">该筛选下暂无待办</p>
           ) : (
             <ul
               className="zebra overflow-hidden rounded border"
               style={{ borderColor: 'var(--line)' }}
             >
-              {organized.todos.map((todo, index) => (
+              {visibleTodos.map((todo, index) => (
                 <li
-                  key={`todo-${index}`}
+                  key={`todo-${todo.text}-${index}`}
                   className="border-b px-2 py-1 text-sm"
                   style={{ borderColor: 'var(--line)' }}
                 >
@@ -200,6 +270,30 @@ export default function RehearsalPanel({ plan, dispatch, scenes }) {
               );
             })}
           </ul>
+        )}
+      </div>
+
+      <div className="mt-6">
+        <h3 className="mb-2 text-sm font-medium">活动日志</h3>
+        {activities.length === 0 ? (
+          <p className="muted text-xs">暂无讨论或排练活动，可从顶栏「讨论」开始记录。</p>
+        ) : (
+          <ol data-testid="activity-log" className="timeline">
+            {activities.map((activity) => (
+              <li key={activity.id} data-testid={`activity-${activity.id}`} className="timeline-item">
+                <span className={`timeline-dot ${activity.kind === 'audio' ? 'is-audio' : 'is-text'}`} />
+                <div className="timeline-body">
+                  <p className="text-sm">
+                    {activity.title}
+                    <span className="muted ml-2 text-xs">
+                      {activity.kind === 'audio' ? '录音讨论' : '文字讨论'}
+                    </span>
+                  </p>
+                  <small className="muted">{formatLogTime(activity.createdAt)}</small>
+                </div>
+              </li>
+            ))}
+          </ol>
         )}
       </div>
     </div>

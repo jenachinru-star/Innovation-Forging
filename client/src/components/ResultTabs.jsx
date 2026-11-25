@@ -6,6 +6,7 @@ import CharacterGallery from './CharacterGallery.jsx';
 import StageBlocking from './StageBlocking.jsx';
 import BriefPanel from './BriefPanel.jsx';
 import RehearsalPanel from './RehearsalPanel.jsx';
+import ReviewTemplate from './ReviewTemplate.jsx';
 import ExportPanel from './ExportPanel.jsx';
 import VisualStudio from './VisualStudio.jsx';
 import { getSourceMode } from '../engine/index.js';
@@ -171,11 +172,16 @@ export default function ResultTabs({
           <BriefPanel scenes={scriptData?.scenes || []} plan={plan} dispatch={dispatch} />
         )}
         {tab === 'rehearsal' && (
-          <RehearsalPanel
-            scenes={scenes}
-            plan={plan}
-            dispatch={dispatch}
-          />
+          <>
+            <RehearsalPanel
+              scenes={scenes}
+              plan={plan}
+              dispatch={dispatch}
+            />
+            <div className="mt-6">
+              <ReviewTemplate plan={plan} dispatch={dispatch} />
+            </div>
+          </>
         )}
         {tab === 'visuals' && (
           <VisualStudio scriptData={scriptData} plan={plan} dispatch={dispatch} />

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import RehearsalPanel from './RehearsalPanel.jsx';
+import RehearsalPanel, { buildActivityLog } from './RehearsalPanel.jsx';
 
 describe('RehearsalPanel', () => {
   it('整理三行笔记后分别进入决策、待确认问题与待办，待办可勾选完成', () => {
@@ -94,5 +94,70 @@ describe('RehearsalPanel', () => {
       id: 'imp-1',
       status: 'keptOld',
     });
+  });
+
+  it('待办完成率随勾选更新', () => {
+    render(<RehearsalPanel plan={{ impacts: [] }} dispatch={() => {}} />);
+
+    fireEvent.change(screen.getByLabelText('排练笔记'), {
+      target: { value: '#确认钥匙位置\n#检查灯光' },
+    });
+    fireEvent.click(screen.getByText('整理'));
+
+    expect(screen.getByTestId('todo-rate').textContent).toContain('0/2');
+    fireEvent.click(screen.getAllByRole('checkbox')[0]);
+    expect(screen.getByTestId('todo-rate').textContent).toContain('1/2');
+    expect(screen.getByTestId('todo-rate').textContent).toContain('50%');
+  });
+
+  it('筛选只显示已完成待办', () => {
+    render(<RehearsalPanel plan={{ impacts: [] }} dispatch={() => {}} />);
+
+    fireEvent.change(screen.getByLabelText('排练笔记'), {
+      target: { value: '#确认钥匙位置\n#检查灯光' },
+    });
+    fireEvent.click(screen.getByText('整理'));
+    fireEvent.click(screen.getAllByRole('checkbox')[0]);
+
+    fireEvent.click(screen.getByText('已完成'));
+    expect(screen.getByText('确认钥匙位置')).toBeInTheDocument();
+    expect(screen.queryByText('检查灯光')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('未完成'));
+    expect(screen.getByText('检查灯光')).toBeInTheDocument();
+    expect(screen.queryByText('确认钥匙位置')).not.toBeInTheDocument();
+  });
+
+  it('按时间倒序渲染讨论活动日志', () => {
+    const plan = {
+      impacts: [],
+      discussions: [
+        { id: 'd1', title: '较早讨论', kind: 'text', createdAt: '2026-11-24T10:00:00Z', status: 'done' },
+        { id: 'd2', title: '录音复盘', kind: 'audio', createdAt: '2026-11-25T10:00:00Z', status: 'done' },
+      ],
+    };
+
+    render(<RehearsalPanel plan={plan} dispatch={() => {}} />);
+
+    const log = screen.getByTestId('activity-log');
+    expect(log.children[0]).toHaveAttribute('data-testid', 'activity-d2');
+    expect(screen.getByText('录音复盘')).toBeInTheDocument();
+    expect(screen.getByText('录音讨论')).toBeInTheDocument();
+  });
+});
+
+describe('buildActivityLog', () => {
+  it('过滤无效项并按创建时间倒序', () => {
+    const result = buildActivityLog([
+      { id: 'd1', title: '较早', kind: 'text', createdAt: '2026-11-24T10:00:00Z' },
+      null,
+      { id: 'd2', title: '较新', kind: 'audio', createdAt: '2026-11-25T10:00:00Z' },
+    ]);
+    expect(result.map((item) => item.id)).toEqual(['d2', 'd1']);
+    expect(result[0].kind).toBe('audio');
+  });
+
+  it('入参非数组时返回空数组', () => {
+    expect(buildActivityLog(undefined)).toEqual([]);
   });
 });
