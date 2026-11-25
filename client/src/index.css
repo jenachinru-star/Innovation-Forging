@@ -4414,3 +4414,269 @@ svg.is-wire .stage-path-line {
   color: var(--ink-faint);
   font-size: 0.74rem;
 }
+
+/* ===== 05 人物关系 ===== */
+.relation-layout {
+  display: grid;
+  grid-template-columns: 184px minmax(0, 1fr) 272px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.relation-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.relation-stat {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.85rem 0.9rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.relation-stat-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.relation-stat-label {
+  font-size: 0.74rem;
+  color: var(--ink-muted);
+}
+
+.relation-stat b {
+  font-size: 1.6rem;
+  line-height: 1.1;
+  color: var(--ink);
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+.relation-stat-hint {
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+}
+
+.relation-stat-icon {
+  font-size: 1rem;
+  color: var(--cue);
+  line-height: 1;
+}
+
+.relation-stat.is-warn .relation-stat-icon {
+  color: var(--accent-seal);
+}
+
+.relation-center {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.relation-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.relation-filters {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.relation-filter {
+  padding: 0.32rem 1rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.relation-filter:hover {
+  color: var(--ink);
+}
+
+.relation-filter.is-active {
+  color: #f3e9dc;
+  background: var(--accent-seal);
+}
+
+.relation-chart-card {
+  position: relative;
+  padding: 1rem 1rem 2.6rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.relation-chart {
+  width: 100%;
+  height: 440px;
+}
+
+.relation-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 440px;
+  margin: 0;
+}
+
+.relation-legend {
+  position: absolute;
+  bottom: 0.85rem;
+  left: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+
+.legend-line {
+  display: inline-block;
+  width: 1.4rem;
+  height: 0;
+  margin-left: 0.4rem;
+  border-top: 1.5px solid var(--stage-muted);
+}
+
+.legend-dashed {
+  border-top: 1.5px dashed var(--accent-seal);
+}
+
+.relation-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.relation-card {
+  padding: 1rem 1.05rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.relation-card-title {
+  margin: 0 0 0.7rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+  font-family: var(--font-heading);
+}
+
+.relation-role {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  color: var(--cue);
+}
+
+.relation-desc {
+  margin: 0 0 0.9rem;
+  font-size: 0.78rem;
+  line-height: 1.65;
+  color: var(--ink-muted);
+}
+
+.relation-scene-label {
+  margin-bottom: 0.5rem;
+  font-size: 0.74rem;
+  color: var(--ink-faint);
+}
+
+.relation-scene-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.relation-scene-tag {
+  padding: 0.25rem 0.6rem;
+  color: var(--ink-muted);
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.relation-scene-tag:hover {
+  color: var(--ink);
+  border-color: var(--stage-muted);
+}
+
+.relation-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.relation-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.2rem;
+  border: none;
+  border-bottom: 1px solid var(--line-soft);
+  background: transparent;
+  font-size: 0.76rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.relation-list-item:hover {
+  color: var(--ink);
+}
+
+.relation-list-names {
+  color: var(--ink-muted);
+}
+
+.relation-list-type {
+  color: var(--ink-faint);
+  flex: 0 0 auto;
+}
+
+.relation-list li.is-review .relation-list-names {
+  color: var(--accent-seal);
+}
+
+.relation-list li.is-review .relation-list-item::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 0.9rem;
+  border-top: 1.5px dashed var(--accent-seal);
+}
+
+@media (max-width: 1180px) {
+  .relation-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .relation-stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .relation-stat {
+    flex: 1 1 44%;
+  }
+}

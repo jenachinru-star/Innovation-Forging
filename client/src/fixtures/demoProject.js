@@ -144,9 +144,20 @@ const plan = {
   },
 };
 
-// 演示专用：在共享样例基础上补人物关系，让关系图可渲染（不修改共享样例）
+// 演示专用：在共享样例基础上补人物关系与角色设定，让关系图可渲染（不修改共享样例）
+const CHARACTER_PROFILE = {
+  老陈: { role: '父亲', description: '独自居住的老父亲，习惯把思念藏在心里，一直盼着女儿回家。' },
+  阿岚: { role: '女儿', description: '离家多年后回到家中，在一把钥匙里重新理解父亲与家的意义。' },
+  老周: { role: '邻居', description: '热心的老街坊，看着阿岚长大，雨夜帮忙把伞拿上楼。' },
+};
+
 const demoScriptData = {
   ...SAMPLE_SCRIPT_DATA,
+  characters: SAMPLE_SCRIPT_DATA.characters.map((character) => ({
+    ...character,
+    role: CHARACTER_PROFILE[character.name]?.role || '',
+    description: CHARACTER_PROFILE[character.name]?.description || character.description || '',
+  })),
   relationships: [
     { from: '老陈', to: '阿岚', relation: '父女', needsReview: false },
     { from: '老周', to: '老陈', relation: '老友', needsReview: false },
