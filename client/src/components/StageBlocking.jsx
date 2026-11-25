@@ -318,6 +318,76 @@ export default function StageBlocking({
     );
   }
 
+  // —— Konva 节点交互：节点直接工作在逻辑坐标，拖拽由 Konva 处理，事件回写 reducer ——
+  function nodePosition(event) {
+    return {
+      x: clamp(event.target.x(), 0, VIEW_W),
+      y: clamp(event.target.y(), 0, VIEW_H),
+    };
+  }
+
+  function handleActorDragStart(event, actor) {
+    if (locked) return;
+    setDraggingId(actor.id);
+    if (recordPath) {
+      pathRef.current = [{ x: event.target.x(), y: event.target.y() }];
+      setPathDraft(pathRef.current);
+    }
+  }
+
+  function handleActorDragMove(event, actor) {
+    const pos = nodePosition(event);
+    setPositions((prev) => {
+      const forScene = prev[sceneNumber] && typeof prev[sceneNumber] === 'object' ? prev[sceneNumber] : {};
+      return { ...prev, [sceneNumber]: { ...forScene, [actor.id]: pos } };
+    });
+    if (recordPath) {
+      pathRef.current = [...pathRef.current, pos];
+      setPathDraft(pathRef.current);
+    }
+  }
+
+  function handleActorDragEnd(event, actor) {
+    const pos = nodePosition(event);
+    setDraggingId(null);
+    dispatch?.({
+      type: 'setPlacement',
+      placement: { sceneNumber, characterId: actor.id, x: pos.x, y: pos.y },
+    });
+    if (recordPath && pathRef.current.length > 1) {
+      dispatch?.({
+        type: 'addPath',
+        path: { sceneNumber, characterId: actor.id, points: pathRef.current, triggerQuote: '' },
+      });
+    }
+    pathRef.current = [];
+    setPathDraft([]);
+  }
+
+  function handleObjectDragStart(event, object) {
+    if (locked) return;
+    setSelectedObjectId(object.id);
+    setDraggingId(object.id);
+  }
+
+  function handleObjectDragMove(event, object) {
+    const pos = nodePosition(event);
+    setObjectPositions((prev) => {
+      const forScene = prev[sceneNumber] && typeof prev[sceneNumber] === 'object' ? prev[sceneNumber] : {};
+      return { ...prev, [sceneNumber]: { ...forScene, [object.id]: pos } };
+    });
+  }
+
+  function handleObjectDragEnd(event, object) {
+    const pos = nodePosition(event);
+    setDraggingId(null);
+    dispatch?.({ type: 'updateStageObject', id: object.id, patch: { x: pos.x, y: pos.y } });
+  }
+
+  function handleObjectClick(object) {
+    setSelectedObjectId(object.id);
+  }
+
   function handleAddObject() {
     const labels = { table: '桌', chair: '椅', entrance: '门口', prop: '道具' };
     dispatch?.({
@@ -626,6 +696,13 @@ export default function StageBlocking({
                   stageEditable={false}
                   stageRef={konvaStageRef}
                   locked={locked}
+                  onActorDragStart={handleActorDragStart}
+                  onActorDragMove={handleActorDragMove}
+                  onActorDragEnd={handleActorDragEnd}
+                  onObjectDragStart={handleObjectDragStart}
+                  onObjectDragMove={handleObjectDragMove}
+                  onObjectDragEnd={handleObjectDragEnd}
+                  onObjectClick={handleObjectClick}
                 />
               ) : (
                 <svg
