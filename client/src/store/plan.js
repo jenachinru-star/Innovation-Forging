@@ -356,6 +356,42 @@ export function planReducer(state, action) {
         ),
       };
 
+    case 'addDiscussion': {
+      const discussions = asArray(current.discussions);
+      const discussion = asObject(action.discussion);
+      return {
+        ...current,
+        discussions: [
+          {
+            id: discussion.id || nextId('disc', discussions),
+            title: discussion.title || '未命名讨论',
+            kind: discussion.kind || 'text',
+            createdAt: discussion.createdAt || new Date().toISOString(),
+            durationSec: Number.isFinite(discussion.durationSec) ? discussion.durationSec : 0,
+            audioUrl: discussion.audioUrl || '',
+            transcript: discussion.transcript || '',
+            status: discussion.status || 'draft',
+            summary: asObject(discussion.summary),
+          },
+          ...discussions,
+        ],
+      };
+    }
+
+    case 'updateDiscussion':
+      return {
+        ...current,
+        discussions: patchById(current.discussions, action.id, action.patch),
+      };
+
+    case 'removeDiscussion':
+      return {
+        ...current,
+        discussions: asArray(current.discussions).filter(
+          (discussion) => !discussion || discussion.id !== action.id
+        ),
+      };
+
     default:
       return current;
   }

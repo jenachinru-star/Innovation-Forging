@@ -18,7 +18,8 @@ import {
 import { findImpacts } from '@director/shared/rules/impact.js';
 import OnboardingGuide, { hasSeenOnboarding } from './components/OnboardingGuide.jsx';
 import FilmCameraIcon from './components/FilmCameraIcon.jsx';
-import { User, ChevronDown, LogOut, ArrowLeft } from 'lucide-react';
+import DiscussionPanel from './components/DiscussionPanel.jsx';
+import { User, ChevronDown, LogOut, ArrowLeft, MessageSquare } from 'lucide-react';
 
 const NAV_ITEMS = [
   { id: 'overview', mark: '00', label: '项目总览', phase: '作品' },
@@ -170,6 +171,7 @@ export default function App() {
   const [hydrated, setHydrated] = useState(false);
   const [user, setUser] = useState(null);
   const [showGuide, setShowGuide] = useState(false);
+  const [discussionOpen, setDiscussionOpen] = useState(false);
 
   const [step, setStep] = useState('input');
   const [material, setMaterial] = useState('');
@@ -600,6 +602,13 @@ export default function App() {
           >
             导出材料
           </button>
+          <button
+            type="button"
+            className="btn-ghost btn-small discussion-top-btn"
+            onClick={() => setDiscussionOpen(true)}
+          >
+            <MessageSquare size={15} aria-hidden /> 讨论
+          </button>
           <AccountMenu
             username={user?.username}
             onBackToCover={handleBackToCover}
@@ -721,6 +730,13 @@ export default function App() {
         onExport={handleExportProject}
         onDelete={handleDeleteProject}
         onDuplicate={handleDuplicateProject}
+      />
+
+      <DiscussionPanel
+        open={discussionOpen}
+        onClose={() => setDiscussionOpen(false)}
+        plan={plan}
+        dispatch={dispatch}
       />
 
       {showGuide && <OnboardingGuide onClose={() => setShowGuide(false)} />}
