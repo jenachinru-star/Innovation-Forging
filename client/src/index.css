@@ -6267,3 +6267,47 @@ svg.is-wire .stage-path-line {
     grid-template-columns: 1fr;
   }
 }
+
+/* 通用资料收藏夹 */
+.disc-collection {
+  margin-top: 22px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.disc-collection-add {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.disc-collection-add .field {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+}
+.disc-collection-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.disc-collection-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 7px 10px;
+  font-size: 0.8rem;
+}
+.disc-collection-link {
+  color: var(--cue);
+  word-break: break-all;
+  text-decoration: none;
+}
+.disc-collection-link:hover {
+  text-decoration: underline;
+}
