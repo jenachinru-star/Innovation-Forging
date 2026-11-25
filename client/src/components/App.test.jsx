@@ -46,4 +46,15 @@ describe('App 工作台', () => {
       expect(container.firstChild).toHaveAttribute('data-theme', 'theatre');
     });
   });
+
+  it('头像下拉可展开并退出登录', async () => {
+    render(<App />);
+    const trigger = await screen.findByRole('button', { name: /tester/ });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(trigger);
+    expect(await screen.findByRole('menu')).toBeInTheDocument();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(screen.getByRole('menuitem', { name: '退出登录' }));
+    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
+  });
 });

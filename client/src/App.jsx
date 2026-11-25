@@ -17,6 +17,8 @@ import {
 } from './api/projects.js';
 import { findImpacts } from '@director/shared/rules/impact.js';
 import OnboardingGuide, { hasSeenOnboarding } from './components/OnboardingGuide.jsx';
+import FilmCameraIcon from './components/FilmCameraIcon.jsx';
+import { User, ChevronDown, LogOut, ArrowLeft } from 'lucide-react';
 
 const NAV_ITEMS = [
   { id: 'overview', mark: '00', label: '项目总览', phase: '作品' },
@@ -62,13 +64,69 @@ function downloadArchive(record) {
   return true;
 }
 
-function BrandMark() {
+function AccountMenu({ username, onBackToCover, onLogout }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    function onDocClick(event) {
+      if (ref.current && !ref.current.contains(event.target)) setOpen(false);
+    }
+    function onKey(event) {
+      if (event.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
   return (
-    <span className="brand-mark" aria-hidden="true">
-      <i />
-      开
-      <i />
-    </span>
+    <div className="account-menu" ref={ref}>
+      <button
+        type="button"
+        className="account-trigger"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span className="account-avatar">
+          <User size={15} aria-hidden />
+        </span>
+        <span className="account-name">{username}</span>
+        <ChevronDown size={14} className={`account-caret ${open ? 'is-open' : ''}`} aria-hidden />
+      </button>
+      {open && (
+        <div className="account-dropdown" role="menu">
+          <div className="account-dropdown-head">{username}</div>
+          <button
+            type="button"
+            role="menuitem"
+            className="account-dropdown-item"
+            onClick={() => {
+              setOpen(false);
+              onBackToCover();
+            }}
+          >
+            <ArrowLeft size={14} aria-hidden /> 返回封面
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="account-dropdown-item"
+            onClick={() => {
+              setOpen(false);
+              onLogout();
+            }}
+          >
+            <LogOut size={14} aria-hidden /> 退出登录
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -491,7 +549,7 @@ export default function App() {
       </a>
       <header className="app-topbar">
         <div className="brand-lockup">
-          <BrandMark />
+          <FilmCameraIcon className="brand-film-icon" />
           <div>
             <b>开排</b>
             <span>舞台制作工作台</span>
@@ -542,6 +600,11 @@ export default function App() {
           >
             导出材料
           </button>
+          <AccountMenu
+            username={user?.username}
+            onBackToCover={handleBackToCover}
+            onLogout={handleLogout}
+          />
         </div>
       </header>
 
@@ -565,16 +628,6 @@ export default function App() {
             <span>打开本地作品库</span>
             <span aria-hidden="true">↗</span>
           </button>
-          <div className="rail-account">
-            <span className="rail-kicker">当前身份</span>
-            <b className="rail-account-name">{user?.username}</b>
-            <button type="button" className="rail-account-link" onClick={handleBackToCover}>
-              返回封面
-            </button>
-            <button type="button" className="rail-account-link" onClick={handleLogout}>
-              退出登录
-            </button>
-          </div>
         </aside>
 
         <main id="workspace-main" className="workspace-main">
