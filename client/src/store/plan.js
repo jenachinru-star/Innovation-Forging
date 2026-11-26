@@ -498,6 +498,12 @@ export function planReducer(state, action) {
         ),
       };
 
+    case 'setAssistantMessages':
+      return {
+        ...current,
+        assistantMessages: asArray(action.messages),
+      };
+
     default:
       return current;
   }

@@ -6,6 +6,7 @@ import { createCharacterRouter } from './routes/character.js';
 import { createVisualRouter } from './routes/visual.js';
 import { createVideoRouter } from './routes/video.js';
 import { createDiscussionRouter } from './routes/discussion.js';
+import { createAssistantRouter } from './routes/assistant.js';
 import { createAuthRouter } from './routes/auth.js';
 import { createProjectsRouter } from './routes/projects.js';
 import { createStatsRouter } from './routes/stats.js';
@@ -26,6 +27,7 @@ export async function createApp(deps = {}) {
   app.use('/api/visual', createVisualRouter({ store }));
   app.use('/api/video', createVideoRouter({ store }));
   app.use('/api/discussion', createDiscussionRouter({ store }));
+  app.use('/api/assistant', createAssistantRouter({ store }));
   app.use('/api/stats', createStatsRouter({ store }));
 
   const distPath = path.resolve(__dirname, '../dist');

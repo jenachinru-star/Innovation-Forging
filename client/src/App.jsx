@@ -20,7 +20,8 @@ import { IMPACT_STATUS } from '@director/shared/constants/status.js';
 import OnboardingGuide, { hasSeenOnboarding } from './components/OnboardingGuide.jsx';
 import FilmCameraIcon from './components/FilmCameraIcon.jsx';
 import DiscussionPanel from './components/DiscussionPanel.jsx';
-import { User, ChevronDown, LogOut, ArrowLeft, MessageSquare } from 'lucide-react';
+import AssistantModal from './components/AssistantModal.jsx';
+import { User, ChevronDown, LogOut, ArrowLeft, MessageSquare, Sparkles } from 'lucide-react';
 
 const NAV_ITEMS = [
   { id: 'overview', mark: '00', label: '项目总览', phase: '作品' },
@@ -174,6 +175,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [showGuide, setShowGuide] = useState(false);
   const [discussionOpen, setDiscussionOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
 
   const [step, setStep] = useState('input');
   const [material, setMaterial] = useState('');
@@ -607,6 +609,13 @@ export default function App() {
           </button>
           <button
             type="button"
+            className="btn-primary btn-small assistant-top-btn"
+            onClick={() => setAssistantOpen(true)}
+          >
+            <Sparkles size={15} aria-hidden /> AI 助手
+          </button>
+          <button
+            type="button"
             className="btn-ghost btn-small discussion-top-btn"
             onClick={() => setDiscussionOpen(true)}
           >
@@ -742,6 +751,20 @@ export default function App() {
         onClose={() => setDiscussionOpen(false)}
         plan={plan}
         dispatch={dispatch}
+      />
+
+      <AssistantModal
+        open={assistantOpen}
+        onClose={() => setAssistantOpen(false)}
+        plan={plan}
+        dispatch={dispatch}
+        context={{
+          projectName,
+          sceneCount,
+          characterCount: Array.isArray(scriptData?.characters)
+            ? scriptData.characters.length
+            : 0,
+        }}
       />
 
       {showGuide && <OnboardingGuide onClose={() => setShowGuide(false)} />}
