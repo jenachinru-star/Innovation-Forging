@@ -101,9 +101,37 @@ export const pathSchema = z.object({
   triggerQuote: optionalString(2000),
 });
 
+const rectSettingsSchema = z.object({
+  x: optionalNumber(0),
+  y: optionalNumber(0),
+  width: optionalNumber(0),
+  height: optionalNumber(0),
+});
+
+const gridSettingsSchema = z.object({
+  showGrid: z.boolean().optional().nullable(),
+  spacing: optionalNumber(40),
+});
+
+// 舞台框/上下场口/网格设置；缺省为 null，由 client mergeStageSettings 兜底默认。
+export const stageSettingsSchema = z
+  .object({
+    frame: rectSettingsSchema.optional().nullable(),
+    doors: z
+      .object({
+        up: rectSettingsSchema.optional().nullable(),
+        down: rectSettingsSchema.optional().nullable(),
+      })
+      .optional()
+      .nullable(),
+    grid: gridSettingsSchema.optional().nullable(),
+  })
+  .optional()
+  .nullable();
+
 export const stagingSchema = z
   .object({
-    stage: looseObject,
+    stage: stageSettingsSchema,
     placements: z.array(placementSchema).optional().nullable().transform((v) => (Array.isArray(v) ? v : [])),
     objects: z.array(stageObjectSchema).optional().nullable().transform((v) => (Array.isArray(v) ? v : [])),
     paths: z.array(pathSchema).optional().nullable().transform((v) => (Array.isArray(v) ? v : [])),

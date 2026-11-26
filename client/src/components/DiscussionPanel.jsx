@@ -6,12 +6,13 @@ import {
   Play,
   X,
   MessageSquare,
-  StickyNote,
   Loader,
   Trash2,
   RotateCcw,
   ListChecks,
   ArrowRight,
+  Bot,
+  Check,
 } from 'lucide-react';
 import useRecorder, { formatClock } from '../hooks/useRecorder.js';
 import { nextId } from '../store/plan.js';
@@ -28,6 +29,12 @@ function blobToBase64(blob) {
     reader.readAsDataURL(blob);
   });
 }
+
+const TABS = [
+  { id: 'record', label: '语音记录', icon: Mic },
+  { id: 'minutes', label: 'AI 纪要', icon: Bot },
+  { id: 'todos', label: '待办清单', icon: ListChecks },
+];
 
 function DiscussionComposer({ recorder, mode, setMode, onSubmitAudio, onSubmitText, busy }) {
   const [text, setText] = useState('');
@@ -141,11 +148,22 @@ function DiscussionComposer({ recorder, mode, setMode, onSubmitAudio, onSubmitTe
 
 export default function DiscussionPanel({ open, onClose, plan, dispatch }) {
   const recorder = useRecorder();
-  const [mode, setMode] = useState('menu');
+  const [tab, setTab] = useState('record');
+  const [composerMode, setComposerMode] = useState('menu');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [checked, setChecked] = useState(new Set());
 
   const discussions = Array.isArray(plan?.discussions) ? plan.discussions : [];
+
+  function toggleChecked(key) {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   useEffect(() => {
     if (!open) return undefined;
@@ -159,7 +177,10 @@ export default function DiscussionPanel({ open, onClose, plan, dispatch }) {
   // 关闭面板时若仍在录音，先放弃并复位
   useEffect(() => {
     if (!open && recorder.status !== 'idle') recorder.cancel();
-    if (!open) setMode('menu');
+    if (!open) {
+      setComposerMode('menu');
+      setTab('record');
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -210,7 +231,7 @@ export default function DiscussionPanel({ open, onClose, plan, dispatch }) {
         id,
         patch: { transcript: data.transcript, summary: data.summary, status: DISCUSSION_STATUS.DONE },
       });
-      setMode('menu');
+      setComposerMode('menu');
     } catch (e) {
       setError(String(e?.message || e));
       dispatch({ type: 'updateDiscussion', id, patch: { status: DISCUSSION_STATUS.ERROR } });
@@ -235,7 +256,7 @@ export default function DiscussionPanel({ open, onClose, plan, dispatch }) {
         id,
         patch: { summary: data.summary, status: DISCUSSION_STATUS.DONE },
       });
-      setMode('menu');
+      setComposerMode('menu');
     } catch (e) {
       setError(String(e?.message || e));
       dispatch({ type: 'updateDiscussion', id, patch: { status: DISCUSSION_STATUS.ERROR } });
@@ -304,6 +325,11 @@ export default function DiscussionPanel({ open, onClose, plan, dispatch }) {
     }
   }
 
+  const totalTodos = discussions.reduce(
+    (sum, item) => sum + (Array.isArray(item.summary?.todos) ? item.summary.todos.length : 0),
+    0
+  );
+
   return (
     <>
       <div className={`disc-backdrop ${open ? 'is-open' : ''}`} onClick={onClose} aria-hidden="true" />
@@ -318,16 +344,23 @@ export default function DiscussionPanel({ open, onClose, plan, dispatch }) {
           </button>
         </header>
 
-        <div className="disc-body">
-          <DiscussionComposer
-            recorder={recorder}
-            mode={mode}
-            setMode={setMode}
-            onSubmitAudio={submitAudio}
-            onSubmitText={submitText}
-            busy={busy}
-          />
+        <nav className="disc-tabs" role="tablist" aria-label="讨论视图">
+          {TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              className={`disc-tab ${tab === id ? 'is-active' : ''}`}
+              onClick={() => setTab(id)}
+            >
+              <Icon size={14} aria-hidden />
+              {label}
+            </button>
+          ))}
+        </nav>
 
+        <div className="disc-body">
           {error && <p className="disc-error">{error}</p>}
           {busy && (
             <p className="disc-processing">
@@ -335,109 +368,203 @@ export default function DiscussionPanel({ open, onClose, plan, dispatch }) {
             </p>
           )}
 
-          <div className="disc-history">
-            <div className="disc-history-head">
-              <h3 className="disc-history-title">
-                <StickyNote size={15} /> 历史讨论（{discussions.length}）
-              </h3>
-              <button type="button" className="disc-sample-btn" onClick={loadSampleDiscussion}>
-                加载示例
-              </button>
-            </div>
-            {discussions.length === 0 ? (
-              <p className="disc-empty">还没有讨论记录，从上方开始一条吧。</p>
-            ) : (
-              discussions.map((item) => (
-                <article key={item.id} className="disc-item" data-testid={`disc-item-${item.id}`}>
-                  <div className="disc-item-head">
-                    <b>{item.title}</b>
-                    <button
-                      type="button"
-                      className="disc-item-delete"
-                      aria-label="删除"
-                      onClick={() => removeDiscussion(item.id)}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                  <p className="disc-item-meta">
-                    {new Date(item.createdAt).toLocaleString('zh-CN', { hour12: false })}
-                    {item.kind === 'audio' && ` · 时长 ${formatClock(item.durationSec)}`}
-                  </p>
-                  {item.audioUrl && (
-                    <audio controls src={item.audioUrl} className="disc-audio" />
-                  )}
-                  {item.transcript && (
-                    <p className="disc-transcript">{item.transcript}</p>
-                  )}
-                  {item.status === DISCUSSION_STATUS.PROCESSING && (
-                    <p className="disc-item-state">分析中……</p>
-                  )}
-                  {item.status === DISCUSSION_STATUS.ERROR && (
-                    <p className="disc-item-state is-error">分析失败</p>
-                  )}
-                  {item.summary &&
-                    (item.summary.overview ||
-                      (item.summary.decisions || []).length ||
-                      (item.summary.todos || []).length ||
-                      (item.summary.changes || []).length ||
-                      (item.summary.questions || []).length) && (
-                    <div className="disc-summary">
-                      {item.summary.overview && (
-                        <p className="disc-summary-overview">{item.summary.overview}</p>
-                      )}
-                      {['decisions', 'todos', 'changes', 'questions'].map((key) =>
-                        (item.summary[key] || []).length ? (
-                          <div key={key} className="disc-summary-group">
-                            <span className={`disc-summary-tag tag-${key}`}>
-                              { { decisions: '决策', todos: '待办', changes: '变更', questions: '问题' }[key] }
-                            </span>
-                            <div className="disc-summary-content">
-                              <ul>
-                                {item.summary[key].map((entry, i) => (
-                                  <li key={i}>{entry}</li>
-                                ))}
-                              </ul>
-                              {key === 'todos' &&
-                                (item.converted?.todos ? (
-                                  <span className="disc-convert is-done">
-                                    <ListChecks size={13} /> 已转入排练待办
-                                  </span>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    className="disc-convert"
-                                    onClick={() => convertTodos(item)}
-                                  >
-                                    <ListChecks size={13} /> 转为排练待办
-                                  </button>
-                                ))}
-                              {key === 'changes' &&
-                                (item.converted?.changes ? (
-                                  <span className="disc-convert is-done">
-                                    <ArrowRight size={13} /> 已转入部门需求
-                                  </span>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    className="disc-convert"
-                                    onClick={() => convertChanges(item)}
-                                  >
-                                    <ArrowRight size={13} /> 转为部门需求
-                                  </button>
-                                ))}
-                            </div>
-                          </div>
-                        ) : null
-                      )}
-                    </div>
-                  )}
-                </article>
-              ))
-            )}
-          </div>
+          {/* ===== 语音记录：录音/文字入口 + 转写气泡 ===== */}
+          {tab === 'record' && (
+            <div className="disc-pane">
+              <DiscussionComposer
+                recorder={recorder}
+                mode={composerMode}
+                setMode={setComposerMode}
+                onSubmitAudio={submitAudio}
+                onSubmitText={submitText}
+                busy={busy}
+              />
 
-          <CollectionPanel plan={plan} dispatch={dispatch} />
+              <div className="disc-bubble-list">
+                <div className="disc-history-head">
+                  <h3 className="disc-history-title">
+                    <MessageSquare size={15} /> 转写记录（{discussions.length}）
+                  </h3>
+                  <button type="button" className="disc-sample-btn" onClick={loadSampleDiscussion}>
+                    加载示例
+                  </button>
+                </div>
+
+                {discussions.length === 0 ? (
+                  <p className="disc-empty">还没有讨论记录，从上方开始一条吧。</p>
+                ) : (
+                  discussions.map((item) => (
+                    <div
+                      key={item.id}
+                      className="disc-bubble"
+                      data-kind={item.kind}
+                      data-testid={`disc-item-${item.id}`}
+                    >
+                      <span className="disc-bubble-avatar" aria-hidden>
+                        {item.kind === 'audio' ? <Mic size={15} /> : <MessageSquare size={15} />}
+                      </span>
+                      <div className="disc-bubble-body">
+                        <div className="disc-bubble-meta">
+                          <b>{item.title}</b>
+                          <small>
+                            {new Date(item.createdAt).toLocaleString('zh-CN', { hour12: false })}
+                            {item.kind === 'audio' && ` · ${formatClock(item.durationSec)}`}
+                          </small>
+                          <button
+                            type="button"
+                            className="disc-bubble-delete"
+                            aria-label="删除"
+                            onClick={() => removeDiscussion(item.id)}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                        {item.audioUrl && <audio controls src={item.audioUrl} className="disc-audio" />}
+                        {item.status === DISCUSSION_STATUS.PROCESSING && (
+                          <p className="disc-item-state">分析中……</p>
+                        )}
+                        {item.status === DISCUSSION_STATUS.ERROR && (
+                          <p className="disc-item-state is-error">分析失败</p>
+                        )}
+                        {item.transcript && <p className="disc-bubble-text">{item.transcript}</p>}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ===== AI 纪要：概览 / 决策 / 变更 / 问题 ===== */}
+          {tab === 'minutes' && (
+            <div className="disc-pane">
+              {discussions.every((item) => !item.summary) ? (
+                <p className="disc-empty">还没有 AI 纪要，先在「语音记录」里发起一条讨论。</p>
+              ) : (
+                discussions.map((item) => {
+                  const s = item.summary;
+                  if (!s) return null;
+                  const hasChanges = (s.changes || []).length > 0;
+                  return (
+                    <article key={item.id} className="ai-minutes-card" data-testid={`minutes-${item.id}`}>
+                      <div className="ai-minutes-head">
+                        <Bot size={16} aria-hidden />
+                        <b>{item.title}</b>
+                      </div>
+                      {s.overview && <p className="ai-minutes-overview">{s.overview}</p>}
+
+                      {[(s.decisions || []).length, (s.changes || []).length, (s.questions || []).length].every(
+                        (n) => n === 0
+                      ) && <p className="disc-empty">本次暂无结构化条目。</p>}
+
+                      {(s.decisions || []).length > 0 && (
+                        <div className="disc-summary-group">
+                          <span className="disc-summary-tag tag-decisions">决策</span>
+                          <ul className="ai-minutes-list">
+                            {s.decisions.map((entry, i) => (
+                              <li key={i}>{entry}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {hasChanges && (
+                        <div className="disc-summary-group">
+                          <span className="disc-summary-tag tag-changes">变更</span>
+                          <div className="disc-summary-content">
+                            <ul className="ai-minutes-list">
+                              {s.changes.map((entry, i) => (
+                                <li key={i}>{entry}</li>
+                              ))}
+                            </ul>
+                            {item.converted?.changes ? (
+                              <span className="disc-convert is-done">
+                                <ArrowRight size={13} /> 已转入部门需求
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                className="disc-convert"
+                                onClick={() => convertChanges(item)}
+                              >
+                                <ArrowRight size={13} /> 转为部门需求
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {(s.questions || []).length > 0 && (
+                        <div className="disc-summary-group">
+                          <span className="disc-summary-tag tag-questions">问题</span>
+                          <ul className="ai-minutes-list">
+                            {s.questions.map((entry, i) => (
+                              <li key={i}>{entry}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </article>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {/* ===== 待办清单：勾选 + 转排练 ===== */}
+          {tab === 'todos' && (
+            <div className="disc-pane">
+              {totalTodos === 0 ? (
+                <p className="disc-empty">还没有待办，AI 梳理后会出现在这里。</p>
+              ) : (
+                discussions.map((item) => {
+                  const todos = Array.isArray(item.summary?.todos) ? item.summary.todos : [];
+                  if (!todos.length) return null;
+                  return (
+                    <div key={item.id} className="todo-group" data-testid={`todos-${item.id}`}>
+                      <div className="todo-group-head">
+                        <b>{item.title}</b>
+                        {item.converted?.todos ? (
+                          <span className="disc-convert is-done">
+                            <ListChecks size={13} /> 已转入排练待办
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            className="disc-convert"
+                            onClick={() => convertTodos(item)}
+                          >
+                            <ListChecks size={13} /> 转为排练待办
+                          </button>
+                        )}
+                      </div>
+                      <ul className="todo-check-list">
+                        {todos.map((entry, i) => {
+                          const key = `${item.id}:${i}`;
+                          const isDone = checked.has(key);
+                          return (
+                            <li key={key}>
+                              <button
+                                type="button"
+                                className={`todo-check ${isDone ? 'is-checked' : ''}`}
+                                aria-pressed={isDone}
+                                onClick={() => toggleChecked(key)}
+                              >
+                                {isDone && <Check size={12} aria-hidden />}
+                              </button>
+                              <span className={isDone ? 'is-done-text' : ''}>{entry}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  );
+                })
+              )}
+
+              <CollectionPanel plan={plan} dispatch={dispatch} />
+            </div>
+          )}
         </div>
       </aside>
     </>

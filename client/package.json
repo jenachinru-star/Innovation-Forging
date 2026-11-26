@@ -13,11 +13,13 @@
     "@director/shared": "*",
     "echarts": "^6.1.0",
     "gsap": "^3.15.1",
+    "konva": "^10.11.0",
     "lucide-react": "^1.80.0",
     "mammoth": "^1.13.0",
     "pdfjs-dist": "^6.5.438",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "react-konva": "^19.3.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.5",
@@ -27,6 +29,7 @@
     "jsdom": "^31.0.1",
     "tailwindcss": "^4.3.5",
     "vite": "^8.3.8",
-    "vitest": "^5.1.1"
+    "vitest": "^5.1.1",
+    "vitest-canvas-mock": "^1.2.0"
   }
 }

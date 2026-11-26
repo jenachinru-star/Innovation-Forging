@@ -5,7 +5,8 @@ import {
   writeSessionCookie,
   removeSessionCookie,
   readSessionToken,
-  SESSION_MS,
+  REMEMBER_SESSION_MS,
+  SHORT_SESSION_MS,
 } from '../services/cookie.js';
 import { validate } from '../middleware/validate.js';
 import { isValidSession } from '../middleware/requireAuth.js';
@@ -59,11 +60,12 @@ function clearFailures(key) {
   failTracker.delete(key);
 }
 
-function issueSession(store, res, username) {
+function issueSession(store, res, username, remember) {
   const token = randomBytes(32).toString('hex');
   const now = Date.now();
-  store.putSession(token, { username, createdAt: now, expiresAt: now + SESSION_MS });
-  writeSessionCookie(res, token);
+  const ttlMs = remember ? REMEMBER_SESSION_MS : SHORT_SESSION_MS;
+  store.putSession(token, { username, createdAt: now, expiresAt: now + ttlMs });
+  writeSessionCookie(res, token, ttlMs);
 }
 
 export function createAuthRouter(deps = {}) {
@@ -71,7 +73,7 @@ export function createAuthRouter(deps = {}) {
   const router = Router();
 
   router.post('/register', validate(registerSchema), (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, remember } = req.body;
     if (store.getUser(username)) return res.status(409).json({ error: '该用户名已被注册' });
 
     store.putUser({
@@ -79,12 +81,12 @@ export function createAuthRouter(deps = {}) {
       passwordHash: hashPassword(password),
       createdAt: new Date().toISOString(),
     });
-    issueSession(store, res, username);
+    issueSession(store, res, username, Boolean(remember));
     return res.status(201).json({ user: { username } });
   });
 
   router.post('/login', validate(loginSchema), (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, remember } = req.body;
     const key = trackerKey(req, username);
     if (isLocked(key)) {
       return res.status(429).json({ error: '失败次数过多，请稍后再试' });
@@ -97,7 +99,7 @@ export function createAuthRouter(deps = {}) {
     }
 
     clearFailures(key);
-    issueSession(store, res, username);
+    issueSession(store, res, username, Boolean(remember));
     return res.json({ user: { username } });
   });
 

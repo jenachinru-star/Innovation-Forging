@@ -23,6 +23,10 @@ function renderPanel(plan = {}, dispatch = vi.fn()) {
   return { ...utils, onClose, dispatch };
 }
 
+function gotoTab(name) {
+  fireEvent.click(screen.getByRole('tab', { name }));
+}
+
 describe('讨论数据 reducer', () => {
   it('addDiscussion 生成默认字段并置于最前', () => {
     const initial = createEmptyProductionPlan('stage', '测试');
@@ -72,13 +76,16 @@ describe('DiscussionPanel 抽屉', () => {
     }));
   });
 
-  it('打开后显示标题与两个模式入口', () => {
+  it('打开后显示标题、三个 Tab 与两个模式入口', () => {
     renderPanel();
     expect(screen.getByRole('complementary', { hidden: true })).toHaveAttribute(
       'aria-hidden',
       'false'
     );
     expect(screen.getByText('讨论与复盘')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /语音记录/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /AI 纪要/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /待办清单/ })).toBeInTheDocument();
     expect(screen.getByText('录音讨论')).toBeInTheDocument();
     expect(screen.getByText('文字记录')).toBeInTheDocument();
   });
@@ -94,7 +101,7 @@ describe('DiscussionPanel 抽屉', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('文字提交后调用接口并渲染结构化纪要', async () => {
+  it('文字提交后调用接口并完成梳理', async () => {
     const { dispatch } = renderPanel();
     fireEvent.click(screen.getByText('文字记录'));
     const textarea = screen.getByPlaceholderText(/记录想法/);
@@ -115,7 +122,7 @@ describe('DiscussionPanel 抽屉', () => {
     );
   });
 
-  it('已有纪要的历史记录渲染决策与待办标签', () => {
+  it('历史纪要分别在 AI 纪要与待办 Tab 渲染', () => {
     const plan = {
       discussions: [
         {
@@ -131,8 +138,17 @@ describe('DiscussionPanel 抽屉', () => {
       ],
     };
     renderPanel(plan);
+
+    // 语音记录 Tab：转写气泡
     expect(screen.getByText('历史讨论')).toBeInTheDocument();
+    expect(screen.getByText(summaryPayload.transcript)).toBeInTheDocument();
+
+    // AI 纪要 Tab：决策
+    gotoTab(/AI 纪要/);
     expect(screen.getByText('开场改为暖光')).toBeInTheDocument();
+
+    // 待办清单 Tab：待办
+    gotoTab(/待办清单/);
     expect(screen.getByText('周五前确认服装')).toBeInTheDocument();
   });
 
@@ -153,6 +169,7 @@ describe('DiscussionPanel 抽屉', () => {
       ],
     };
     const { dispatch } = renderPanel(plan);
+    gotoTab(/待办清单/);
     fireEvent.click(screen.getByRole('button', { name: /转为排练待办/ }));
 
     const rehCall = dispatch.mock.calls.find((c) => c[0].type === 'setRehearsalNotes');
@@ -176,12 +193,13 @@ describe('DiscussionPanel 抽屉', () => {
       ],
     };
     const { dispatch } = renderPanel(plan);
+    gotoTab(/待办清单/);
     fireEvent.click(screen.getByRole('button', { name: /转为排练待办/ }));
     const rehCall = dispatch.mock.calls.find((c) => c[0].type === 'setRehearsalNotes');
     expect(rehCall[0].payload.todos).toHaveLength(1);
   });
 
-  it('变更转为部门需求并按关键词推断部门', () => {
+  it('变更在 AI 纪要 Tab 转为部门需求并推断部门', () => {
     const plan = {
       briefs: [],
       discussions: [
@@ -202,6 +220,7 @@ describe('DiscussionPanel 抽屉', () => {
       ],
     };
     const { dispatch } = renderPanel(plan);
+    gotoTab(/AI 纪要/);
     fireEvent.click(screen.getByRole('button', { name: /转为部门需求/ }));
 
     const addCalls = dispatch.mock.calls.filter((c) => c[0].type === 'addBrief');
@@ -224,6 +243,7 @@ describe('DiscussionPanel 抽屉', () => {
       ],
     };
     renderPanel(plan);
+    gotoTab(/待办清单/);
     expect(screen.getByText(/已转入排练待办/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /转为排练待办/ })).not.toBeInTheDocument();
   });

@@ -21,10 +21,18 @@ import { DEPARTMENTS, DEPARTMENT_LABELS } from '@director/shared/rules/briefs.js
 import { CUE_STATUS_OPTIONS, CUE_STATUS } from '@director/shared/constants/status.js';
 import { nextId } from '../store/plan.js';
 import { CHARACTER_IMAGE } from '../assets/samples/index.js';
+import {
+  VIEW_W,
+  VIEW_H,
+  clamp,
+  defaultPosition,
+  storedPosition,
+  pointAtProgress,
+} from '../stage/geometry.js';
+import { getScene, hasScene, sceneLines, actorsFor } from '../stage/actors.js';
+import StageCanvas from '../stage/StageCanvas.jsx';
+import { mergeStageSettings } from '../stage/stageSettings.js';
 
-const VIEW_W = 800;
-const VIEW_H = 480;
-const DEFAULT_Y = Math.round(VIEW_H * 0.62);
 const DURATION = 330; // 时间轴总时长（秒），对齐设计稿 05:30
 
 // 舞台子 Tab：舞台 / 调度 / 灯光 / 音乐 / 道具 / 音效
@@ -44,11 +52,6 @@ const DISPATCH_TABS = [
   { id: 'cue', label: '提示' },
 ];
 
-function clamp(value, min, max) {
-  if (!Number.isFinite(value)) return min;
-  return Math.min(max, Math.max(min, value));
-}
-
 function pad2(value) {
   return String(value).padStart(2, '0');
 }
@@ -62,103 +65,6 @@ function formatTime(sec) {
   return `${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`;
 }
 
-// 沿点序列按进度（0~1）取点，线性段插值
-function pointAtProgress(points, progress) {
-  if (!Array.isArray(points) || points.length < 2) return null;
-  const p = clamp(progress, 0, 1);
-  const seg = p * (points.length - 1);
-  const index = Math.min(Math.floor(seg), points.length - 2);
-  const k = seg - index;
-  return {
-    x: points[index].x + (points[index + 1].x - points[index].x) * k,
-    y: points[index].y + (points[index + 1].y - points[index].y) * k,
-  };
-}
-
-function normalizeCharacters(characters) {
-  const list = Array.isArray(characters) ? characters : [];
-  return list
-    .map((item) => {
-      if (!item) return null;
-      if (typeof item === 'string') return { id: `ch-${item}`, name: item };
-      const name = item.name || item.id || '';
-      if (!name) return null;
-      return { id: item.id || `ch-${name}`, name };
-    })
-    .filter(Boolean);
-}
-
-function getScene(scenes, sceneNumber) {
-  const list = Array.isArray(scenes) ? scenes : [];
-  if (list.length === 0) return null;
-  return list.find((scene) => Number(scene?.sceneNumber) === Number(sceneNumber)) || list[0];
-}
-
-function hasScene(scenes, sceneNumber) {
-  const list = Array.isArray(scenes) ? scenes : [];
-  return list.some((scene) => Number(scene?.sceneNumber) === Number(sceneNumber));
-}
-
-function sceneLines(scenes, sceneNumber) {
-  const scene = getScene(scenes, sceneNumber);
-  const raw = scene?.lines ?? scene?.dialogue ?? scene?.quotes ?? [];
-  const list = Array.isArray(raw) ? raw : [];
-  const seen = new Set();
-  const lines = [];
-  for (const item of list) {
-    const speaker = typeof item === 'object' && item ? String(item.speaker ?? '').trim() : '';
-    const text = String(
-      typeof item === 'string' ? item : (item?.text ?? item?.quote ?? item?.content ?? '')
-    ).trim();
-    if (!text || seen.has(text)) continue;
-    seen.add(text);
-    lines.push({ speaker, text });
-  }
-  return lines;
-}
-
-function actorsFor(characters, cast) {
-  const base = normalizeCharacters(characters);
-  const castMap = cast && typeof cast === 'object' && !Array.isArray(cast) ? cast : {};
-  const actors = [];
-
-  for (const character of base) {
-    const players = Array.isArray(castMap[character.name]) ? castMap[character.name] : [];
-    if (players.length > 1) {
-      players.forEach((player, index) => {
-        const suffix = String.fromCharCode(65 + index);
-        const characterId = `${character.name}#${suffix}`;
-        actors.push({ characterId, label: `${character.name}（${suffix}）` });
-      });
-    } else {
-      actors.push({ characterId: character.name, label: character.name });
-    }
-  }
-
-  return actors;
-}
-
-function defaultPosition(index, total) {
-  return {
-    x: Math.round((VIEW_W * (index + 1)) / (total + 1)),
-    y: DEFAULT_Y,
-  };
-}
-
-function storedPosition(placements, sceneNumber, characterId) {
-  const list = Array.isArray(placements) ? placements : [];
-  const found = list.find(
-    (item) =>
-      item &&
-      item.characterId === characterId &&
-      Number(item.sceneNumber) === Number(sceneNumber)
-  );
-  if (found && Number.isFinite(found.x) && Number.isFinite(found.y)) {
-    return { x: found.x, y: found.y };
-  }
-  return null;
-}
-
 export default function StageBlocking({
   characters,
   scenes,
@@ -166,7 +72,7 @@ export default function StageBlocking({
   plan,
   dispatch,
 }) {
-  const svgRef = useRef(null);
+  const konvaStageRef = useRef(null);
   const stage3dRef = useRef(null);
   const dragRef = useRef(null);
   const pathRef = useRef([]);
@@ -357,17 +263,6 @@ export default function StageBlocking({
     }
   }
 
-  function handlePointerMove(event) {
-    if (!dragRef.current) return;
-    const svg = svgRef.current;
-    if (!svg) return;
-    applyDrag(
-      Number(event.clientX ?? event.nativeEvent?.clientX ?? 0),
-      Number(event.clientY ?? event.nativeEvent?.clientY ?? 0),
-      svg.getBoundingClientRect()
-    );
-  }
-
   function handlePointerUp() {
     const drag = dragRef.current;
     if (!drag) return;
@@ -424,6 +319,117 @@ export default function StageBlocking({
     );
   }
 
+  // —— Konva 节点交互：节点直接工作在逻辑坐标，拖拽由 Konva 处理，事件回写 reducer ——
+  function nodePosition(event) {
+    return {
+      x: clamp(event.target.x(), 0, VIEW_W),
+      y: clamp(event.target.y(), 0, VIEW_H),
+    };
+  }
+
+  function handleActorDragStart(event, actor) {
+    if (locked) return;
+    setDraggingId(actor.id);
+    if (recordPath) {
+      pathRef.current = [{ x: event.target.x(), y: event.target.y() }];
+      setPathDraft(pathRef.current);
+    }
+  }
+
+  function handleActorDragMove(event, actor) {
+    const pos = nodePosition(event);
+    setPositions((prev) => {
+      const forScene = prev[sceneNumber] && typeof prev[sceneNumber] === 'object' ? prev[sceneNumber] : {};
+      return { ...prev, [sceneNumber]: { ...forScene, [actor.id]: pos } };
+    });
+    if (recordPath) {
+      pathRef.current = [...pathRef.current, pos];
+      setPathDraft(pathRef.current);
+    }
+  }
+
+  function handleActorDragEnd(event, actor) {
+    const pos = nodePosition(event);
+    setDraggingId(null);
+    dispatch?.({
+      type: 'setPlacement',
+      placement: { sceneNumber, characterId: actor.id, x: pos.x, y: pos.y },
+    });
+    if (recordPath && pathRef.current.length > 1) {
+      dispatch?.({
+        type: 'addPath',
+        path: { sceneNumber, characterId: actor.id, points: pathRef.current, triggerQuote: '' },
+      });
+    }
+    pathRef.current = [];
+    setPathDraft([]);
+  }
+
+  function handleObjectDragStart(event, object) {
+    if (locked) return;
+    setSelectedObjectId(object.id);
+    setDraggingId(object.id);
+  }
+
+  function handleObjectDragMove(event, object) {
+    const pos = nodePosition(event);
+    setObjectPositions((prev) => {
+      const forScene = prev[sceneNumber] && typeof prev[sceneNumber] === 'object' ? prev[sceneNumber] : {};
+      return { ...prev, [sceneNumber]: { ...forScene, [object.id]: pos } };
+    });
+  }
+
+  function handleObjectDragEnd(event, object) {
+    const pos = nodePosition(event);
+    setDraggingId(null);
+    dispatch?.({ type: 'updateStageObject', id: object.id, patch: { x: pos.x, y: pos.y } });
+  }
+
+  function handleObjectClick(object) {
+    setSelectedObjectId(object.id);
+  }
+
+  // 舞台框/上下场口拖拽结束，回写 plan.stage。
+  function handleFrameDragEnd(event) {
+    dispatch?.({
+      type: 'updateStageSettings',
+      patch: {
+        frame: {
+          x: clamp(event.target.x(), 0, VIEW_W),
+          y: clamp(event.target.y(), 0, VIEW_H),
+        },
+      },
+    });
+  }
+
+  function handleDoorDragEnd(which, event) {
+    dispatch?.({
+      type: 'updateStageSettings',
+      patch: {
+        doors: {
+          [which]: {
+            x: clamp(event.target.x(), 0, VIEW_W),
+            y: clamp(event.target.y(), 0, VIEW_H),
+          },
+        },
+      },
+    });
+  }
+
+  // 导出当前画布为 2 倍像素 PNG。
+  function handleExportPng() {
+    const stage = konvaStageRef.current;
+    if (!stage) return;
+    const url = stage.toDataURL({ pixelRatio: 2 });
+    const link = document.createElement('a');
+    const safeName = String(plan?.name || '舞台').replace(/[\\/:*?"<>|]/g, '_');
+    link.href = url;
+    link.download = `${safeName}-场景${sceneNumber}.png`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+
   function handleAddObject() {
     const labels = { table: '桌', chair: '椅', entrance: '门口', prop: '道具' };
     dispatch?.({
@@ -474,13 +480,56 @@ export default function StageBlocking({
   }
 
   const isWire = viewMode === 'wire';
+
+  // 节点画布的展示数据：位置/尺寸在此算好，StageCanvas 只负责纯渲染。
+  const konvaActors = actors.map((actor, index) => {
+    const position = renderPosition(actor, index);
+    const baseName = actor.characterId.split('#')[0];
+    return {
+      id: actor.characterId,
+      label: actor.label,
+      x: position.x,
+      y: position.y,
+      imageUrl: CHARACTER_IMAGE[baseName],
+      dragging: draggingId === actor.characterId,
+    };
+  });
+  const konvaObjects = sceneObjects.map((object) => {
+    const position = objectPositionFor(object);
+    const scale = object.scale || 1;
+    return {
+      id: object.id,
+      label: object.label,
+      kind: object.kind,
+      x: position.x,
+      y: position.y,
+      width: 54 * scale * (object.kind === 'table' ? 1.5 : 1),
+      height: 30 * scale,
+      rotation: object.rotation,
+      selected: selectedObjectId === object.id,
+    };
+  });
+  const stageSettings = mergeStageSettings(plan?.staging?.stage);
+
   const viewButtons = [
     { id: 'plan', label: '2D' },
     { id: '3d', label: '3D' },
     { id: 'wire', label: '白模' },
   ];
   const toolButtons = [
-    { icon: Grid3x3, label: '网格', onClick: () => setStageTab('stage'), disabled: false },
+    {
+      icon: Grid3x3,
+      label: '网格',
+      onClick: () => {
+        setStageTab('stage');
+        dispatch?.({
+          type: 'updateStageSettings',
+          patch: { grid: { showGrid: !stageSettings.grid.showGrid } },
+        });
+      },
+      active: stageSettings.grid.showGrid,
+      disabled: false,
+    },
     { icon: Box, label: '对象', onClick: () => setStageTab('prop'), disabled: false },
     { icon: ListIcon, label: '列表', onClick: () => setShowForm((v) => !v), disabled: false },
     { icon: Pencil, label: '编辑', onClick: () => setShowForm((v) => !v), disabled: false },
@@ -514,6 +563,9 @@ export default function StageBlocking({
           onClick={() => setRecordPath((value) => !value)}
         >
           记录走位轨迹
+        </button>
+        <button type="button" data-testid="export-png" title="导出当前画布为 PNG" onClick={handleExportPng}>
+          导出 PNG
         </button>
         <span>三种视图共享同一组位置数据</span>
       </div>
@@ -671,168 +723,27 @@ export default function StageBlocking({
                   <p className="stage-3d-caption">灯光为氛围预览 · 拖动演员调整平面位置</p>
                 </div>
               ) : (
-                <svg
-                  ref={svgRef}
-                  data-testid="stage-canvas"
-                  viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-                  className={`block h-auto w-full touch-none select-none ${isWire ? 'is-wire' : ''}`}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={handlePointerUp}
-                >
-                  <rect x="0" y="0" width={VIEW_W} height={VIEW_H} className="stage-bg" />
-
-                  <text
-                    x={VIEW_W / 2}
-                    y="24"
-                    textAnchor="middle"
-                    fontSize="15"
-                    className="stage-muted-text"
-                  >
-                    观众方向
-                  </text>
-
-                  <rect
-                    x="60"
-                    y="44"
-                    width="680"
-                    height="400"
-                    rx="10"
-                    strokeWidth="2"
-                    className="stage-frame"
-                  />
-
-                  {scenePaths.map((path) =>
-                    Array.isArray(path.points) && path.points.length > 1 ? (
-                      <polyline
-                        key={path.id}
-                        points={path.points.map((point) => `${point.x},${point.y}`).join(' ')}
-                        fill="none"
-                        className={`stage-path-line ${stageTab === 'block' ? 'is-focus' : ''}`}
-                        strokeWidth="2"
-                        strokeDasharray="6 6"
-                      />
-                    ) : null
-                  )}
-                  {pathDraft.length > 1 && (
-                    <polyline
-                      points={pathDraft.map((point) => `${point.x},${point.y}`).join(' ')}
-                      fill="none"
-                      stroke="var(--cue)"
-                      strokeWidth="3"
-                      strokeDasharray="5 5"
-                    />
-                  )}
-
-                  {sceneObjects.map((object) => {
-                    const position = objectPositionFor(object);
-                    const width = 54 * (object.scale || 1) * (object.kind === 'table' ? 1.5 : 1);
-                    const height = 30 * (object.scale || 1);
-                    return (
-                      <g
-                        key={object.id}
-                        data-testid={`stage-object-${object.id}`}
-                        onPointerDown={(event) => handleObjectPointerDown(event, object, position)}
-                        style={{ cursor: 'grab' }}
-                      >
-                        <rect
-                          x={position.x - width / 2}
-                          y={position.y - height / 2}
-                          width={width}
-                          height={height}
-                          rx="3"
-                          transform={`rotate(${object.rotation || 0} ${position.x} ${position.y})`}
-                          className="stage-object-shape"
-                          stroke={selectedObjectId === object.id ? 'var(--cue)' : undefined}
-                          strokeWidth="2"
-                        />
-                        <text
-                          x={position.x}
-                          y={position.y + 4}
-                          textAnchor="middle"
-                          fontSize="11"
-                          className="stage-object-label"
-                        >
-                          {object.label || object.kind}
-                        </text>
-                      </g>
-                    );
-                  })}
-
-                  <rect x="18" y="200" width="34" height="88" rx="4" className="stage-door" />
-                  <text x="35" y="250" textAnchor="middle" fontSize="12" className="stage-ink-text">
-                    上场口
-                  </text>
-
-                  <rect x="748" y="200" width="34" height="88" rx="4" className="stage-door" />
-                  <text x="765" y="250" textAnchor="middle" fontSize="12" className="stage-ink-text">
-                    下场口
-                  </text>
-
-                  {actors.map((actor, index) => {
-                    const position = renderPosition(actor, index);
-                    const dragging = draggingId === actor.characterId;
-                    const baseName = actor.characterId.split('#')[0];
-                    const imageUrl = CHARACTER_IMAGE[baseName];
-                    const clipId = `clip-${actor.characterId.replace(/[^a-zA-Z0-9一-龥]/g, '')}`;
-                    return (
-                      <g
-                        key={actor.characterId}
-                        data-testid={`actor-${actor.characterId}`}
-                        data-x={position.x}
-                        data-y={position.y}
-                        onPointerDown={(event) => handlePointerDown(event, actor, position)}
-                        style={{ cursor: locked ? 'default' : dragging ? 'grabbing' : 'grab' }}
-                      >
-                        <circle
-                          cx={position.x}
-                          cy={position.y}
-                          r="26"
-                          strokeWidth="2"
-                          className="stage-actor-circle"
-                          style={{
-                            stroke: dragging ? 'var(--accent-seal)' : undefined,
-                          }}
-                        />
-                        {!isWire && imageUrl && (
-                          <>
-                            <clipPath id={clipId}>
-                              <circle cx={position.x} cy={position.y} r="26" />
-                            </clipPath>
-                            <image
-                              href={imageUrl}
-                              x={position.x - 26}
-                              y={position.y - 26}
-                              width="52"
-                              height="52"
-                              clipPath={`url(#${clipId})`}
-                              preserveAspectRatio="xMidYMid slice"
-                            />
-                          </>
-                        )}
-                        {!isWire && !imageUrl && (
-                          <text
-                            x={position.x}
-                            y={position.y + 5}
-                            textAnchor="middle"
-                            fontSize="13"
-                            className="stage-actor-name"
-                          >
-                            {actor.label}
-                          </text>
-                        )}
-                        <text
-                          x={position.x}
-                          y={position.y + 44}
-                          textAnchor="middle"
-                          fontSize="12"
-                          className="stage-actor-caption"
-                        >
-                          {actor.label}
-                        </text>
-                      </g>
-                    );
-                  })}
-                </svg>
+                <StageCanvas
+                  actors={konvaActors}
+                  objects={konvaObjects}
+                  paths={scenePaths}
+                  draftPoints={pathDraft}
+                  settings={stageSettings}
+                  isWire={isWire}
+                  focusPath={stageTab === 'block'}
+                  stageEditable={stageTab === 'stage'}
+                  stageRef={konvaStageRef}
+                  locked={locked}
+                  onFrameDragEnd={handleFrameDragEnd}
+                  onDoorDragEnd={handleDoorDragEnd}
+                  onActorDragStart={handleActorDragStart}
+                  onActorDragMove={handleActorDragMove}
+                  onActorDragEnd={handleActorDragEnd}
+                  onObjectDragStart={handleObjectDragStart}
+                  onObjectDragMove={handleObjectDragMove}
+                  onObjectDragEnd={handleObjectDragEnd}
+                  onObjectClick={handleObjectClick}
+                />
               )}
             </div>
 

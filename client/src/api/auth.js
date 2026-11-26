@@ -6,17 +6,17 @@ export async function currentUser() {
   return data.user;
 }
 
-export function register(username, password) {
+export function register(username, password, remember) {
   return apiRequest('/api/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username, password, remember }),
   });
 }
 
-export function login(username, password) {
+export function login(username, password, remember) {
   return apiRequest('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username, password, remember }),
   });
 }
 
