@@ -23,6 +23,7 @@ import FilmCameraIcon from './components/FilmCameraIcon.jsx';
 import DiscussionPanel from './components/DiscussionPanel.jsx';
 import AssistantModal from './components/AssistantModal.jsx';
 import TodoMenu from './components/TodoMenu.jsx';
+import AssetLibrary from './components/AssetLibrary.jsx';
 import { User, ChevronDown, LogOut, ArrowLeft, MessageSquare, Sparkles } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -34,6 +35,7 @@ const NAV_ITEMS = [
   { id: 'briefs', mark: '05', label: '部门需求', phase: '排演', tab: 'briefs' },
   { id: 'rehearsal', mark: '06', label: '排练与影响', phase: '排演', tab: 'rehearsal' },
   { id: 'visuals', mark: '07', label: '视觉制作', phase: '交付', tab: 'visuals' },
+  { id: 'library', mark: '10', label: '图片库', phase: '交付' },
   { id: 'export', mark: '08', label: '导出与归档', phase: '交付', tab: 'export' },
   { id: 'props', mark: '09', label: '道具清单', phase: '拆解', tab: 'props' },
 ];
@@ -701,6 +703,8 @@ export default function App() {
                   versions={scriptVersions}
                   onNavigate={navigate}
                 />
+              ) : activeNav === 'library' ? (
+                <AssetLibrary plan={plan} />
               ) : (
                 <ResultTabs
                   scriptData={scriptData}

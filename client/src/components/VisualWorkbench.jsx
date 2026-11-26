@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildStylePrompt } from '../data/styles.js';
 import { nextId } from '../store/plan.js';
 import { ASSET_STATUS } from '@director/shared/constants/status.js';
+import { assetTypeLabel } from '@director/shared/rules/assets.js';
 import { WORKBENCH_SAMPLES } from '../assets/visual/index.js';
 import { Sparkles, Image as ImageIcon, Palette, Wand2 } from 'lucide-react';
 
@@ -9,15 +10,6 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // 下列状态表示任务仍在进行；其余（succeeded / failed / cancelled / expired 等）都是终态
 const ACTIVE_VIDEO_STATUSES = ['queued', 'submitting', 'running', 'processing'];
-
-const ASSET_BADGE = {
-  character: '人物',
-  scene: '场景',
-  prop: '道具',
-  keyframe: '关键帧',
-  poster: '海报',
-  video: '视频',
-};
 
 // 各目标的生成规格：图片走 /api/visual，视频走 /api/video
 const TARGET_SPECS = {
@@ -64,7 +56,7 @@ export default function VisualWorkbench({ plan, dispatch, style, onPatchStyle })
       .map((a) => ({
         id: a.id,
         title: a.characterName || a.title || '视觉资产',
-        badge: ASSET_BADGE[a.type] || '场景',
+        badge: assetTypeLabel(a.type),
         src: a.url,
       }));
     const used = new Set(fromPlan.map((a) => a.id));
