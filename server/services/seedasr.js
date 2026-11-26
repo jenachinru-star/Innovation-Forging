@@ -1,85 +1,60 @@
+// 语音转写服务：OpenAI 兼容 /audio/transcriptions（Whisper），multipart 上传文件字节
 function readConfig() {
   return {
-    base: process.env.SEEDASR_BASE_URL || 'https://openspeech.bytedance.com',
-    key: process.env.SEEDASR_API_KEY || '',
-    resourceId: process.env.SEEDASR_RESOURCE_ID || 'volc.seedasr.auc',
+    base: process.env.OPENAI_NEXT_BASE_URL || 'https://api.openai-next.com/v1',
+    key: process.env.OPENAI_NEXT_API_KEY || '',
+    model: process.env.ASR_MODEL || 'whisper-1',
   };
 }
 
-function buildHeaders(key, resourceId, requestId) {
-  return {
-    'Content-Type': 'application/json',
-    'x-api-key': key,
-    'X-Api-Resource-Id': resourceId,
-    'X-Api-Request-Id': requestId,
-    'X-Api-Sequence': '-1',
-  };
+function normalizeFormat(format) {
+  const f = String(format || '').toLowerCase();
+  if (f.includes('webm')) return { ext: 'webm', mime: 'audio/webm' };
+  if (f.includes('mpeg') || f.includes('mp3')) return { ext: 'mp3', mime: 'audio/mpeg' };
+  if (f.includes('mp4') || f.includes('m4a')) return { ext: 'm4a', mime: 'audio/mp4' };
+  if (f.includes('aac')) return { ext: 'aac', mime: 'audio/aac' };
+  if (f.includes('ogg')) return { ext: 'ogg', mime: 'audio/ogg' };
+  if (f.includes('wav') || f.includes('wave')) return { ext: 'wav', mime: 'audio/wav' };
+  return { ext: 'webm', mime: 'audio/webm' };
 }
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// 录音文件识别：submit 提交 + query 轮询，返回识别文本
 export async function transcribeAudio(
   { audioData = '', audioUrl = '', format = 'webm' },
-  { fetchImpl = fetch, pollInterval = 2000, maxPolls = 30 } = {}
+  { fetchImpl = fetch } = {}
 ) {
-  const { base, key, resourceId } = readConfig();
-  if (!key) throw new Error('未配置 SeedASR 凭证');
+  const { base, key, model } = readConfig();
+  if (!key) throw new Error('未配置转写凭证');
   if (!audioData && !audioUrl) throw new Error('缺少音频数据');
 
-  const requestId = crypto.randomUUID();
-  const headers = buildHeaders(key, resourceId, requestId);
+  let buffer;
+  let fileMeta;
+  if (audioData) {
+    buffer = Buffer.from(audioData, 'base64');
+    fileMeta = normalizeFormat(format);
+  } else {
+    const upstream = await fetchImpl(audioUrl);
+    if (!upstream.ok) throw new Error('音频下载失败');
+    buffer = Buffer.from(await upstream.arrayBuffer());
+    fileMeta = { ext: 'wav', mime: 'audio/wav' };
+  }
 
-  const audio = { format, codec: 'raw', rate: 16000, bits: 16, channel: 1 };
-  if (audioData) audio.data = audioData;
-  else audio.url = audioUrl;
+  const form = new FormData();
+  form.append('model', model);
+  form.append('file', new Blob([buffer], { type: fileMeta.mime }), `recording.${fileMeta.ext}`);
 
-  const submitBody = {
-    user: { uid: 'kaipai' },
-    audio,
-    request: {
-      model_name: 'bigmodel',
-      enable_itn: true,
-      enable_punc: true,
-      show_utterances: false,
-    },
-  };
-
-  const submitRes = await fetchImpl(`${base}/api/v3/auc/bigmodel/submit`, {
+  const res = await fetchImpl(`${base}/audio/transcriptions`, {
     method: 'POST',
-    headers,
-    body: JSON.stringify(submitBody),
+    headers: { Authorization: `Bearer ${key}` },
+    body: form,
   });
-  if (!submitRes.ok) {
-    const t = await submitRes.text().catch(() => '');
-    throw new Error(`SeedASR submit ${submitRes.status}: ${t.slice(0, 200)}`);
+
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error(`语音转写 API ${res.status}: ${t.slice(0, 200)}`);
   }
 
-  for (let i = 0; i < maxPolls; i += 1) {
-    await sleep(pollInterval);
-    const qRes = await fetchImpl(`${base}/api/v3/auc/bigmodel/query`, {
-      method: 'POST',
-      headers,
-      body: '{}',
-    });
-    if (!qRes.ok) {
-      const t = await qRes.text().catch(() => '');
-      throw new Error(`SeedASR query ${qRes.status}: ${t.slice(0, 200)}`);
-    }
-    const raw = await qRes.text();
-    if (!raw || raw === '{}') continue;
-
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      continue;
-    }
-    if (data?.code != null && String(data.code) !== '0') {
-      throw new Error(`SeedASR 错误：${data.message || data.code}`);
-    }
-    if (data?.result?.text) return data.result.text;
-  }
-
-  throw new Error('转写超时，请稍后重试');
+  const data = await res.json();
+  const text = data?.text;
+  if (typeof text !== 'string') throw new Error('语音转写未返回文本');
+  return text;
 }

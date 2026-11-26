@@ -7,8 +7,8 @@ import { Sparkles, Image as ImageIcon, Palette, Wand2 } from 'lucide-react';
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// 只有这两个状态表示任务仍在进行；其余（succeeded / failed / cancelled / expired 等）都是终态
-const ACTIVE_VIDEO_STATUSES = ['queued', 'running'];
+// 下列状态表示任务仍在进行；其余（succeeded / failed / cancelled / expired 等）都是终态
+const ACTIVE_VIDEO_STATUSES = ['queued', 'submitting', 'running', 'processing'];
 
 const ASSET_BADGE = {
   character: '人物',
@@ -31,7 +31,9 @@ const TARGET_SPECS = {
 
 const VIDEO_STATUS_TEXT = {
   queued: '排队中……',
+  submitting: '提交中……',
   running: '正在生成视频……',
+  processing: '正在生成视频……',
   failed: '视频生成失败',
 };
 

@@ -32,9 +32,9 @@ beforeAll(async () => {
     });
   });
   await new Promise((r) => upstream.listen(0, '127.0.0.1', r));
-  process.env.SEEDANCE_BASE_URL = `http://127.0.0.1:${upstream.address().port}`;
-  process.env.SEEDANCE_API_KEY = 'test-key';
-  process.env.SEEDANCE_MODEL = 'm';
+  process.env.OPENAI_NEXT_BASE_URL = `http://127.0.0.1:${upstream.address().port}/v1`;
+  process.env.OPENAI_NEXT_API_KEY = 'test-key';
+  process.env.VIDEO_MODEL = 'm';
 
   store = await createStore(file).init();
   app = await createApp({ store });
@@ -44,9 +44,9 @@ afterAll(async () => {
   await store.flush();
   await new Promise((r) => upstream.close(r));
   await rm(file, { force: true });
-  delete process.env.SEEDANCE_BASE_URL;
-  delete process.env.SEEDANCE_API_KEY;
-  delete process.env.SEEDANCE_MODEL;
+  delete process.env.OPENAI_NEXT_BASE_URL;
+  delete process.env.OPENAI_NEXT_API_KEY;
+  delete process.env.VIDEO_MODEL;
 });
 
 async function login(username) {

@@ -37,7 +37,7 @@ describe('visual 路由', () => {
 
   it('生成服务抛错时返回 502 友好错误', async () => {
     const res = await request(buildApp(async () => {
-      throw new Error('Seedream 请求超时');
+      throw new Error('图片生成请求超时');
     }))
       .post('/api/visual/generate')
       .send({ description: '雨夜小巷' });

@@ -9,9 +9,9 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '..', 'server', '.env') });
 
-const BASE = process.env.SEEDREAM_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3';
-const MODEL = process.env.SEEDREAM_MODEL;
-const KEY = process.env.SEEDREAM_API_KEY;
+const BASE = process.env.OPENAI_NEXT_BASE_URL || 'https://api.openai-next.com/v1';
+const MODEL = process.env.IMAGE_MODEL;
+const KEY = process.env.OPENAI_NEXT_API_KEY;
 
 const OUT_DIR = path.join(__dirname, '..', 'client', 'src', 'assets', 'samples');
 
@@ -133,7 +133,7 @@ async function generateImage(asset) {
 
 async function main() {
   if (!KEY || !MODEL) {
-    console.error('缺少 SEEDREAM_API_KEY / SEEDREAM_MODEL，请先配置 server/.env');
+    console.error('缺少 OPENAI_NEXT_API_KEY / IMAGE_MODEL，请先配置 server/.env');
     process.exit(1);
   }
   await mkdir(OUT_DIR, { recursive: true });

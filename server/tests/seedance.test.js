@@ -10,7 +10,7 @@ function jsonRes(status, body) {
   };
 }
 
-it('createVideoTask 发送 model/content/ratio/duration 并返回任务 ID', async () => {
+it('createVideoTask 发送 model/content/ratio/duration/resolution 并返回任务 ID', async () => {
   let captured;
   let target;
   const fetchImpl = async (url, opts) => {
@@ -24,10 +24,12 @@ it('createVideoTask 发送 model/content/ratio/duration 并返回任务 ID', asy
   );
 
   expect(result).toEqual({ id: 'cgt-1', status: 'queued' });
-  expect(target).toContain('/contents/generations/tasks');
+  expect(target).toContain('/seedance/api/v3/contents/generations/tasks');
   expect(captured.content).toContainEqual({ type: 'text', text: '镜头缓缓推进' });
   expect(captured.ratio).toBe('16:9');
   expect(captured.duration).toBe(5);
+  expect(captured.resolution).toBeTruthy();
+  expect(captured).toHaveProperty('generate_audio');
 });
 
 it('createVideoTask 带 imageUrl 时追加 image_url 元素', async () => {
@@ -46,6 +48,16 @@ it('createVideoTask 带 imageUrl 时追加 image_url 元素', async () => {
   });
 });
 
+it('createVideoTask 时长超出上游范围时被裁剪到 4–15 秒', async () => {
+  let captured;
+  const fetchImpl = async (url, opts) => {
+    captured = JSON.parse(opts.body);
+    return jsonRes(200, { id: 'cgt-3' });
+  };
+  await createVideoTask({ prompt: 'x', duration: 30 }, { fetchImpl });
+  expect(captured.duration).toBe(15);
+});
+
 it('createVideoTask 缺少描述时抛错', async () => {
   await expect(
     createVideoTask({ prompt: '   ' }, { fetchImpl: async () => jsonRes(200, {}) })
@@ -60,7 +72,7 @@ it('createVideoTask 上游非 2xx 时抛错', async () => {
     json: async () => ({}),
   });
   await expect(createVideoTask({ prompt: 'x' }, { fetchImpl })).rejects.toThrow(
-    /Seedance API 400/
+    /视频生成 API 400/
   );
 });
 
@@ -82,7 +94,7 @@ it('getVideoTask 返回状态与视频地址', async () => {
 
 it('getVideoTask 失败状态保留错误信息', async () => {
   const fetchImpl = async () =>
-    jsonRes(200, { id: 'cgt-9', status: 'failed', error: '内容不合规' });
+    jsonRes(200, { id: 'cgt-9', status: 'failed', error: { message: '内容不合规' } });
   const task = await getVideoTask('cgt-9', { fetchImpl });
   expect(task.status).toBe('failed');
   expect(task.error).toBe('内容不合规');
