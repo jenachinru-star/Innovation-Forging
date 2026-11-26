@@ -8,6 +8,17 @@ const CUE_RE = /^([^\s：:，。！？、；（）()【】《》“”‘’"'�
 const DIR_RE = /^[（(【].*[）)】]$/;
 const CAST_RE = /^(?:人物|角色)\s*[：:]\s*(.+)$/;
 
+// 话剧舞台排版：角色名（内部可含排版空格）+ 两个及以上空格 + 台词
+const STAGE_CUE_RE = /^([一-龥]{1,4}(?:\s+[一-龥]{1,4}){0,2})\s{2,}(\S.*)$/;
+// 景行：「景」+ 可选分隔符 + 地点描述
+const JING_RE = /^景\s*[—–\-：:、，,．.]*\s*(.*)$/;
+// 仅以括号开头的动作行（允许括号不闭合）
+const OPEN_DIR_RE = /^[【（(]/;
+// 台词开头的语气/动作圆括号
+const LEADING_PAREN_RE = /^[（(]([^（）()]*)[）)]\s*/;
+// 动作行中提示某角色开始说话
+const SPEAK_VERB_RE = /(说话|讲述|诉说|独白|喃喃|自语|开口|说道|念叨)/;
+
 const PROPS = ['钥匙', '信件', '信', '信纸', '钱', '酒', '酒瓶', '照片', '手机', '伞', '箱子', '灯', '花', '书', '药'];
 
 const CN_DIGITS = { 零: 0, 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
@@ -43,6 +54,11 @@ function splitNames(str) {
     .filter(Boolean);
 }
 
+// 去掉角色名内部的排版空格，如「林   越」→「林越」
+function normalizeName(raw) {
+  return String(raw || '').replace(/\s+/g, '').trim();
+}
+
 function splitLines(rawText) {
   const result = [];
   let pos = 0;
@@ -67,31 +83,41 @@ function makeLine(text, start) {
   return { text: content, start, contentStart: start + leading };
 }
 
-export function parseScriptOffline(text) {
+export function parseScriptOffline(rawTextInput) {
   const warnings = [];
-  const rawText = typeof text === 'string' ? text : '';
+  const rawText = typeof rawTextInput === 'string' ? rawTextInput : '';
   const lines = splitLines(rawText);
 
   const headerCandidates = new Set();
   const allCharacterOrder = [];
   const allCharacterSet = new Set();
   const addCharacter = (name) => {
-    if (name && !allCharacterSet.has(name)) {
-      allCharacterSet.add(name);
-      allCharacterOrder.push(name);
+    const n = normalizeName(name);
+    if (n && !allCharacterSet.has(n)) {
+      allCharacterSet.add(n);
+      allCharacterOrder.push(n);
     }
   };
 
+  // 第一遍：建立角色候选表
   for (const line of lines) {
     const t = line.text.trim();
     if (!t) continue;
-    if (ACT_RE.test(t) || SCENE_RE.test(t)) continue;
+    if (ACT_RE.test(t) || SCENE_RE.test(t) || JING_RE.test(t)) continue;
     const cast = t.match(CAST_RE);
     if (cast) {
       for (const name of splitNames(cast[1])) {
-        headerCandidates.add(name);
-        addCharacter(name);
+        const n = normalizeName(name);
+        headerCandidates.add(n);
+        addCharacter(n);
       }
+      continue;
+    }
+    const stage = t.match(STAGE_CUE_RE);
+    if (stage) {
+      const stageName = normalizeName(stage[1]);
+      headerCandidates.add(stageName);
+      addCharacter(stageName);
       continue;
     }
     const cue = t.match(CUE_RE);
@@ -105,6 +131,9 @@ export function parseScriptOffline(text) {
   let currentScene = null;
   let sceneCounter = 0;
   let actCounter = 0;
+  let currentLineRef = null;
+  let pendingSpeaker = null;
+  let jingMode = false;
 
   const scanProps = (value, allowSingleChar = false) => {
     if (!currentScene) return;
@@ -146,6 +175,10 @@ export function parseScriptOffline(text) {
     scene.props = scene._propOrder.slice();
     scene.estimatedMinutes = Math.max(1, Math.ceil(scene._dialogueChars / 250));
 
+    if (!scene.location) {
+      warnings.push(`第${scene.sceneNumber}场未标注场景（景），请补全地点`);
+    }
+
     delete scene._speakers;
     delete scene._speakerSet;
     delete scene._propOrder;
@@ -155,6 +188,25 @@ export function parseScriptOffline(text) {
     if (currentAct) currentAct.sceneIds.push(scene.id);
     scenes.push(scene);
     currentScene = null;
+    currentLineRef = null;
+    pendingSpeaker = null;
+  };
+
+  const openDialogue = (name, text, start) => {
+    let body = String(text || '');
+    const lead = body.match(LEADING_PAREN_RE);
+    if (lead) body = body.slice(lead[0].length);
+    body = body.trim();
+    if (!currentScene._speakerSet.has(name)) {
+      currentScene._speakerSet.add(name);
+      currentScene._speakers.push(name);
+    }
+    const line = { id: uid(), speaker: name, text: body, offset: start };
+    currentScene.lines.push(line);
+    currentScene._dialogueChars += body.length;
+    scanProps(body);
+    currentLineRef = line;
+    return line;
   };
 
   for (const line of lines) {
@@ -174,6 +226,7 @@ export function parseScriptOffline(text) {
       const title = stripHeadingSeparator(t.slice(actMatch[0].length));
       currentAct = { id: uid(), actNumber, title, sceneIds: [] };
       acts.push(currentAct);
+      jingMode = false;
       continue;
     }
 
@@ -209,40 +262,83 @@ export function parseScriptOffline(text) {
         _propSet: new Set(),
         _dialogueChars: 0,
       };
+      currentLineRef = null;
+      pendingSpeaker = null;
+      jingMode = false;
       continue;
     }
 
     if (CAST_RE.test(t)) continue;
 
-    if (!currentScene) continue;
-
-    if (DIR_RE.test(t)) {
-      currentScene.stageDirections.push(t);
-      scanProps(t, true);
+    // 景行
+    const jing = t.match(JING_RE);
+    if (jing && currentScene) {
+      currentScene.location = jing[1].trim();
+      currentLineRef = null;
+      pendingSpeaker = null;
+      jingMode = true;
       continue;
     }
 
-    const cue = t.match(CUE_RE);
-    if (cue) {
-      const name = cue[1];
-      const dialogue = cue[2].trim();
+    if (!currentScene) continue;
+
+    // 动作行（闭合或不闭合）
+    if (DIR_RE.test(t) || OPEN_DIR_RE.test(t)) {
+      currentScene.stageDirections.push(t);
+      scanProps(t, true);
+      currentLineRef = null;
+      pendingSpeaker = null;
+      if (SPEAK_VERB_RE.test(t)) {
+        const found = allCharacterOrder.filter((n) => t.includes(n));
+        if (found.length === 1) pendingSpeaker = found[0];
+      }
+      jingMode = false;
+      continue;
+    }
+
+    // 话剧排版台词
+    const stage = t.match(STAGE_CUE_RE);
+    if (stage) {
+      const name = normalizeName(stage[1]);
       if (!headerCandidates.has(name)) {
         warnings.push(`台词人物「${name}」不在候选表，已按台词处理`);
       }
-      if (!currentScene._speakerSet.has(name)) {
-        currentScene._speakerSet.add(name);
-        currentScene._speakers.push(name);
-      }
-      currentScene.lines.push({
-        id: uid(),
-        speaker: name,
-        text: dialogue,
-        offset: line.start,
-      });
-      currentScene._dialogueChars += dialogue.length;
-      scanProps(dialogue);
+      openDialogue(name, stage[2], line.start);
+      pendingSpeaker = null;
+      jingMode = false;
       continue;
     }
+
+    // 冒号台词
+    const cue = t.match(CUE_RE);
+    if (cue) {
+      const name = normalizeName(cue[1]);
+      if (!headerCandidates.has(name)) {
+        warnings.push(`台词人物「${name}」不在候选表，已按台词处理`);
+      }
+      openDialogue(name, cue[2], line.start);
+      pendingSpeaker = null;
+      jingMode = false;
+      continue;
+    }
+
+    // 无主续行
+    if (jingMode && currentScene.location) {
+      currentScene.location += t;
+      continue;
+    }
+    if (currentLineRef) {
+      currentLineRef.text += t;
+      currentScene._dialogueChars += t.length;
+      scanProps(t);
+      continue;
+    }
+    if (pendingSpeaker) {
+      openDialogue(pendingSpeaker, t, line.start);
+      pendingSpeaker = null;
+      continue;
+    }
+    // 其余噪声（封面、页码、全剧终等）忽略
   }
 
   finalizeScene(rawText.length);
