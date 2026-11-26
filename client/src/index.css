@@ -1724,17 +1724,14 @@ p {
 
 .style-family-strip {
   display: grid;
-  grid-auto-columns: minmax(9rem, 1fr);
-  grid-auto-flow: column;
+  grid-template-columns: repeat(auto-fill, minmax(8.6rem, 1fr));
   gap: 0.55rem;
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
 }
 
 .style-family-card {
   display: grid;
   gap: 0.35rem;
-  min-width: 9rem;
+  min-width: 0;
   padding: 0.8rem;
   color: var(--ink);
   background: rgba(255, 255, 255, 0.03);
@@ -2489,14 +2486,17 @@ p {
   gap: 0.7rem;
 }
 
-.landing-brand-mark {
-  display: grid;
+.landing-brand-icon {
+  display: inline-flex;
   width: 2.2rem;
   height: 2.2rem;
-  place-items: center;
-  font-family: var(--font-heading);
-  color: #f3e8d9;
-  border: 1px solid var(--cue);
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem;
+  color: var(--cue);
+  border: 1px solid var(--stage-line);
+  border-radius: 0.5rem;
+  background: rgba(212, 175, 55, 0.08);
 }
 
 .landing-brand b {
@@ -5128,6 +5128,51 @@ svg.is-wire .stage-path-line {
 }
 
 /* ===== 09 视觉制作：子 Tab + 视觉圣经 + 视频 ===== */
+.visual-banner {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+}
+
+.visual-banner-img {
+  display: block;
+  width: 100%;
+  height: clamp(150px, 22vw, 230px);
+  object-fit: cover;
+}
+
+.visual-banner-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  padding: 1.1rem 1.4rem;
+  background: linear-gradient(
+    90deg,
+    rgba(17, 16, 14, 0.82) 0%,
+    rgba(17, 16, 14, 0.45) 45%,
+    rgba(17, 16, 14, 0) 75%
+  );
+}
+
+.visual-banner-kicker {
+  color: var(--cue);
+  font-size: 0.7rem;
+  letter-spacing: 0.32em;
+}
+
+.visual-banner-title {
+  max-width: 32rem;
+  color: #f4ede1;
+  font-family: var(--font-heading);
+  font-size: clamp(1rem, 1.8vw, 1.35rem);
+  letter-spacing: 0.04em;
+}
+
 .visual-subtabs {
   display: flex;
   gap: 0.4rem;
@@ -5491,9 +5536,6 @@ svg.is-wire .stage-path-line {
 }
 
 /* 风格卡：缩略图贴顶 */
-.style-family-strip {
-  grid-auto-columns: minmax(10.5rem, 1fr);
-}
 .style-family-card {
   align-content: start;
   gap: 0.55rem;
@@ -5698,6 +5740,39 @@ svg.is-wire .stage-path-line {
   flex: 1;
   overflow-y: auto;
   padding: 1rem 1.15rem 1.4rem;
+}
+
+/* 三 Tab：语音记录 / AI 纪要 / 待办清单 */
+.disc-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.55rem 0.7rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.disc-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.7rem;
+  margin-bottom: -1px;
+  color: var(--ink-muted);
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.disc-tab:hover {
+  color: var(--ink);
+}
+.disc-tab.is-active {
+  color: var(--cue);
+  border-bottom-color: var(--accent-seal);
+}
+.disc-pane {
+  display: grid;
+  gap: 1.05rem;
 }
 
 .disc-mode-menu {
@@ -5998,6 +6073,158 @@ svg.is-wire .stage-path-line {
 }
 .disc-summary-group li {
   margin-bottom: 0.2rem;
+}
+
+/* ===== 转写气泡 ===== */
+.disc-bubble {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.disc-bubble-avatar {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 1.9rem;
+  height: 1.9rem;
+  align-items: center;
+  justify-content: center;
+  color: var(--cue);
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+.disc-bubble-body {
+  flex: 1;
+  min-width: 0;
+}
+.disc-bubble-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+.disc-bubble-meta b {
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+.disc-bubble-meta small {
+  font-size: 0.66rem;
+  color: var(--ink-faint);
+}
+.disc-bubble-delete {
+  display: inline-flex;
+  margin-left: auto;
+  padding: 0.25rem;
+  color: var(--ink-muted);
+  background: none;
+  border: 0;
+  border-radius: 0.35rem;
+  cursor: pointer;
+}
+.disc-bubble-delete:hover {
+  color: var(--ink);
+  background: rgba(212, 175, 55, 0.1);
+}
+.disc-bubble-text {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 0.55rem 0.55rem 0.55rem 0.15rem;
+}
+
+/* ===== AI 纪要卡 ===== */
+.ai-minutes-card {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.95rem 1rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+.ai-minutes-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--cue);
+}
+.ai-minutes-head b {
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+.ai-minutes-overview {
+  margin: 0;
+  padding-left: 0.6rem;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--ink-muted);
+  border-left: 2px solid var(--accent-seal);
+}
+.ai-minutes-list {
+  margin: 0;
+  padding-left: 0.9rem;
+  font-size: 0.76rem;
+  color: var(--ink-muted);
+}
+.ai-minutes-list li {
+  margin-bottom: 0.25rem;
+}
+
+/* ===== 待办清单 ===== */
+.todo-group {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.9rem 1rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+.todo-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+.todo-group-head b {
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+.todo-check-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.todo-check-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.todo-check {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 1.15rem;
+  height: 1.15rem;
+  align-items: center;
+  justify-content: center;
+  color: #11100e;
+  background: transparent;
+  border: 1px solid var(--cue);
+  border-radius: 0.3rem;
+  cursor: pointer;
+}
+.todo-check.is-checked {
+  background: var(--cue);
+}
+.todo-check-list .is-done-text {
+  color: var(--ink-faint);
+  text-decoration: line-through;
 }
 
 .discussion-top-btn {
