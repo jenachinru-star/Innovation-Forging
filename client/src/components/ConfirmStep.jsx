@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { parseOffline } from '../engine/index.js';
+import scriptBg from '../assets/visual/script-bg.jpg';
 import {
   highlightScript,
   SPEAKER_PALETTE,
@@ -556,12 +557,24 @@ export default function ConfirmStep({
       .map((character) => ({ name: character.name, count: lineCounts[character.name] || 0 }))
       .sort((a, b) => b.count - a.count);
     const max = list[0]?.count || 1;
+    const totalSpoken = list.reduce((sum, item) => sum + item.count, 0) || 1;
     return list.map((item, index) => ({
       ...item,
       tier: tierFor(item.count, max),
       color: SPEAKER_PALETTE[index % SPEAKER_PALETTE.length],
+      ratio: Math.round((item.count / totalSpoken) * 100),
     }));
   }, [preview, lineCounts]);
+
+  const sceneCount = preview?.scenes?.length || 0;
+  const characterCount = preview?.characters?.length || 0;
+  const relationCount = preview?.relationships?.length || 0;
+  const charCount = scriptText?.length || 0;
+  const rowCount = Math.max((scriptText || '').split('\n').length, 1);
+  const duration = (preview?.scenes || []).reduce(
+    (sum, scene) => sum + (Number(scene.estimatedMinutes) || 0),
+    0
+  );
 
   const reviewCount = (preview?.relationships || []).filter((r) => r.needsReview).length;
 
@@ -584,9 +597,33 @@ export default function ConfirmStep({
 
   return (
     <div className="cf2">
-      <header className="cf2-head">
-        <span className="cf2-eyebrow">—— 校对与确认 ——</span>
-        <h1>核对拆解结果</h1>
+      <div className="cf2-bg" aria-hidden="true">
+        <img src={scriptBg} alt="" />
+      </div>
+      <div className="cf2-mask" aria-hidden="true" />
+
+      <header className="cf2-hero">
+        <div className="cf2-hero-main">
+          <span className="cf2-eyebrow">SCRIPT & VERSIONS · 01</span>
+          <div className="cf2-hero-title">
+            <h1>核对拆解结果</h1>
+            <span className="cf2-hero-badge">校对中</span>
+          </div>
+        </div>
+        <div className="cf2-hero-stats">
+          <div className="cf2-mini-stat">
+            <b>{sceneCount}</b><span>场次</span>
+          </div>
+          <div className="cf2-mini-stat">
+            <b>{characterCount}</b><span>角色</span>
+          </div>
+          <div className="cf2-mini-stat">
+            <b>{charCount}</b><span>字数</span>
+          </div>
+          <div className="cf2-mini-stat">
+            <b>{duration}<small>分钟</small></b><span>时长</span>
+          </div>
+        </div>
       </header>
 
       <div className="cf2-grid">
@@ -629,8 +666,9 @@ export default function ConfirmStep({
             characterNames={(preview?.characters || []).map((c) => c.name)}
           />
           <div className="cf2-manuscript-foot">
-            <span>第 1 / {preview?.scenes?.length || 0} 场</span>
-            <span>{scriptText.length} 字</span>
+            <span>第 1 / {sceneCount} 场</span>
+            <span>{charCount} 字</span>
+            <span>{rowCount} 行</span>
           </div>
         </section>
 
@@ -670,10 +708,18 @@ export default function ConfirmStep({
               <ul className="cf-roster">
                 {roster.map((item) => (
                   <li key={item.name}>
-                    <span className="cf-roster-dot" style={{ backgroundColor: item.color }} />
-                    <span className="cf-roster-name">{item.name}</span>
-                    <span className="cf-tier">{item.tier}</span>
-                    <span className="cf-roster-count">{item.count}</span>
+                    <div className="cf-roster-row">
+                      <span className="cf-roster-dot" style={{ backgroundColor: item.color }} />
+                      <span className="cf-roster-name">{item.name}</span>
+                      <span className="cf-tier">{item.tier}</span>
+                      <span className="cf-roster-count">{item.count}</span>
+                    </div>
+                    <span className="cf-roster-bar" aria-hidden="true">
+                      <span
+                        className="cf-roster-bar-fill"
+                        style={{ width: `${item.ratio}%`, backgroundColor: item.color }}
+                      />
+                    </span>
                   </li>
                 ))}
               </ul>

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { SAMPLE_TEXT, SAMPLE_SCRIPT_DATA } from '@director/shared/samples/oneAct.js';
+import { parseScriptOffline } from '@director/shared/parser/index.js';
 
 const asText = (scene) => (scene.stageDirections || []).join('\n');
 
@@ -52,5 +53,13 @@ describe('oneAct sample', () => {
   it('第二场含雨声音效提示', () => {
     const second = SAMPLE_SCRIPT_DATA.scenes[1];
     expect(asText(second)).toContain('雨声');
+  });
+
+  it('冒号写法的幕/场标题不会被误判为角色', () => {
+    const text = '第一幕：启程\n第一场：特别节目\n老陈：你好\n第二场：雨中\n老陈：再见';
+    const { scriptData } = parseScriptOffline(text);
+    expect(scriptData.characters.map((c) => c.name)).toEqual(['老陈']);
+    expect(scriptData.scenes).toHaveLength(2);
+    expect(scriptData.scenes.map((s) => s.location)).toEqual(['特别节目', '雨中']);
   });
 });

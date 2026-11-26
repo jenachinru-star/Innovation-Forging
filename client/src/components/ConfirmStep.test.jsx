@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import ConfirmStep from './ConfirmStep.jsx';
 import { SAMPLE_TEXT } from '@director/shared/samples/oneAct.js';
 
@@ -147,5 +147,29 @@ describe('ConfirmStep', () => {
     fireEvent.change(screen.getByLabelText('替换为'), { target: { value: '老周' } });
     fireEvent.click(screen.getByRole('button', { name: '全部替换' }));
     expect(editor()).toHaveValue('老周和老周');
+  });
+
+  it('信息页头渲染状态徽章与四个统计标签', () => {
+    render(<ConfirmStep {...baseProps()} />);
+    const hero = document.querySelector('.cf2-hero');
+    expect(within(hero).getByText('校对中')).toBeInTheDocument();
+    expect(within(hero).getByText('SCRIPT & VERSIONS · 01')).toBeInTheDocument();
+    for (const label of ['场次', '角色', '字数', '时长']) {
+      expect(within(hero).getByText(label)).toBeInTheDocument();
+    }
+  });
+
+  it('角色名单渲染戏份占比条且带宽度', () => {
+    render(<Controlled initial={SAMPLE_TEXT} />);
+    const fills = document.querySelectorAll('.cf-roster-bar-fill');
+    expect(fills.length).toBeGreaterThan(0);
+    for (const fill of fills) {
+      expect(fill.style.width).not.toBe('');
+    }
+  });
+
+  it('编辑器底部统计行数', () => {
+    render(<Controlled initial={'第一行\n第二行'} />);
+    expect(screen.getByText('2 行')).toBeInTheDocument();
   });
 });

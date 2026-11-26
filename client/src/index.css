@@ -7027,3 +7027,235 @@ svg.is-wire .stage-path-line {
   }
 
 }
+
+/* ============================================================
+   剧本与版本（01）：文稿实景 + 玻璃化，编辑器保持高可读
+   ============================================================ */
+
+/* paper 透底，让实景透出来；overflow 改 visible 以便底部操作栏 sticky 吸底 */
+.workspace-paper:has(.cf2) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+/* 步骤条加玻璃底，保证在实景上可读 */
+.workspace-main:has(.cf2) .step-bar {
+  padding: 0.4rem 0.8rem;
+  background: rgba(26, 20, 16, 0.55);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  border-radius: 0.7rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* 固定实景背景：暗化 + 轻模糊，只在边缘与间隙透出 */
+.cf2-bg {
+  position: fixed;
+  inset: 4.5rem 0 0 232px;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.cf2-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.08);
+  filter: blur(2px) brightness(0.5) saturate(1.05);
+}
+.cf2-mask {
+  position: fixed;
+  inset: 4.5rem 0 0 232px;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(26, 20, 16, 0.32) 0%, rgba(26, 20, 16, 0.72) 100%),
+    linear-gradient(180deg, rgba(26, 20, 16, 0.5) 0%, rgba(26, 20, 16, 0.78) 100%);
+}
+
+/* 内容浮在背景之上 */
+.cf2 {
+  position: relative;
+  z-index: 1;
+}
+
+/* 左：剧本编辑器外框玻璃化 */
+.cf2-manuscript {
+  background: rgba(38, 29, 21, 0.55);
+  border: 1px solid rgba(212, 175, 55, 0.26);
+  border-radius: 0.9rem;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(16px) saturate(1.12);
+  -webkit-backdrop-filter: blur(16px) saturate(1.12);
+}
+
+/* 编辑器工具栏玻璃化，与下方编辑器衔接 */
+.cf2-manuscript .cf-element-bar {
+  background: rgba(38, 29, 21, 0.45);
+  border-color: rgba(212, 175, 55, 0.2);
+  border-radius: 0.55rem 0.55rem 0 0;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* 编辑器主体保持深色实底，确保文字高对比、可读 */
+.cf2-manuscript .cf-editor {
+  background: rgba(22, 16, 11, 0.95);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  border-radius: 0 0 0.55rem 0.55rem;
+}
+.cf2-manuscript .cf-gutter {
+  background: rgba(0, 0, 0, 0.32);
+}
+
+/* 引导条增强玻璃质感 */
+.cf2-manuscript .cf-guide {
+  background: rgba(193, 138, 45, 0.12);
+  border-color: rgba(212, 175, 55, 0.3);
+  border-radius: 0.7rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* 右：玻璃卡片 */
+.cf2 .cf2-card {
+  background: rgba(38, 29, 21, 0.55);
+  border: 1px solid rgba(212, 175, 55, 0.26);
+  border-radius: 0.9rem;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(16px) saturate(1.12);
+  -webkit-backdrop-filter: blur(16px) saturate(1.12);
+}
+
+/* 窄屏：背景铺满（侧栏通常已折叠） */
+@media (max-width: 1100px) {
+  .cf2-bg,
+  .cf2-mask {
+    inset: 4.5rem 0 0 0;
+  }
+}
+
+/* ---- 横向信息页头 ---- */
+.cf2-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.2rem;
+  margin-bottom: 1.3rem;
+  padding: 1.1rem 1.4rem;
+  background: rgba(38, 29, 21, 0.55);
+  border: 1px solid rgba(212, 175, 55, 0.26);
+  border-radius: 0.9rem;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(16px) saturate(1.12);
+  -webkit-backdrop-filter: blur(16px) saturate(1.12);
+}
+.cf2-hero-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.cf2-hero .cf2-eyebrow {
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+}
+.cf2-hero-title {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.cf2-hero-title h1 {
+  margin: 0;
+  color: #f1e9dc;
+  font-size: clamp(1.4rem, 2vw, 1.8rem);
+}
+.cf2-hero-badge {
+  padding: 0.15rem 0.6rem;
+  color: var(--cue);
+  background: rgba(212, 175, 55, 0.14);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 999px;
+  font-size: 0.7rem;
+}
+.cf2-hero-stats {
+  display: flex;
+  gap: 0.7rem;
+}
+.cf2-mini-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 4.6rem;
+  padding: 0.55rem 0.7rem;
+  background: rgba(22, 16, 11, 0.5);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 0.6rem;
+}
+.cf2-mini-stat b {
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+}
+.cf2-mini-stat b small {
+  margin-left: 0.1rem;
+  color: var(--ink-muted);
+  font-size: 0.62rem;
+}
+.cf2-mini-stat > span {
+  color: var(--ink-faint);
+  font-size: 0.66rem;
+}
+
+/* ---- 角色戏份占比条 ---- */
+.cf2 .cf-roster li {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.3rem;
+  padding: 0.32rem 0.2rem;
+}
+.cf-roster-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cf-roster-bar {
+  display: block;
+  height: 0.32rem;
+  margin-left: 1.2rem;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 999px;
+}
+.cf-roster-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+
+@media (max-width: 1100px) {
+  .cf2-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .cf2-hero-stats {
+    flex-wrap: wrap;
+  }
+}
+
+/* 底部操作栏吸底：内容再长，主按钮也始终停在工作区底部可见 */
+.cf2-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 6;
+  padding: 0.8rem 1rem;
+  background: rgba(26, 20, 16, 0.85);
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  border-radius: 0.8rem;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+}
