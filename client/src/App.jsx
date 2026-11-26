@@ -32,6 +32,7 @@ const NAV_ITEMS = [
   { id: 'rehearsal', mark: '06', label: '排练与影响', phase: '排演', tab: 'rehearsal' },
   { id: 'visuals', mark: '07', label: '视觉制作', phase: '交付', tab: 'visuals' },
   { id: 'export', mark: '08', label: '导出与归档', phase: '交付', tab: 'export' },
+  { id: 'props', mark: '09', label: '道具清单', phase: '拆解', tab: 'props' },
 ];
 
 function appPlanReducer(state, action) {

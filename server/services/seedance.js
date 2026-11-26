@@ -63,7 +63,7 @@ export async function getVideoTask(taskId, { fetchImpl = fetch } = {}) {
   const timer = setTimeout(() => controller.abort(), 30000);
   let res;
   try {
-    res = await fetchImpl(`${base}/contents/generations/tasks/${taskId}`, {
+    res = await fetchImpl(`${base}/contents/generations/tasks/${encodeURIComponent(taskId)}`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${key}` },
       signal: controller.signal,

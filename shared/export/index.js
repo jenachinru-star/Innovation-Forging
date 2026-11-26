@@ -168,7 +168,7 @@ function stagingSection(plan) {
 }
 
 function discussionSection(discussions) {
-  const list = asArray(discussions);
+  const list = asArray(discussions).filter(Boolean);
   if (!list.length) return '';
 
   const miniList = (label, items) =>
@@ -222,7 +222,7 @@ function reviewSection(review) {
 }
 
 function collectionSection(collections) {
-  const list = asArray(collections);
+  const list = asArray(collections).filter(Boolean);
   if (!list.length) return '';
   return `
     <section>
@@ -340,8 +340,13 @@ export function toHtml({ title, scriptData, plan, now } = {}) {
 </html>`;
 }
 
+// 电子表格会把以 = + - @ 开头的单元格当公式执行；纯数字（含负数）保持原样
+const FORMULA_START_RE = /^[=+\-@\t\r]/;
+const PLAIN_NUMBER_RE = /^[+-]?\d+(\.\d+)?$/;
+
 function csvCell(value) {
-  const raw = text(value);
+  let raw = text(value);
+  if (FORMULA_START_RE.test(raw) && !PLAIN_NUMBER_RE.test(raw)) raw = `'${raw}`;
   if (/[",\r\n]/.test(raw)) {
     return `"${raw.replace(/"/g, '""')}"`;
   }
@@ -391,4 +396,35 @@ export function toFountain({ title, scriptData } = {}) {
   }
 
   return `${blocks.join('\n').trim()}\n`;
+}
+/**
+ * 道具清单 CSV：每场次每道具一行，便于排演前逐项核对。
+ */
+export function toPropsCsv(scriptData) {
+  const scenes = asArray(scriptData?.scenes);
+  const rows = [];
+  scenes.forEach((scene, index) => {
+    const label = sceneLabel(scene, index);
+    for (const prop of asArray(scene?.props)) {
+      rows.push({ 场次: label, 道具: text(prop) });
+    }
+  });
+  return toCsv(rows, ['场次', '道具']);
+}
+
+/**
+ * 人物出场统计 CSV：每个人物一行，列出出场场次与次数。
+ */
+export function toCharacterAppearanceCsv(scriptData) {
+  const scenes = asArray(scriptData?.scenes);
+  const names = Array.from(
+    new Set(asArray(scriptData?.characters).map((c) => c && c.name).filter(Boolean))
+  );
+  const rows = names.map((name) => {
+    const appearances = scenes
+      .filter((scene) => asArray(scene?.characters).includes(name))
+      .map((scene, index) => sceneLabel(scene, index));
+    return { 人物: name, 出场场次: appearances.join('、'), 出场次数: appearances.length };
+  });
+  return toCsv(rows, ['人物', '出场场次', '出场次数']);
 }

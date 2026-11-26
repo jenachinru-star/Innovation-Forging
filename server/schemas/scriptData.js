@@ -36,6 +36,7 @@ export const sceneSchema = z.object({
 export const characterSchema = z.object({
   id: idString,
   name: optionalString(200),
+  role: optionalString(50),
   description: optionalString(4000),
   aliases: stringArray,
 });

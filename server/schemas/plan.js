@@ -157,6 +157,7 @@ export const discussionSchema = z.object({
 export const assetSchema = z.object({
   id: idString,
   type: optionalString(50),
+  taskId: optionalString(200),
   title: optionalString(200),
   status: z.enum(ASSET_STATUS_VALUES).optional().nullable(),
   url: optionalString(2000),

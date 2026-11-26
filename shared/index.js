@@ -86,6 +86,7 @@ export function normalizeCharacter(raw) {
   return {
     id: toStr(r.id) || uid(),
     name,
+    role: toStr(r.role),
     description: toStr(r.description),
     aliases: toStrArray(r.aliases),
   };

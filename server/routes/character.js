@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { generateCharacterImage } from '../services/seedream.js';
 import { createRequireAuth } from '../middleware/requireAuth.js';
 import { validate } from '../middleware/validate.js';
+import { sendUpstreamError } from '../services/upstreamError.js';
 import { characterImageSchema } from '../schemas/ai.js';
 
 export function createCharacterRouter(deps = {}) {
@@ -14,7 +15,7 @@ export function createCharacterRouter(deps = {}) {
       const imageUrl = await generate(description, { stylePrompt });
       return res.json({ name, imageUrl });
     } catch (e) {
-      return res.status(502).json({ error: '生成失败', detail: String(e?.message || e) });
+      return sendUpstreamError(res, '生成失败', e);
     }
   });
   return router;

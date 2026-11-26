@@ -146,8 +146,8 @@ function HighlightEditor({ value, onChange, characterNames = [] }) {
     const selStart = ta.selectionStart;
     const selEnd = ta.selectionEnd;
     const ctx = {
-      actNumber: countHeading(doc, /^第[一二三四五六七八九十百\d]+幕/gm) + 1,
-      sceneNumber: countHeading(doc, /^第[一二三四五六七八九十百\d]+场/gm) + 1,
+      actNumber: countHeading(doc, /^第[零一二两三四五六七八九十百\d]+幕/gm) + 1,
+      sceneNumber: countHeading(doc, /^第[零一二两三四五六七八九十百\d]+场/gm) + 1,
     };
     const result =
       selStart !== selEnd
@@ -174,8 +174,8 @@ function HighlightEditor({ value, onChange, characterNames = [] }) {
     let pos = 0;
     for (let i = 0; i < index; i += 1) pos += lines[i].length + 1;
     const ctx = {
-      actNumber: countHeading(doc, /^第[一二三四五六七八九十百\d]+幕/gm) + 1,
-      sceneNumber: countHeading(doc, /^第[一二三四五六七八九十百\d]+场/gm) + 1,
+      actNumber: countHeading(doc, /^第[零一二两三四五六七八九十百\d]+幕/gm) + 1,
+      sceneNumber: countHeading(doc, /^第[零一二两三四五六七八九十百\d]+场/gm) + 1,
     };
     let result;
     if (kind === 'plain') {

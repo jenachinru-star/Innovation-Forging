@@ -6,6 +6,20 @@ import {
   ASSET_STATUS,
   DISCUSSION_STATUS,
 } from '@director/shared/constants/status.js';
+import { assertStatusTransition } from '@director/shared/rules/statusFlow.js';
+
+// 状态流转守卫：非法状态跳转被静默拒绝（保留原值），合法跳转与自转放行。
+function applyStatusGuard(kind, list, id, patch) {
+  const patchObj = asObject(patch);
+  const status = patchObj.status;
+  if (status == null) return patchObj;
+  const item = asArray(list).find((x) => x && x.id === id);
+  const current = item ? item.status : undefined;
+  const { ok } = assertStatusTransition(kind, current, status);
+  if (ok) return patchObj;
+  const { status: _dropped, ...rest } = patchObj;
+  return rest;
+}
 
 export function createPlan(type, name) {
   return createEmptyProductionPlan(type, name);
@@ -150,7 +164,14 @@ export function planReducer(state, action) {
     }
 
     case 'updateCue':
-      return { ...current, cues: patchById(current.cues, action.id, action.patch) };
+      return {
+        ...current,
+        cues: patchById(
+          current.cues,
+          action.id,
+          applyStatusGuard('cue', current.cues, action.id, action.patch)
+        ),
+      };
 
     case 'removeCue': {
       const cues = asArray(current.cues).filter((cue) => !cue || cue.id !== action.id);
@@ -188,7 +209,14 @@ export function planReducer(state, action) {
     }
 
     case 'updateBrief':
-      return { ...current, briefs: patchById(current.briefs, action.id, action.patch) };
+      return {
+        ...current,
+        briefs: patchById(
+          current.briefs,
+          action.id,
+          applyStatusGuard('brief', current.briefs, action.id, action.patch)
+        ),
+      };
 
     case 'setPlacement': {
       const staging = normalizeStaging(current.staging);
@@ -357,9 +385,11 @@ export function planReducer(state, action) {
     case 'resolveImpact':
       return {
         ...current,
-        impacts: asArray(current.impacts).map((impact) =>
-          impact && impact.id === action.id ? { ...impact, status: action.status } : impact
-        ),
+        impacts: asArray(current.impacts).map((impact) => {
+          if (!impact || impact.id !== action.id) return impact;
+          const { ok } = assertStatusTransition('impact', impact.status, action.status);
+          return ok ? { ...impact, status: action.status } : impact;
+        }),
       };
 
     case 'addDiscussion': {

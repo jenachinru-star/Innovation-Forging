@@ -85,3 +85,24 @@ describe('parseScriptOffline', () => {
     expect(scriptData.meta.importedAt.length).toBeGreaterThan(0);
   });
 });
+
+describe('全角冒号标题与人物表', () => {
+  const src = `人物：陈默、兰心
+第一幕：序幕
+第一场：客厅
+（陈默拿着钥匙站在门口）
+陈默：你回来了。
+兰心：嗯。
+`;
+
+  it('幕/场标题不会被当成台词人物', () => {
+    const { scriptData } = parseScriptOffline(src);
+    expect(scriptData.characters.map((c) => c.name)).toEqual(['陈默', '兰心']);
+  });
+
+  it('场次地点与幕名去掉标题后的分隔符', () => {
+    const { scriptData } = parseScriptOffline(src);
+    expect(scriptData.scenes[0].location).toBe('客厅');
+    expect(scriptData.acts[0].title).toBe('序幕');
+  });
+});

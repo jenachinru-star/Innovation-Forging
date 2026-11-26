@@ -8,6 +8,7 @@ import BriefPanel from './BriefPanel.jsx';
 import RehearsalPanel from './RehearsalPanel.jsx';
 import ReviewTemplate from './ReviewTemplate.jsx';
 import ExportPanel from './ExportPanel.jsx';
+import PropsPanel from './PropsPanel.jsx';
 import VisualStudio from './VisualStudio.jsx';
 import { getSourceMode } from '../engine/index.js';
 
@@ -90,6 +91,7 @@ export default function ResultTabs({
             {tab === 'rehearsal' && '排练与影响'}
             {tab === 'visuals' && '视觉制作'}
             {tab === 'export' && '交付'}
+            {tab === 'props' && '道具清单'}
           </h2>
         </div>
         <button type="button" onClick={onBackToEdit} className="text-action">
@@ -107,6 +109,7 @@ export default function ResultTabs({
           {tabBtn('rehearsal', '排练与影响', '06')}
           {tabBtn('visuals', '视觉制作', '07')}
           {tabBtn('export', '导出', '08')}
+          {tabBtn('props', '道具清单', '09')}
         </nav>
       )}
 
@@ -192,6 +195,9 @@ export default function ResultTabs({
             scriptData={scriptData}
             plan={plan}
           />
+        )}
+        {tab === 'props' && (
+          <PropsPanel scriptData={scriptData} onChangeScene={onChangeScene} />
         )}
       </div>
     </div>

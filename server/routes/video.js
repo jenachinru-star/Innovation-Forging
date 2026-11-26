@@ -2,7 +2,23 @@ import { Router } from 'express';
 import { createVideoTask, getVideoTask } from '../services/seedance.js';
 import { createRequireAuth } from '../middleware/requireAuth.js';
 import { validate } from '../middleware/validate.js';
+import { sendUpstreamError } from '../services/upstreamError.js';
 import { videoTaskSchema } from '../schemas/ai.js';
+
+const TASK_ID_RE = /^[\w-]{1,128}$/;
+
+// 判断任务是否属于当前用户。新任务以登记的创建者为准；
+// 本次改动之前创建的任务没有登记，回退到用户自己项目 assets 里的 taskId，并补登记。
+function ownsTask(store, username, taskId) {
+  const owner = store.getVideoTaskOwner(taskId);
+  if (owner) return owner === username;
+  const inOwnProject = store.listProjectsByUser(username).some((project) => {
+    const assets = Array.isArray(project?.plan?.assets) ? project.plan.assets : [];
+    return assets.some((asset) => asset && asset.taskId === taskId);
+  });
+  if (inOwnProject) store.putVideoTask(taskId, username);
+  return inOwnProject;
+}
 
 export function createVideoRouter(deps = {}) {
   const create = deps.createVideoTask || createVideoTask;
@@ -21,16 +37,25 @@ export function createVideoRouter(deps = {}) {
         duration: duration ?? 5,
         imageUrl: imageUrl || '',
       });
+      if (deps.store && TASK_ID_RE.test(String(task.id))) {
+        deps.store.putVideoTask(String(task.id), req.user.username);
+      }
       return res.status(202).json({ taskId: task.id, status: task.status });
     } catch (e) {
-      return res
-        .status(502)
-        .json({ error: '视频任务创建失败', detail: String(e?.message || e) });
+      return sendUpstreamError(res, '视频任务创建失败', e);
     }
   });
 
   // 查询视频任务状态
   router.get('/tasks/:id', async (req, res) => {
+    // 任务 ID 只允许安全字符，防止 "../" 之类改写上游请求路径
+    if (!TASK_ID_RE.test(req.params.id)) {
+      return res.status(400).json({ error: '任务 ID 不合法' });
+    }
+    // 不属于当前用户的任务一律按不存在处理，不暴露他人的任务与视频地址
+    if (deps.store && !ownsTask(deps.store, req.user.username, req.params.id)) {
+      return res.status(404).json({ error: '任务不存在' });
+    }
     try {
       const task = await query(req.params.id);
       return res.json({
@@ -40,9 +65,7 @@ export function createVideoRouter(deps = {}) {
         error: task.error,
       });
     } catch (e) {
-      return res
-        .status(502)
-        .json({ error: '视频任务查询失败', detail: String(e?.message || e) });
+      return sendUpstreamError(res, '视频任务查询失败', e);
     }
   });
 

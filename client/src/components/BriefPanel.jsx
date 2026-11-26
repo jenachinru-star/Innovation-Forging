@@ -3,10 +3,17 @@ import { splitBrief, DEPARTMENTS, DEPARTMENT_LABELS } from '@director/shared/rul
 import {
   BRIEF_STATUS_OPTIONS,
   BRIEF_STATUS,
+  BRIEF_STATUS_LABELS,
   isBriefDone,
 } from '@director/shared/constants/status.js';
+import { nextStatusOptions } from '@director/shared/rules/statusFlow.js';
 
-const STATUS_OPTIONS = BRIEF_STATUS_OPTIONS;
+function statusOptionsFor(current) {
+  return nextStatusOptions('brief', current).map((value) => [
+    value,
+    BRIEF_STATUS_LABELS[value] || value,
+  ]);
+}
 
 const GROUP_ORDER = [...DEPARTMENTS, 'uncertain'];
 const GROUP_LABELS = { ...DEPARTMENT_LABELS, uncertain: '待确认' };
@@ -181,7 +188,7 @@ export default function BriefPanel({ scenes = [], plan, dispatch }) {
                             }
                             className="field px-1 py-0.5 text-xs"
                           >
-                            {STATUS_OPTIONS.map(([value, label]) => (
+                            {statusOptionsFor(brief.status || BRIEF_STATUS.DRAFT).map(([value, label]) => (
                               <option key={value} value={value}>
                                 {label}
                               </option>

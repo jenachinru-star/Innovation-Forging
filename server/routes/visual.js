@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { generateVisualImage } from '../services/seedream.js';
 import { createRequireAuth } from '../middleware/requireAuth.js';
 import { validate } from '../middleware/validate.js';
+import { sendUpstreamError } from '../services/upstreamError.js';
 import { visualGenerateSchema } from '../schemas/ai.js';
 
 export function createVisualRouter(deps = {}) {
@@ -16,7 +17,7 @@ export function createVisualRouter(deps = {}) {
       const imageUrl = await generate(prompt, { size: size || '1024x1024' });
       return res.json({ imageUrl });
     } catch (e) {
-      return res.status(502).json({ error: '生成失败', detail: String(e?.message || e) });
+      return sendUpstreamError(res, '生成失败', e);
     }
   });
 

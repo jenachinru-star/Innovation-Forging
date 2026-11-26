@@ -399,6 +399,20 @@ export default function StageBlocking({
     setPathDraft([]);
   }
 
+  // 指针拖出画布后松开/被系统取消时，容器上收不到 pointerup。
+  // 在 window 上兜底结束拖拽；画布内正常松开会先清空 dragRef，这里不会重复提交。
+  const endDragRef = useRef(handlePointerUp);
+  endDragRef.current = handlePointerUp;
+  useEffect(() => {
+    const finish = () => endDragRef.current();
+    window.addEventListener('pointerup', finish);
+    window.addEventListener('pointercancel', finish);
+    return () => {
+      window.removeEventListener('pointerup', finish);
+      window.removeEventListener('pointercancel', finish);
+    };
+  }, []);
+
   function handle3DPointerMove(event) {
     if (!dragRef.current) return;
     const box = stage3dRef.current?.getBoundingClientRect();

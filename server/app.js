@@ -8,6 +8,7 @@ import { createVideoRouter } from './routes/video.js';
 import { createDiscussionRouter } from './routes/discussion.js';
 import { createAuthRouter } from './routes/auth.js';
 import { createProjectsRouter } from './routes/projects.js';
+import { createStatsRouter } from './routes/stats.js';
 import { createStore } from './services/dataStore.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -25,6 +26,7 @@ export async function createApp(deps = {}) {
   app.use('/api/visual', createVisualRouter({ store }));
   app.use('/api/video', createVideoRouter({ store }));
   app.use('/api/discussion', createDiscussionRouter({ store }));
+  app.use('/api/stats', createStatsRouter({ store }));
 
   const distPath = path.resolve(__dirname, '../dist');
   app.use(express.static(distPath));
@@ -33,6 +35,15 @@ export async function createApp(deps = {}) {
     res.sendFile(path.join(distPath, 'index.html'), (err) => {
       if (err) next();
     });
+  });
+
+  // 兜底错误处理：非法 JSON、body 过大等统一返回 JSON，不暴露堆栈
+  // eslint-disable-next-line no-unused-vars
+  app.use((err, req, res, next) => {
+    const status = Number(err?.status || err?.statusCode) || 500;
+    if (status >= 500) console.error('[app] unhandled error:', err);
+    const messages = { 400: '请求格式不正确', 413: '请求内容过大' };
+    return res.status(status).json({ error: messages[status] || (status >= 500 ? '服务器内部错误' : '请求失败') });
   });
 
   return app;

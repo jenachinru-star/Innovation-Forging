@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const RHYTHM_OPTIONS = ['铺垫', '转折', '结尾'];
+const RHYTHM_OPTIONS = ['铺垫', '转折', '结尾', '高潮'];
 
 // 把分钟（可为小数）格式化为 m'ss" 分秒时长
 export function formatClock(totalMinutes) {

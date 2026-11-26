@@ -3,6 +3,7 @@ import { transcribeAudio } from '../services/seedasr.js';
 import { summarizeDiscussion } from '../services/discussion.js';
 import { createRequireAuth } from '../middleware/requireAuth.js';
 import { validate } from '../middleware/validate.js';
+import { sendUpstreamError } from '../services/upstreamError.js';
 import { discussionAnalyzeSchema } from '../schemas/ai.js';
 
 function mimeToFormat(mime) {
@@ -35,9 +36,7 @@ export function createDiscussionRouter(deps = {}) {
       const summary = await summarize(transcript);
       return res.json({ transcript, summary });
     } catch (e) {
-      return res
-        .status(502)
-        .json({ error: '讨论分析失败', detail: String(e?.message || e) });
+      return sendUpstreamError(res, '讨论分析失败', e);
     }
   });
 

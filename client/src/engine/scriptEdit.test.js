@@ -113,3 +113,40 @@ describe('countHeading', () => {
     expect(countHeading('第一幕\n第一幕', /^第[一二三四五六七八九十百\d]+幕/gm)).toBe(2);
   });
 });
+
+describe('toChineseNum 大数与往返', () => {
+  it('100 以上不再产生 undefined', () => {
+    expect(toChineseNum(100)).toBe('一百');
+    expect(toChineseNum(101)).toBe('一百零一');
+    expect(toChineseNum(110)).toBe('一百一十');
+    expect(toChineseNum(120)).toBe('一百二十');
+    expect(toChineseNum(205)).toBe('二百零五');
+    expect(toChineseNum(999)).toBe('九百九十九');
+  });
+
+  it('1000 及以上回退为阿拉伯数字，解析器同样认', () => {
+    expect(toChineseNum(1000)).toBe('1000');
+  });
+
+  it('输出能被离线解析器读回同一场次号', async () => {
+    const { parseScriptOffline } = await import('@director/shared/parser/index.js');
+    for (const n of [1, 9, 10, 11, 20, 25, 99, 100, 101, 110, 205]) {
+      const text = `第${toChineseNum(n)}场 客厅
+陈默：你好
+`;
+      expect(parseScriptOffline(text).scriptData.scenes[0].sceneNumber).toBe(n);
+    }
+  });
+});
+
+describe('场次/幕标题带冒号时不被当成台词', () => {
+  it('unwrapLine 识别「第一场：客厅」为标题', () => {
+    expect(unwrapLine('第一场：客厅')).toMatchObject({ speaker: '', content: '客厅' });
+    expect(unwrapLine('第二幕：夜')).toMatchObject({ speaker: '', content: '夜' });
+  });
+
+  it('标题转说明/对白时保留地点内容，不把「第一场」当人物', () => {
+    expect(transformLine('第一场：客厅', 'direction')).toBe('（客厅）');
+    expect(transformLine('第一场：客厅', 'dialogue', { defaultSpeaker: '老陈' })).toBe('老陈：客厅');
+  });
+});

@@ -4,13 +4,23 @@
 const CN_DIGITS = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
 
 export function toChineseNum(n) {
-  if (n <= 0) return '一';
-  if (n < 10) return CN_DIGITS[n];
-  if (n === 10) return '十';
-  if (n < 20) return '十' + CN_DIGITS[n % 10];
-  const tens = Math.floor(n / 10);
-  const ones = n % 10;
-  return CN_DIGITS[tens] + '十' + (ones ? CN_DIGITS[ones] : '');
+  const value = Math.floor(Number(n));
+  if (!Number.isFinite(value) || value <= 0) return '一';
+  if (value < 10) return CN_DIGITS[value];
+  if (value === 10) return '十';
+  if (value < 20) return '十' + CN_DIGITS[value % 10];
+  if (value < 100) {
+    const ones = value % 10;
+    return CN_DIGITS[Math.floor(value / 10)] + '十' + (ones ? CN_DIGITS[ones] : '');
+  }
+  // 解析器只认到「百」，1000 及以上直接用阿拉伯数字，保证写出的标题能被读回
+  if (value >= 1000) return String(value);
+  const hundreds = Math.floor(value / 100);
+  const rest = value % 100;
+  let out = CN_DIGITS[hundreds] + '百';
+  if (rest === 0) return out;
+  if (rest < 10) return out + '零' + CN_DIGITS[rest];
+  return out + CN_DIGITS[Math.floor(rest / 10)] + '十' + (rest % 10 ? CN_DIGITS[rest % 10] : '');
 }
 
 export function countHeading(text, re) {
@@ -24,10 +34,10 @@ export function unwrapLine(line) {
   if (!t) return { content: '', speaker: '' };
   const direction = t.match(/^[（(]\s*([\s\S]*?)\s*[）)]$/);
   if (direction) return { content: direction[1], speaker: '' };
+  const heading = t.match(/^第[零一二两三四五六七八九十百\d]+[幕场][\s：:、，,.\-—–]*([\s\S]*)$/);
+  if (heading) return { content: heading[1].trim(), speaker: '', heading: t };
   const dialogue = t.match(/^([^：:]{1,12})[：:]([\s\S]*)$/);
   if (dialogue) return { speaker: dialogue[1].trim(), content: dialogue[2].trim() };
-  const heading = t.match(/^第[一二三四五六七八九十百\d]+[幕场]\s*([\s\S]*)$/);
-  if (heading) return { content: heading[1].trim(), speaker: '', heading: t };
   return { content: t, speaker: '' };
 }
 

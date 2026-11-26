@@ -20,8 +20,8 @@ function escapeHtml(value) {
 export function tokenizeLine(line) {
   const trimmed = line.trim();
   if (!trimmed) return { type: 'empty' };
-  if (/^第[一二三四五六七八九十百\d]+幕/.test(trimmed)) return { type: 'act' };
-  if (/^第[一二三四五六七八九十百\d]+场/.test(trimmed)) return { type: 'scene' };
+  if (/^第[零一二两三四五六七八九十百\d]+幕/.test(trimmed)) return { type: 'act' };
+  if (/^第[零一二两三四五六七八九十百\d]+场/.test(trimmed)) return { type: 'scene' };
   if (/^(?:人物|角色)\s*[:：]/.test(trimmed)) return { type: 'cast' };
   if (/^【场景】/.test(trimmed)) return { type: 'metaScene', text: trimmed.slice(4) };
   if (/^【人物】/.test(trimmed)) return { type: 'metaCharacter', text: trimmed.slice(4) };

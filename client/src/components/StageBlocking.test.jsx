@@ -453,4 +453,32 @@ describe('StageBlocking', () => {
 
     expect(dispatch.mock.calls.some(([action]) => action.type === 'setPlacement')).toBe(false);
   });
+
+  it('指针在画布外松开或被取消时，仍提交拖拽结果并结束拖拽', () => {
+    const dispatch = vi.fn();
+    render(<StageBlocking characters={characters} dispatch={dispatch} />);
+
+    const svg = screen.getByTestId('stage-canvas');
+    Object.defineProperty(svg, 'getBoundingClientRect', { value: rect });
+
+    // 在画布外（window）松开
+    fireEvent.pointerDown(screen.getByTestId('actor-老陈'));
+    fireEvent.pointerMove(svg, { clientX: 200, clientY: 100 });
+    fireEvent.pointerUp(window);
+    const placements = dispatch.mock.calls.filter(([a]) => a.type === 'setPlacement');
+    expect(placements).toHaveLength(1);
+    expect(placements[0][0].placement).toMatchObject({ characterId: '老陈', x: 200, y: 100 });
+
+    // 系统取消指针（如触控被打断）
+    fireEvent.pointerDown(screen.getByTestId('actor-阿岚'));
+    fireEvent.pointerMove(svg, { clientX: 300, clientY: 150 });
+    fireEvent.pointerCancel(window);
+    expect(dispatch.mock.calls.filter(([a]) => a.type === 'setPlacement')).toHaveLength(2);
+
+    // 在画布内正常松开只提交一次，不会被 window 兜底重复提交
+    fireEvent.pointerDown(screen.getByTestId('actor-老陈'));
+    fireEvent.pointerMove(svg, { clientX: 220, clientY: 120 });
+    fireEvent.pointerUp(svg);
+    expect(dispatch.mock.calls.filter(([a]) => a.type === 'setPlacement')).toHaveLength(3);
+  });
 });

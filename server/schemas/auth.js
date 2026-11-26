@@ -16,6 +16,6 @@ export const registerSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  username: z.string().trim().min(1, '请输入用户名'),
-  password: z.string().min(1, '请输入密码'),
+  username: z.string().trim().min(1, '请输入用户名').max(32, '用户名过长'),
+  password: z.string().min(1, '请输入密码').max(64, '密码过长'),
 });

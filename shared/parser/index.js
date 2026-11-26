@@ -1,9 +1,9 @@
 import { normalizeScriptData } from '../index.js';
 import { uid } from '../id.js';
 
-const ACT_RE = /^第[一二三四五六七八九十百\d]+幕/;
-const SCENE_RE = /^第[一二三四五六七八九十百\d]+场\s*(.*)$/;
-const SCENE_NUM_RE = /^第([一二三四五六七八九十百\d]+)场/;
+const ACT_RE = /^第[零一二两三四五六七八九十百\d]+幕/;
+const SCENE_RE = /^第[零一二两三四五六七八九十百\d]+场\s*(.*)$/;
+const SCENE_NUM_RE = /^第([零一二两三四五六七八九十百\d]+)场/;
 const CUE_RE = /^([^\s：:，。！？、；（）()【】《》“”‘’"'…—]{1,12})[：:]\s*(.+)$/;
 const DIR_RE = /^[（(【].*[）)】]$/;
 const CAST_RE = /^(?:人物|角色)\s*[：:]\s*(.+)$/;
@@ -29,6 +29,11 @@ function cnToNumber(str) {
     }
   }
   return section + number;
+}
+
+// 去掉标题编号后紧跟的分隔符，如「第一场：客厅」「第二幕 - 夜」
+function stripHeadingSeparator(str) {
+  return String(str || '').replace(/^[\s：:、，,.\-—–]+/, '').trim();
 }
 
 function splitNames(str) {
@@ -80,6 +85,7 @@ export function parseScriptOffline(text) {
   for (const line of lines) {
     const t = line.text.trim();
     if (!t) continue;
+    if (ACT_RE.test(t) || SCENE_RE.test(t)) continue;
     const cast = t.match(CAST_RE);
     if (cast) {
       for (const name of splitNames(cast[1])) {
@@ -165,7 +171,7 @@ export function parseScriptOffline(text) {
       } else if (actNumber > actCounter) {
         actCounter = actNumber;
       }
-      const title = t.slice(actMatch[0].length).trim();
+      const title = stripHeadingSeparator(t.slice(actMatch[0].length));
       currentAct = { id: uid(), actNumber, title, sceneIds: [] };
       acts.push(currentAct);
       continue;
@@ -182,7 +188,7 @@ export function parseScriptOffline(text) {
         sceneCounter = sceneNumber;
       }
       usedSceneNumbers.add(sceneNumber);
-      const location = sceneMatch[1].trim();
+      const location = stripHeadingSeparator(sceneMatch[1]);
       currentScene = {
         id: uid(),
         sceneNumber,

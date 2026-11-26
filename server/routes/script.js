@@ -4,11 +4,12 @@ import * as llm from '../services/llm.js';
 import * as extractService from '../services/extract.js';
 import { createRequireAuth } from '../middleware/requireAuth.js';
 import { validate } from '../middleware/validate.js';
+import { sendUpstreamError } from '../services/upstreamError.js';
 import { scriptGenerateSchema, scriptParseSchema } from '../schemas/ai.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 5, fieldSize: 1024 },
 });
 
 export function createScriptRouter(deps = {}) {
@@ -28,7 +29,7 @@ export function createScriptRouter(deps = {}) {
       }
       return res.json({ scriptText: result.scriptText });
     } catch (e) {
-      return res.status(502).json({ error: '生成失败，请重试', detail: String(e?.message || e) });
+      return sendUpstreamError(res, '生成失败，请重试', e);
     }
   });
 
@@ -43,9 +44,11 @@ export function createScriptRouter(deps = {}) {
         if (!scriptText) return res.status(400).json({ error: '文件内容为空' });
         return res.json({ scriptText });
       } catch (e) {
+        // 损坏或无法解析的文件属于输入问题，返回 400；解析库内部错误只记日志
         const msg = String(e?.message || e);
-        const status = msg.includes('不支持的文件类型') ? 400 : 502;
-        return res.status(status).json({ error: msg });
+        if (msg.includes('不支持的文件类型')) return res.status(400).json({ error: msg });
+        console.error('[extract] failed:', e);
+        return res.status(400).json({ error: '文件无法解析，请确认文件未损坏且包含可提取的文字' });
       }
     });
   });
@@ -56,7 +59,7 @@ export function createScriptRouter(deps = {}) {
       const scriptData = await parseScript(scriptText);
       return res.json({ scriptData });
     } catch (e) {
-      return res.status(502).json({ error: '解析失败，请重试', detail: String(e?.message || e) });
+      return sendUpstreamError(res, '解析失败，请重试', e);
     }
   });
 

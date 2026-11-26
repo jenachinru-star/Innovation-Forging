@@ -64,10 +64,11 @@ export default function ProjectLibrary({
       const value = JSON.parse(await file.text());
       const record = value?.project || value;
       if (!record || typeof record !== 'object') throw new Error('文件中没有作品数据');
-      onImport(record);
+      // 必须等导入真正完成：服务端会校验归档，失败时不能提示“已导入”
+      await onImport(record);
       setMessage(`已导入「${record.name || '未命名作品'}」`);
     } catch (error) {
-      setMessage(String(error.message || error));
+      setMessage(`导入失败：${String(error?.message || error)}`);
     } finally {
       event.target.value = '';
     }

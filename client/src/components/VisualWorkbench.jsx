@@ -7,6 +7,9 @@ import { Sparkles, Image as ImageIcon, Palette, Wand2 } from 'lucide-react';
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// 只有这两个状态表示任务仍在进行；其余（succeeded / failed / cancelled / expired 等）都是终态
+const ACTIVE_VIDEO_STATUSES = ['queued', 'running'];
+
 const ASSET_BADGE = {
   character: '人物',
   scene: '场景',
@@ -103,6 +106,8 @@ export default function VisualWorkbench({ plan, dispatch, style, onPatchStyle })
     pollingRef.current.add(taskId);
     while (pollingRef.current.has(taskId)) {
       await delay(5000);
+      // 等待期间组件可能已卸载（轮询集合被清空），此时不能再请求上游
+      if (!pollingRef.current.has(taskId)) break;
       let res;
       try {
         res = await fetch(`/api/video/tasks/${encodeURIComponent(taskId)}`);
@@ -111,6 +116,8 @@ export default function VisualWorkbench({ plan, dispatch, style, onPatchStyle })
       }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) break;
+      // 请求在途时组件被卸载：丢弃结果，不再派发
+      if (!pollingRef.current.has(taskId)) break;
 
       dispatch?.({
         type: 'upsertAsset',
@@ -124,7 +131,7 @@ export default function VisualWorkbench({ plan, dispatch, style, onPatchStyle })
           updatedAt: new Date().toISOString(),
         },
       });
-      if (data.status === 'succeeded' || data.status === 'failed') break;
+      if (!ACTIVE_VIDEO_STATUSES.includes(data.status)) break;
     }
     pollingRef.current.delete(taskId);
   }
@@ -132,7 +139,7 @@ export default function VisualWorkbench({ plan, dispatch, style, onPatchStyle })
   // 发现未完成的视频任务即启动轮询（含刷新后恢复）
   useEffect(() => {
     const pending = videoAssets.filter(
-      (a) => a.taskId && ['queued', 'running'].includes(a.status)
+      (a) => a.taskId && ACTIVE_VIDEO_STATUSES.includes(a.status)
     );
     for (const asset of pending) {
       if (!pollingRef.current.has(asset.taskId)) {
@@ -294,7 +301,7 @@ export default function VisualWorkbench({ plan, dispatch, style, onPatchStyle })
                 ) : (
                   <div className="video-pending">
                     <span className="visual-loader" aria-hidden />
-                    <p>{VIDEO_STATUS_TEXT[asset.status] || '准备中……'}</p>
+                    <p>{VIDEO_STATUS_TEXT[asset.status] || (ACTIVE_VIDEO_STATUSES.includes(asset.status) || !asset.status ? '准备中……' : '任务已结束，未生成视频')}</p>
                   </div>
                 )}
                 <figcaption className="video-card-title">

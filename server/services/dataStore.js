@@ -7,13 +7,22 @@ import { migrateScriptDataIds, remapSceneReferences } from '@director/shared/mig
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_FILE = path.resolve(__dirname, '../data/store.json');
 
+// 映射一律用无原型对象，避免 "constructor" / "__proto__" 之类键命中 Object.prototype
+function toMap(value) {
+  return Object.assign(Object.create(null), value && typeof value === 'object' ? value : {});
+}
+
 function emptyData() {
   return {
     users: Object.create(null),
     sessions: Object.create(null),
     projects: Object.create(null),
+    videoTasks: Object.create(null),
   };
 }
+
+// 视频任务归属记录只需保留一段时间；超期的任务早已不会再被轮询
+const VIDEO_TASK_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
  * 一次性把项目内剧本层的旧临时 id 迁移为稳定 UUID，并同步 plan 场景引用。
@@ -57,9 +66,10 @@ export function createStore(filePath = DEFAULT_FILE) {
       const raw = await readFile(resolved, 'utf8');
       const parsed = JSON.parse(raw);
       data = {
-        users: parsed.users || Object.create(null),
-        sessions: parsed.sessions || Object.create(null),
-        projects: parsed.projects || Object.create(null),
+        users: toMap(parsed.users),
+        sessions: toMap(parsed.sessions),
+        projects: toMap(parsed.projects),
+        videoTasks: toMap(parsed.videoTasks),
       };
     } catch (err) {
       if (err.code !== 'ENOENT') throw err;
@@ -88,6 +98,9 @@ export function createStore(filePath = DEFAULT_FILE) {
       const tmp = `${resolved}.tmp-${process.pid}-${randomUUID()}`;
       await writeFile(tmp, JSON.stringify(snapshot, null, 2), 'utf8');
       await rename(tmp, resolved);
+    }).catch((err) => {
+      // 写盘失败只记录，不让链条永久 rejected，也不触发 unhandled rejection 退出进程
+      console.error('[dataStore] persist failed:', err);
     });
     return writeChain;
   }
@@ -134,6 +147,18 @@ export function createStore(filePath = DEFAULT_FILE) {
     },
     deleteProject(id) {
       delete data.projects[id];
+      persist();
+    },
+    // 视频任务归属：taskId -> { username, createdAt }
+    getVideoTaskOwner(taskId) {
+      return data.videoTasks[taskId]?.username || null;
+    },
+    putVideoTask(taskId, username) {
+      const now = Date.now();
+      for (const [id, record] of Object.entries(data.videoTasks)) {
+        if (now - Number(record?.createdAt || 0) > VIDEO_TASK_TTL_MS) delete data.videoTasks[id];
+      }
+      data.videoTasks[taskId] = { username, createdAt: now };
       persist();
     },
     listProjectsByUser(userId) {

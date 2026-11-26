@@ -1,9 +1,10 @@
-const RHYTHM_CYCLE = ['', '铺垫', '转折', '结尾'];
+export const RHYTHM_CYCLE = ['', '铺垫', '转折', '结尾', '高潮'];
 
 const RHYTHM_COLOR = {
   铺垫: 'var(--accent-seal)',
   转折: 'var(--cue)',
   结尾: 'var(--confirmed)',
+  高潮: '#b45309',
 };
 
 // 取标题里冒号后的短名；没有冒号则去掉“第 x 场”前缀
@@ -13,7 +14,7 @@ function shortTitle(scene) {
     const tail = full.split(/[：:]/).pop().trim();
     if (tail) return tail;
   }
-  return full.replace(/^第[一二三四五六七八九十百\d]+场\s*/, '').trim() || full;
+  return full.replace(/^第[零一二两三四五六七八九十百\d]+场\s*/, '').trim() || full;
 }
 
 export default function CadencePanel({ scenes = [], onChange }) {

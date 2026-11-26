@@ -205,3 +205,17 @@ describe('toFountain', () => {
     expect(text).toContain('\n老陈\n你终于回来了');
   });
 });
+
+describe('导出健壮性与 CSV 公式注入防护', () => {
+  it('讨论/收藏里混入 null 不会让 toHtml 抛错', () => {
+    expect(() => toHtml({ plan: { discussions: [null], collections: [null] } })).not.toThrow();
+  });
+
+  it('以 = + - @ 开头的文本加单引号前缀，纯数字保持原样', () => {
+    const csv = toCsv(
+      [{ a: '=1+1' }, { a: '@SUM(A1)' }, { a: '-cmd' }, { a: -3 }, { a: 12 }],
+      ['a']
+    );
+    expect(csv).toBe("\uFEFFa\n'=1+1\n'@SUM(A1)\n'-cmd\n-3\n12");
+  });
+});

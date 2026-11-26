@@ -4725,7 +4725,10 @@ svg.is-wire .stage-path-line {
 
 .rhythm-select.is-rhythm-结尾 {
   color: var(--confirmed);
-  border-color: rgba(85, 113, 91, 0.55);
+}
+
+.rhythm-select.is-rhythm-高潮 {
+  color: #b45309;
 }
 
 /* 展开的额外字段行 */
@@ -6333,4 +6336,84 @@ svg.is-wire .stage-path-line {
 }
 .disc-collection-link:hover {
   text-decoration: underline;
+}
+/* 道具清单面板 */
+.props-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.props-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.props-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+
+.props-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.props-card-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.props-chips {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.props-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.8rem;
+  color: var(--ink);
+}
+
+.props-chip-remove {
+  border: none;
+  background: transparent;
+  color: var(--muted-strong);
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.props-chip-remove:hover {
+  color: var(--risk);
+}
+
+.props-add {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.props-add .field {
+  flex: 1;
+  min-width: 0;
 }

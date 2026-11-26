@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { toCsv, toFountain, toHtml } from '@director/shared/export/index.js';
+import { toCsv, toFountain, toHtml, toPropsCsv, toCharacterAppearanceCsv } from '@director/shared/export/index.js';
 import { DEPARTMENT_LABELS } from '@director/shared/rules/briefs.js';
 
 const UNSUPPORTED_MESSAGE = '当前环境不支持下载，可改用浏览器打印（Ctrl+P）';
@@ -184,6 +184,20 @@ export default function ExportPanel({ title, scriptData, plan }) {
           className="btn-seal px-4 py-2 text-sm"
         >
           走位与提示
+        </button>
+        <button
+          type="button"
+          onClick={() => exportCsv('道具清单', toPropsCsv(scriptData))}
+          className="btn-seal px-4 py-2 text-sm"
+        >
+          道具清单
+        </button>
+        <button
+          type="button"
+          onClick={() => exportCsv('人物出场', toCharacterAppearanceCsv(scriptData))}
+          className="btn-seal px-4 py-2 text-sm"
+        >
+          人物出场
         </button>
         <button
           type="button"

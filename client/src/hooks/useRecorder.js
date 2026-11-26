@@ -33,7 +33,8 @@ export default function useRecorder() {
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
   const stopResolveRef = useRef(null);
-  const objectUrlRef = useRef('');
+  // 历史讨论还在引用之前录音的地址，会话内全部保留，卸载时统一释放
+  const objectUrlsRef = useRef([]);
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -71,9 +72,9 @@ export default function useRecorder() {
       recorder.onstop = () => {
         const type = recorder.mimeType || mimeType || 'audio/webm';
         const blob = new Blob(chunksRef.current, { type });
-        if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-        objectUrlRef.current = URL.createObjectURL(blob);
-        stopResolveRef.current?.({ blob, url: objectUrlRef.current, type });
+        const url = URL.createObjectURL(blob);
+        objectUrlsRef.current.push(url);
+        stopResolveRef.current?.({ blob, url, type });
         stopResolveRef.current = null;
         releaseStream();
       };
@@ -132,7 +133,8 @@ export default function useRecorder() {
     () => () => {
       clearTimer();
       streamRef.current?.getTracks().forEach((track) => track.stop());
-      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      objectUrlsRef.current = [];
     },
     []
   );

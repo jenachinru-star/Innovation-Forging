@@ -11,6 +11,7 @@
     "./rules/breakdown.js": "./rules/breakdown.js",
     "./rules/briefs.js": "./rules/briefs.js",
     "./rules/impact.js": "./rules/impact.js",
+    "./rules/statusFlow.js": "./rules/statusFlow.js",
     "./samples/oneAct.js": "./samples/oneAct.js",
     "./export/index.js": "./export/index.js",
     "./constants/status.js": "./constants/status.js",

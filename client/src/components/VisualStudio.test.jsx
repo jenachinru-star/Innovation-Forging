@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { useReducer } from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, cleanup } from '@testing-library/react';
 import VisualStudio from './VisualStudio.jsx';
 import { createPlan, planReducer } from '../store/plan.js';
 import { DIRECTOR_STYLES, STYLE_FAMILIES } from '../data/styles.js';
@@ -169,5 +169,84 @@ describe('视频生成与轮询', () => {
     expect(
       screen.getByTestId('video-card-asset-1').querySelector('video')
     ).toBeInTheDocument();
+  }, 10000);
+
+  function stubVideoApi(statusSequence) {
+    let pollCount = 0;
+    const fetchMock = vi.fn(async (url, opts) => {
+      if (opts?.method === 'POST') {
+        return { ok: true, status: 202, json: async () => ({ taskId: 'cgt-x', status: 'queued' }) };
+      }
+      const status = statusSequence[Math.min(pollCount, statusSequence.length - 1)];
+      pollCount += 1;
+      return { ok: true, status: 200, json: async () => ({ status }) };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    return () => fetchMock.mock.calls.filter(([, o]) => o?.method !== 'POST').length;
+  }
+
+  async function startVideo() {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: /镜头视频/ }));
+    goWorkbench();
+    fireEvent.change(screen.getByLabelText('画面描述'), { target: { value: '镜头缓缓推进' } });
+    await act(async () => {
+      fireEvent.click(screen.getByText('生成').closest('button'));
+    });
+  }
+
+  it('上游返回 cancelled 等未知终态时停止轮询，不再持续请求', async () => {
+    vi.useFakeTimers();
+    const pollCalls = stubVideoApi(['running', 'cancelled']);
+    await startVideo();
+
+    for (let i = 0; i < 6; i += 1) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+    }
+    expect(pollCalls()).toBe(2);
+    expect(screen.getByText('任务已结束，未生成视频')).toBeInTheDocument();
+  }, 10000);
+
+  it('轮询请求返回失败状态码时停止，且 assets 变化不会重新拉起轮询', async () => {
+    vi.useFakeTimers();
+    let polls = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url, opts) => {
+        if (opts?.method === 'POST') {
+          return { ok: true, status: 202, json: async () => ({ taskId: 'cgt-x', status: 'queued' }) };
+        }
+        polls += 1;
+        return { ok: false, status: 500, json: async () => ({ error: '上游异常' }) };
+      })
+    );
+    await startVideo();
+
+    for (let i = 0; i < 6; i += 1) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+    }
+    expect(polls).toBe(1);
+  }, 10000);
+
+  it('组件卸载后不再请求、不再派发', async () => {
+    vi.useFakeTimers();
+    const pollCalls = stubVideoApi(['running']);
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: /镜头视频/ }));
+    goWorkbench();
+    fireEvent.change(screen.getByLabelText('画面描述'), { target: { value: '镜头缓缓推进' } });
+    await act(async () => {
+      fireEvent.click(screen.getByText('生成').closest('button'));
+    });
+    cleanup();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(20000);
+    });
+    expect(pollCalls()).toBe(0);
   }, 10000);
 });

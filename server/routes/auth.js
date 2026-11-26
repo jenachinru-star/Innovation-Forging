@@ -8,13 +8,25 @@ import {
   SESSION_MS,
 } from '../services/cookie.js';
 import { validate } from '../middleware/validate.js';
+import { isValidSession } from '../middleware/requireAuth.js';
 import { registerSchema, loginSchema } from '../schemas/auth.js';
 
 // 登录限流：同一 IP + 用户名，窗口内连续失败达到阈值后锁定
 const FAIL_WINDOW_MS = 10 * 60 * 1000;
 const MAX_FAILS = 5;
 const LOCK_MS = 5 * 60 * 1000;
+const MAX_TRACKED = 10000;
 const failTracker = new Map();
+
+// 清理过期条目，并在超出容量时淘汰最早的记录，防止 Map 无界增长
+function pruneTracker(now) {
+  for (const [key, rec] of failTracker) {
+    if (now - rec.firstAt > FAIL_WINDOW_MS && rec.lockedUntil <= now) failTracker.delete(key);
+  }
+  while (failTracker.size >= MAX_TRACKED) {
+    failTracker.delete(failTracker.keys().next().value);
+  }
+}
 
 function clientIp(req) {
   return req.ip || req.socket?.remoteAddress || 'unknown';
@@ -37,6 +49,7 @@ function recordFailure(key) {
     rec.firstAt = now;
     rec.lockedUntil = 0;
   }
+  if (!failTracker.has(key)) pruneTracker(now);
   rec.fails += 1;
   if (rec.fails >= MAX_FAILS) rec.lockedUntil = now + LOCK_MS;
   failTracker.set(key, rec);
@@ -92,7 +105,7 @@ export function createAuthRouter(deps = {}) {
     const token = readSessionToken(req);
     if (!token) return res.json({ user: null });
     const session = store.getSession(token);
-    if (!session || session.expiresAt < Date.now()) {
+    if (!isValidSession(session)) {
       store.deleteSession(token);
       removeSessionCookie(res);
       return res.json({ user: null });
