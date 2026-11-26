@@ -15,6 +15,13 @@ function joinList(list) {
   return (list || []).filter(Boolean).join('、');
 }
 
+// 出场人物：优先“在场人物”（含不说话的在场者），回退有台词人物
+function presentList(scene) {
+  const present = scene.presentCharacters;
+  if (Array.isArray(present) && present.length) return present;
+  return scene.characters || [];
+}
+
 export default function ScheduleTable({ scriptData, onChangeScene }) {
   const scenes = scriptData?.scenes || [];
   const [expanded, setExpanded] = useState(null);
@@ -37,31 +44,24 @@ export default function ScheduleTable({ scriptData, onChangeScene }) {
             <thead>
               <tr>
                 <th className="col-index">场次</th>
-                <th>标题</th>
-                <th>地点</th>
+                <th className="col-location">地点</th>
                 <th>出场人物</th>
-                <th>道具</th>
                 <th className="col-time">时长</th>
                 <th className="col-rhythm">节奏</th>
               </tr>
             </thead>
             <tbody>
-              {scenes.map((scene, idx) => {
-                const isOpen = expanded === idx;
-                const rhythm = scene.structure || '';
-                return (
-                  <SceneRows
-                    key={`${scene.sceneNumber}-${scene.title}`}
-                    scene={scene}
-                    index={idx}
-                    isOpen={isOpen}
-                    editable={editable}
-                    rhythm={rhythm}
-                    onToggle={() => toggle(idx)}
-                    onChangeScene={onChangeScene}
-                  />
-                );
-              })}
+              {scenes.map((scene, idx) => (
+                <SceneRows
+                  key={`${scene.sceneNumber}-${scene.id}`}
+                  scene={scene}
+                  index={idx}
+                  isOpen={expanded === idx}
+                  editable={editable}
+                  onToggle={() => toggle(idx)}
+                  onChangeScene={onChangeScene}
+                />
+              ))}
             </tbody>
           </table>
         </div>
@@ -70,11 +70,14 @@ export default function ScheduleTable({ scriptData, onChangeScene }) {
   );
 }
 
-function SceneRows({ scene, index, isOpen, editable, rhythm, onToggle, onChangeScene }) {
+function SceneRows({ scene, index, isOpen, editable, onToggle, onChangeScene }) {
+  const rhythm = scene.structure || '';
+  const missingLocation = !scene.location;
   const hasExtra =
-    (scene.presentCharacters?.length || 0) > 0 ||
-    (scene.stageDirections?.length || 0) > 0 ||
-    Boolean(scene.summary);
+    (scene.presentCharacters?.length || 0) ||
+    (scene.stageDirections?.length || 0) ||
+    Boolean(scene.summary) ||
+    Boolean(scene.note);
 
   return (
     <>
@@ -94,21 +97,22 @@ function SceneRows({ scene, index, isOpen, editable, rhythm, onToggle, onChangeS
             <span className="row-index-num">{scene.sceneNumber}</span>
           </button>
         </td>
-        <td className="whitespace-nowrap">{scene.title || `第 ${scene.sceneNumber} 场`}</td>
-        <td>
+        <td className="col-location">
           {editable ? (
             <input
               value={scene.location ?? ''}
               onChange={(e) => onChangeScene(index, { location: e.target.value })}
-              className="cell-input w-full"
+              className={'cell-input location-input' + (missingLocation ? ' is-missing' : '')}
+              placeholder="待补地点？"
               aria-label="编辑地点"
             />
+          ) : missingLocation ? (
+            <span className="location-missing">待补 ?</span>
           ) : (
-            scene.location
+            <span>{scene.location}</span>
           )}
         </td>
-        <td>{joinList(scene.characters)}</td>
-        <td>{joinList(scene.props)}</td>
+        <td>{joinList(presentList(scene))}</td>
         <td className="whitespace-nowrap col-time">
           {editable ? (
             <span className="time-edit">
@@ -116,9 +120,7 @@ function SceneRows({ scene, index, isOpen, editable, rhythm, onToggle, onChangeS
                 type="number"
                 min="0"
                 value={scene.estimatedMinutes ?? 0}
-                onChange={(e) =>
-                  onChangeScene(index, { estimatedMinutes: Number(e.target.value) })
-                }
+                onChange={(e) => onChangeScene(index, { estimatedMinutes: Number(e.target.value) })}
                 className="cell-input time-min-input"
                 aria-label="编辑时长（分钟）"
               />
@@ -148,8 +150,37 @@ function SceneRows({ scene, index, isOpen, editable, rhythm, onToggle, onChangeS
 
       {isOpen && (
         <tr className="schedule-extra-row">
-          <td colSpan={7}>
+          <td colSpan={5}>
             <div className="schedule-extra">
+              <div className="schedule-extra-item schedule-extra-summary">
+                <span className="schedule-extra-label">AI 简介</span>
+                {editable ? (
+                  <textarea
+                    value={scene.summary ?? ''}
+                    onChange={(e) => onChangeScene(index, { summary: e.target.value })}
+                    className="cell-input extra-textarea"
+                    rows={2}
+                    aria-label="编辑 AI 简介"
+                  />
+                ) : (
+                  <span>{scene.summary || '—'}</span>
+                )}
+              </div>
+              <div className="schedule-extra-item schedule-extra-summary">
+                <span className="schedule-extra-label">手工备注</span>
+                {editable ? (
+                  <textarea
+                    value={scene.note ?? ''}
+                    onChange={(e) => onChangeScene(index, { note: e.target.value })}
+                    className="cell-input extra-textarea"
+                    rows={2}
+                    placeholder="导演手工补充，可接录音…"
+                    aria-label="编辑手工备注"
+                  />
+                ) : (
+                  <span>{scene.note || '—'}</span>
+                )}
+              </div>
               <div className="schedule-extra-item">
                 <span className="schedule-extra-label">在场人物</span>
                 <span>{joinList(scene.presentCharacters) || '—'}</span>
@@ -157,19 +188,6 @@ function SceneRows({ scene, index, isOpen, editable, rhythm, onToggle, onChangeS
               <div className="schedule-extra-item">
                 <span className="schedule-extra-label">舞台说明</span>
                 <span>{joinList(scene.stageDirections) || '—'}</span>
-              </div>
-              <div className="schedule-extra-item schedule-extra-summary">
-                <span className="schedule-extra-label">剧情摘要</span>
-                {editable ? (
-                  <input
-                    value={scene.summary ?? ''}
-                    onChange={(e) => onChangeScene(index, { summary: e.target.value })}
-                    className="cell-input w-full"
-                    aria-label="编辑剧情摘要"
-                  />
-                ) : (
-                  <span>{scene.summary || '—'}</span>
-                )}
               </div>
             </div>
           </td>

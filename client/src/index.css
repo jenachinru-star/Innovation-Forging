@@ -4474,6 +4474,29 @@ svg.is-wire .stage-path-line {
   width: 6.5rem;
 }
 
+/* 话剧地点短（家/餐厅/修理铺），地点列收窄 */
+.schedule-table .col-location {
+  width: 9rem;
+}
+.location-input {
+  width: 100%;
+}
+.location-input.is-missing,
+.location-missing {
+  color: var(--state-doing);
+}
+.location-missing {
+  font-size: 0.82rem;
+  border: 1px dashed rgba(192, 138, 46, 0.55);
+  border-radius: 0.4rem;
+  padding: 0.15rem 0.45rem;
+}
+.extra-textarea {
+  width: 100%;
+  resize: vertical;
+  line-height: 1.55;
+}
+
 .schedule-row td {
   vertical-align: middle;
 }
@@ -7259,3 +7282,4 @@ svg.is-wire .stage-path-line {
   backdrop-filter: blur(14px) saturate(1.1);
   -webkit-backdrop-filter: blur(14px) saturate(1.1);
 }
+

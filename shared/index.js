@@ -77,6 +77,7 @@ export function normalizeScene(raw) {
     rawRange: normalizeRawRange(r.rawRange),
     actId: toStr(r.actId) || null,
     structure: toStr(r.structure),
+    note: toStr(r.note),
   };
 }
 

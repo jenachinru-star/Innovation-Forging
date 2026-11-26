@@ -59,6 +59,20 @@ function normalizeName(raw) {
   return String(raw || '').replace(/\s+/g, '').trim();
 }
 
+// 离线模式下用规则生成每场基础简介（远程 AI 路径会直接给出 summary）
+function buildSceneSummary(scene) {
+  const bits = [];
+  const firstDir = scene.stageDirections[0];
+  if (firstDir) {
+    bits.push(firstDir.replace(/^[【（(\s]+|[）)】\s]+$/g, '').slice(0, 36));
+  }
+  const firstLine = scene.lines[0];
+  if (firstLine) bits.push(`${firstLine.speaker}：${firstLine.text}`.slice(0, 40));
+  let out = bits.join('；');
+  if (out.length > 72) out = `${out.slice(0, 72)}…`;
+  return out;
+}
+
 function splitLines(rawText) {
   const result = [];
   let pos = 0;
@@ -175,6 +189,8 @@ export function parseScriptOffline(rawTextInput) {
     scene.props = scene._propOrder.slice();
     scene.estimatedMinutes = Math.max(1, Math.ceil(scene._dialogueChars / 250));
 
+    if (!scene.summary) scene.summary = buildSceneSummary(scene);
+
     if (!scene.location) {
       warnings.push(`第${scene.sceneNumber}场未标注场景（景），请补全地点`);
     }
@@ -253,6 +269,7 @@ export function parseScriptOffline(rawTextInput) {
         stageDirections: [],
         lines: [],
         summary: '',
+        note: '',
         estimatedMinutes: 0,
         rawRange: { start: line.contentStart, end: rawText.length },
         actId: currentAct ? currentAct.id : null,
