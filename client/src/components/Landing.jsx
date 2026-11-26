@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { login, register } from '../api/auth.js';
+import FilmCameraIcon from './FilmCameraIcon.jsx';
 
 const NAV_ITEMS = ['创作', '编排', '排练', '资料库', '灵感集'];
 
@@ -44,9 +45,7 @@ export default function Landing({ user, onAuth, onResume, onLogout }) {
     <div className="landing-page">
       <header className="landing-topbar">
         <div className="landing-brand">
-          <span className="landing-brand-mark" aria-hidden="true">
-            开
-          </span>
+          <FilmCameraIcon className="landing-brand-icon" />
           <b>开排</b>
           <span className="landing-brand-sub">AI 戏剧编导工作台</span>
         </div>
