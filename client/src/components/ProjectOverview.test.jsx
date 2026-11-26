@@ -75,10 +75,7 @@ describe('ProjectOverview 导演驾驶舱', () => {
       within(container.querySelector('.ov3-progress')).getAllByText('已完成')
     ).toHaveLength(4);
 
-    // 待办：点击直达对应模块
-    const todo = screen.getByRole('button', { name: /待核实部门需求/ });
-    fireEvent.click(todo);
-    expect(onNavigate).toHaveBeenCalledWith('briefs');
+    // 待办已移至顶栏 TodoMenu，总览不再渲染待办面板
 
     // 幕场结构：两幕，各 4 场，点击进入拆解
     expect(screen.getByRole('heading', { name: '幕场结构' })).toBeInTheDocument();
@@ -112,8 +109,5 @@ describe('ProjectOverview 导演驾驶舱', () => {
     const stats = container.querySelectorAll('.ov3-hero-stat');
     expect(stats).toHaveLength(4);
     expect(within(stats[0]).getByText('0')).toBeInTheDocument();
-    // 无视觉方向时待办提示确定视觉方向
-    fireEvent.click(screen.getByRole('button', { name: /确定视觉方向/ }));
-    expect(onNavigate).toHaveBeenCalledWith('visuals');
   });
 });

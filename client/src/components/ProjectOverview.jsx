@@ -21,7 +21,6 @@ function Icon({ path, size = 22 }) {
 
 const ICONS = {
   check: 'M5 12.5 10 17l9-10',
-  arrow: 'M9 6l6 6-6 6',
 };
 
 function sceneMinutes(scenes) {
@@ -98,13 +97,6 @@ export default function ProjectOverview({ scriptData, plan, versions = [], onNav
     : allDone
       ? '已完成'
       : '待开始';
-
-  // ---- 待办（真实，点击直达） ----
-  const todos = [];
-  if (reviewBriefs.length) todos.push({ label: '待核实部门需求', meta: '部门·需求', id: 'briefs' });
-  if (impacts.length) todos.push({ label: '待处理排练影响', meta: '排练·影响', id: 'rehearsal' });
-  if (!plan?.style) todos.push({ label: '确定视觉方向', meta: '视觉·风格', id: 'visuals' });
-  if (!todos.length) todos.push({ label: '确认走位与提示', meta: '舞台·调度', id: 'stage' });
 
   // ---- 幕场结构（优先 acts，缺省按 actId 聚合） ----
   const rawActs = Array.isArray(scriptData?.acts) ? scriptData.acts : [];
@@ -203,24 +195,6 @@ export default function ProjectOverview({ scriptData, plan, versions = [], onNav
               </li>
             ))}
           </ol>
-        </section>
-
-        <section className="ov3-panel">
-          <h2 className="ov3-panel-title">待办</h2>
-          <ul className="ov3-todos">
-            {todos.map((todo) => (
-              <li key={todo.id}>
-                <button type="button" className="ov3-todo" onClick={() => onNavigate(todo.id)}>
-                  <span className="ov3-todo-bar" />
-                  <span className="ov3-todo-text">
-                    <b>{todo.label}</b>
-                    <small>{todo.meta}</small>
-                  </span>
-                  <Icon path={ICONS.arrow} size={16} />
-                </button>
-              </li>
-            ))}
-          </ul>
         </section>
       </div>
 

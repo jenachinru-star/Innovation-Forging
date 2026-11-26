@@ -22,6 +22,7 @@ import OnboardingGuide, { hasSeenOnboarding } from './components/OnboardingGuide
 import FilmCameraIcon from './components/FilmCameraIcon.jsx';
 import DiscussionPanel from './components/DiscussionPanel.jsx';
 import AssistantModal from './components/AssistantModal.jsx';
+import TodoMenu from './components/TodoMenu.jsx';
 import { User, ChevronDown, LogOut, ArrowLeft, MessageSquare, Sparkles } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -616,6 +617,7 @@ export default function App() {
           >
             <Sparkles size={15} aria-hidden /> AI 助手
           </button>
+          <TodoMenu plan={plan} onNavigate={navigate} />
           <button
             type="button"
             className="btn-ghost btn-small discussion-top-btn"

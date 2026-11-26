@@ -2885,6 +2885,82 @@ p {
   background: rgba(212, 175, 55, 0.1);
 }
 
+/* ===== 顶栏待办下拉 ===== */
+.todo-menu {
+  position: relative;
+}
+
+.todo-trigger {
+  position: relative;
+}
+
+.todo-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.3rem;
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  color: #1c1408;
+  background: var(--cue);
+  border-radius: 999px;
+}
+
+.todo-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 60;
+  min-width: 14rem;
+  padding: 0.35rem;
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.todo-dropdown-head {
+  padding: 0.4rem 0.6rem 0.55rem;
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+}
+
+.todo-item {
+  display: flex;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.6rem;
+  color: var(--ink-muted);
+  background: none;
+  border: 0;
+  border-radius: 0.5rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.todo-item:hover {
+  color: var(--ink);
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.todo-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.todo-item-text b {
+  font-size: 0.82rem;
+}
+
+.todo-item-text small {
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+}
+
 /* fieldset 工作纸，重置默认边框/内边距 */
 fieldset.workspace-paper {
   border: 0;
@@ -6819,7 +6895,7 @@ svg.is-wire .stage-path-line {
   gap: 1.2rem;
 }
 .ov3-row-2 {
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr;
 }
 .ov3-row-3 {
   grid-template-columns: repeat(3, 1fr);
@@ -6897,52 +6973,6 @@ svg.is-wire .stage-path-line {
 }
 .ov3-progress-item.is-todo .ov3-progress-head b {
   color: var(--ink-faint);
-}
-
-/* 待办 */
-.ov3-todos {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-}
-.ov3-todo {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  width: 100%;
-  padding: 0.7rem 0.2rem;
-  background: none;
-  border: 0;
-  border-bottom: 1px solid rgba(212, 175, 55, 0.14);
-  color: var(--ink-muted);
-  text-align: left;
-}
-.ov3-todos li:last-child .ov3-todo {
-  border-bottom: 0;
-}
-.ov3-todo-bar {
-  flex: none;
-  width: 3px;
-  align-self: stretch;
-  background: var(--accent-seal);
-  border-radius: 2px;
-}
-.ov3-todo-text {
-  flex: 1;
-  display: grid;
-  gap: 0.15rem;
-}
-.ov3-todo-text b {
-  color: #e9e0d1;
-  font-size: 0.86rem;
-}
-.ov3-todo-text small {
-  color: var(--ink-muted);
-  font-size: 0.68rem;
-}
-.ov3-todo:hover {
-  color: var(--cue);
 }
 
 /* 幕场结构 */
