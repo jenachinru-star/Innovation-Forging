@@ -10,12 +10,16 @@ const password = z
   .min(6, '密码至少 6 位')
   .max(64, '密码过长');
 
+const remember = z.boolean().optional();
+
 export const registerSchema = z.object({
   username,
   password,
+  remember,
 });
 
 export const loginSchema = z.object({
   username: z.string().trim().min(1, '请输入用户名'),
   password: z.string().min(1, '请输入密码'),
+  remember,
 });

@@ -1,6 +1,10 @@
 export const COOKIE_NAME = 'kaipai_session';
-const SESSION_DAYS = 7;
-export const SESSION_MS = SESSION_DAYS * 24 * 60 * 60 * 1000;
+const SHORT_SESSION_DAYS = 1;
+const REMEMBER_SESSION_DAYS = 30;
+export const SHORT_SESSION_MS = SHORT_SESSION_DAYS * 24 * 60 * 60 * 1000;
+export const REMEMBER_SESSION_MS = REMEMBER_SESSION_DAYS * 24 * 60 * 60 * 1000;
+// 默认（未勾选“记住我”）使用短效会话
+export const SESSION_MS = SHORT_SESSION_MS;
 
 export function parseCookies(header = '') {
   const out = {};
@@ -30,10 +34,10 @@ function flags() {
   return `HttpOnly; SameSite=Lax; Path=/${secure ? '; Secure' : ''}`;
 }
 
-export function writeSessionCookie(res, token) {
+export function writeSessionCookie(res, token, ttlMs = SESSION_MS) {
   res.setHeader(
     'Set-Cookie',
-    `${COOKIE_NAME}=${token}; Max-Age=${Math.floor(SESSION_MS / 1000)}; ${flags()}`
+    `${COOKIE_NAME}=${token}; Max-Age=${Math.floor(ttlMs / 1000)}; ${flags()}`
   );
 }
 

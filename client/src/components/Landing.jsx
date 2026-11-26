@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { login, register } from '../api/auth.js';
 import FilmCameraIcon from './FilmCameraIcon.jsx';
-
-const NAV_ITEMS = ['创作', '编排', '排练', '资料库', '灵感集'];
+import landingBg from '../assets/visual/landing-bg.jpg';
 
 export default function Landing({ user, onAuth, onResume, onLogout }) {
   const [mode, setMode] = useState('login'); // login | register
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const signedIn = Boolean(user);
@@ -29,9 +29,9 @@ export default function Landing({ user, onAuth, onResume, onLogout }) {
     setError('');
     try {
       if (mode === 'register') {
-        await register(username, password);
+        await register(username, password, remember);
       } else {
-        await login(username, password);
+        await login(username, password, remember);
       }
       await onAuth();
     } catch (err) {
@@ -43,17 +43,17 @@ export default function Landing({ user, onAuth, onResume, onLogout }) {
 
   return (
     <div className="landing-page">
+      <div className="landing-bg" aria-hidden="true">
+        <img className="landing-bg-img" src={landingBg} alt="" />
+      </div>
+      <div className="landing-mask" aria-hidden="true" />
+
       <header className="landing-topbar">
         <div className="landing-brand">
           <FilmCameraIcon className="landing-brand-icon" />
           <b>开排</b>
           <span className="landing-brand-sub">AI 戏剧编导工作台</span>
         </div>
-        <nav className="landing-nav" aria-label="封面导航">
-          {NAV_ITEMS.map((item) => (
-            <span key={item}>{item}</span>
-          ))}
-        </nav>
       </header>
 
       <div className="landing-body">
@@ -143,6 +143,14 @@ export default function Landing({ user, onAuth, onResume, onLogout }) {
                     autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                   />
                 </label>
+                <label className="landing-remember">
+                  <input
+                    type="checkbox"
+                    checked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
+                  />
+                  <span>记住我（30 天内免登录）</span>
+                </label>
                 {error && (
                   <p role="alert" className="landing-error">
                     {error}
@@ -160,6 +168,12 @@ export default function Landing({ user, onAuth, onResume, onLogout }) {
           )}
         </section>
       </div>
+
+      <p className="landing-decor landing-decor-left">故事，排练，重逢</p>
+      <p className="landing-decor landing-decor-right">
+        <span className="landing-decor-cn">让创作，更简单</span>
+        <span className="landing-decor-en">Make Creation Easier</span>
+      </p>
     </div>
   );
 }

@@ -2462,22 +2462,50 @@ p {
 
 /* ===== Landing / 封面与本地登录 ===== */
 .landing-page {
+  position: relative;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   color: var(--stage-text);
+  background: var(--stage-950);
+}
+
+.landing-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+.landing-bg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.landing-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
   background:
-    radial-gradient(circle at 78% -10%, rgba(193, 138, 45, 0.1), transparent 32rem),
-    radial-gradient(circle at 8% 110%, rgba(178, 59, 50, 0.08), transparent 30rem),
-    var(--stage-950);
+    linear-gradient(
+      90deg,
+      rgba(20, 15, 10, 0.74) 0%,
+      rgba(20, 15, 10, 0.42) 46%,
+      rgba(20, 15, 10, 0.58) 100%
+    ),
+    rgba(18, 13, 9, 0.32);
 }
 
 .landing-topbar {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 1.1rem 2rem;
-  border-bottom: 1px solid var(--stage-line);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.16);
 }
 
 .landing-brand {
@@ -2513,20 +2541,9 @@ p {
   letter-spacing: 0.08em;
 }
 
-.landing-nav {
-  display: flex;
-  gap: 1.8rem;
-  color: var(--stage-muted);
-  font-size: 0.82rem;
-}
-
-.landing-nav span:first-child {
-  padding-bottom: 0.3rem;
-  color: var(--stage-text);
-  border-bottom: 2px solid var(--accent-seal);
-}
-
 .landing-body {
+  position: relative;
+  z-index: 2;
   flex: 1;
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(22rem, 0.75fr);
@@ -2570,8 +2587,17 @@ p {
 }
 
 .landing-main-cta {
-  padding: 0.75rem 1.8rem;
+  padding: 0.8rem 1.9rem;
   font-size: 0.95rem;
+  color: #2a1f12;
+  border: 1px solid rgba(244, 214, 138, 0.85);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f0d49a 0%, #d4af37 55%, #b8902c 100%);
+  box-shadow: 0 10px 26px rgba(193, 138, 45, 0.32);
+}
+
+.landing-main-cta:hover {
+  filter: brightness(1.06);
 }
 
 .landing-features {
@@ -2600,10 +2626,13 @@ p {
 }
 
 .landing-auth-card {
-  padding: 1.8rem;
-  background: var(--stage-900);
-  border: 1px solid var(--stage-line);
-  box-shadow: var(--shadow-float);
+  padding: 2rem 1.8rem;
+  border-radius: 1rem;
+  background: rgba(38, 29, 21, 0.52);
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
 }
 
 .landing-auth-tabs {
@@ -2639,11 +2668,11 @@ p {
 }
 
 .landing-input {
-  padding: 0.65rem 0.75rem;
+  padding: 0.7rem 0.8rem;
   color: var(--stage-text);
-  background: var(--media-bg);
-  border: 1px solid var(--stage-line);
-  border-radius: 2px;
+  background: rgba(20, 15, 10, 0.42);
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  border-radius: 0.5rem;
 }
 
 .landing-input:focus {
@@ -2678,11 +2707,65 @@ p {
   line-height: 1.6;
 }
 
-@media (max-width: 920px) {
-  .landing-nav {
-    display: none;
-  }
+.landing-remember {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+  cursor: pointer;
+}
 
+.landing-remember input {
+  width: 0.95rem;
+  height: 0.95rem;
+  accent-color: var(--cue);
+  cursor: pointer;
+}
+
+.landing-remember span {
+  color: var(--stage-muted);
+  font-size: 0.8rem;
+}
+
+.landing-decor {
+  position: absolute;
+  z-index: 2;
+  margin: 0;
+  font-family: var(--font-heading);
+  pointer-events: none;
+}
+
+.landing-decor-left {
+  left: 2.4rem;
+  bottom: 1.6rem;
+  font-size: 1.3rem;
+  font-style: italic;
+  color: rgba(242, 230, 211, 0.82);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+
+.landing-decor-right {
+  right: 2.4rem;
+  bottom: 1.4rem;
+  display: grid;
+  justify-items: end;
+  gap: 0.15rem;
+  text-align: right;
+}
+
+.landing-decor-cn {
+  font-size: 1.1rem;
+  color: rgba(242, 230, 211, 0.82);
+}
+
+.landing-decor-en {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: rgba(189, 169, 141, 0.78);
+}
+
+@media (max-width: 920px) {
   .landing-body {
     grid-template-columns: 1fr;
     gap: 2rem;
@@ -2690,6 +2773,10 @@ p {
 
   .landing-features {
     grid-template-columns: 1fr;
+  }
+
+  .landing-decor {
+    display: none;
   }
 }
 
