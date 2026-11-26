@@ -16,7 +16,8 @@
     "./export/index.js": "./export/index.js",
     "./constants/status.js": "./constants/status.js",
     "./id.js": "./id.js",
-    "./migration/ids.js": "./migration/ids.js"
+    "./migration/ids.js": "./migration/ids.js",
+    "./migration/plan.js": "./migration/plan.js"
   },
   "dependencies": {
     "diff": "^8.0.4"

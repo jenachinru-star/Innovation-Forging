@@ -6,8 +6,7 @@ describe('splitBrief', () => {
     const out = splitBrief('这里想更暖一点，加个定点，面光弱一些；音乐渐入，加点雨声；声音加混响');
     const depts = out.map((b) => b.department);
     expect(depts).toContain('lighting');
-    expect(depts).toContain('music');
-    expect(depts).toContain('sound');
+    expect(depts).toContain('musicSound');
     expect(out.every((b) => b.original.length > 0)).toBe(true);
   });
 

@@ -1,16 +1,30 @@
-export const DEPARTMENTS = ['lighting', 'music', 'sound', 'scenery'];
+export const DEPARTMENTS = ['lighting', 'musicSound', 'scenery'];
 
 export const DEPARTMENT_LABELS = {
   lighting: '灯光',
-  music: '音乐',
-  sound: '音响',
+  musicSound: '音乐音响',
   scenery: '舞美',
 };
 
 const KEYWORDS = {
   lighting: ['灯', '光', '定点', '面光', '侧光', '追光', '暖', '冷', '暗', '亮', '氛围'],
-  music: ['音乐', '配乐', '音效', '旋律', '渐入', '渐出', '歌', '曲', '雨声'],
-  sound: ['麦', '麦克风', '混响', '音量', '人声', '扩声'],
+  musicSound: [
+    '音乐',
+    '配乐',
+    '音效',
+    '旋律',
+    '渐入',
+    '渐出',
+    '歌',
+    '曲',
+    '雨声',
+    '麦',
+    '麦克风',
+    '混响',
+    '音量',
+    '人声',
+    '扩声',
+  ],
   scenery: ['景', '置景', '道具', '服装', '化妆', '材质', '颜色', '幕布', '台口'],
 };
 

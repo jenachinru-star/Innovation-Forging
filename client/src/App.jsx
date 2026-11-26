@@ -16,6 +16,7 @@ import {
   removeProject,
 } from './api/projects.js';
 import { findImpacts } from '@director/shared/rules/impact.js';
+import { migratePlan } from '@director/shared/migration/plan.js';
 import { IMPACT_STATUS } from '@director/shared/constants/status.js';
 import OnboardingGuide, { hasSeenOnboarding } from './components/OnboardingGuide.jsx';
 import FilmCameraIcon from './components/FilmCameraIcon.jsx';
@@ -38,7 +39,8 @@ const NAV_ITEMS = [
 
 function appPlanReducer(state, action) {
   if (action?.type === 'replacePlan') {
-    return action.plan && typeof action.plan === 'object' ? action.plan : state;
+    if (!action.plan || typeof action.plan !== 'object') return state;
+    return migratePlan(action.plan);
   }
   return planReducer(state, action);
 }

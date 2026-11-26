@@ -12,7 +12,6 @@ import {
   ChevronRight,
   Lightbulb,
   Music,
-  Volume2,
   Package,
   Route,
   Clapperboard,
@@ -35,14 +34,13 @@ import { mergeStageSettings } from '../stage/stageSettings.js';
 
 const DURATION = 330; // 时间轴总时长（秒），对齐设计稿 05:30
 
-// 舞台子 Tab：舞台 / 调度 / 灯光 / 音乐 / 道具 / 音效
+// 舞台子 Tab：舞台 / 调度 / 灯光 / 音乐音响 / 道具
 const STAGE_TABS = [
   { id: 'stage', label: '舞台', icon: Clapperboard },
   { id: 'block', label: '调度', icon: Route },
   { id: 'light', label: '灯光', icon: Lightbulb },
-  { id: 'music', label: '音乐', icon: Music },
+  { id: 'musicSound', label: '音乐音响', icon: Music },
   { id: 'prop', label: '道具', icon: Package },
-  { id: 'sound', label: '音效', icon: Volume2 },
 ];
 
 // 底部舞台调度卡片：动作 / 走位 / 提示
@@ -126,11 +124,11 @@ export default function StageBlocking({
     [sceneCues]
   );
 
-  // 子 Tab 联动：灯光/音乐/音效过滤右侧 Cue
+  // 子 Tab 联动：灯光/音乐音响过滤右侧 Cue
   const filteredCues = useMemo(() => {
     if (stageTab === 'light') return cuesWithTime.filter((c) => c.department === 'lighting');
-    if (stageTab === 'music') return cuesWithTime.filter((c) => c.department === 'music');
-    if (stageTab === 'sound') return cuesWithTime.filter((c) => c.department === 'sound');
+    if (stageTab === 'musicSound')
+      return cuesWithTime.filter((c) => c.department === 'musicSound');
     return cuesWithTime;
   }, [stageTab, cuesWithTime]);
 

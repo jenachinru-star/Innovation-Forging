@@ -298,7 +298,7 @@ describe('StageBlocking', () => {
       },
       {
         id: 'cue-2',
-        department: 'music',
+        department: 'musicSound',
         sceneNumber: 1,
         content: '背景音乐起',
         status: 'draft',
@@ -386,9 +386,9 @@ describe('StageBlocking', () => {
     expect(circle().fill()).toBe('transparent');
   });
 
-  it('渲染六个舞台子 Tab，点击后切换激活态', () => {
+  it('渲染五个舞台子 Tab，点击后切换激活态', () => {
     renderTimeline();
-    const labels = ['舞台', '调度', '灯光', '音乐', '道具', '音效'];
+    const labels = ['舞台', '调度', '灯光', '音乐音响', '道具'];
     for (const label of labels) {
       expect(screen.getByRole('tab', { name: new RegExp(label) })).toBeInTheDocument();
     }
@@ -404,7 +404,7 @@ describe('StageBlocking', () => {
     }
   });
 
-  it('灯光/音乐子 Tab 过滤 Cue，数据不删除', () => {
+  it('灯光/音乐音响子 Tab 过滤 Cue，数据不删除', () => {
     renderTimeline();
     expect(screen.getByTestId('cue-cue-1')).toBeInTheDocument();
     expect(screen.getByTestId('cue-cue-2')).toBeInTheDocument();
@@ -413,7 +413,7 @@ describe('StageBlocking', () => {
     expect(screen.getByTestId('cue-cue-1')).toBeInTheDocument();
     expect(screen.queryByTestId('cue-cue-2')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('tab', { name: /音乐/ }));
+    fireEvent.click(screen.getByRole('tab', { name: /音乐音响/ }));
     expect(screen.queryByTestId('cue-cue-1')).not.toBeInTheDocument();
     expect(screen.getByTestId('cue-cue-2')).toBeInTheDocument();
 

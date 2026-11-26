@@ -33,7 +33,7 @@ describe('BriefPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: '拆分' }));
 
     expect(screen.getByTestId('brief-group-lighting')).toBeInTheDocument();
-    expect(screen.getByTestId('brief-group-music')).toBeInTheDocument();
+    expect(screen.getByTestId('brief-group-musicSound')).toBeInTheDocument();
     expect(screen.getByText('这里想更暖一点')).toBeInTheDocument();
     expect(screen.getByText('加个定点')).toBeInTheDocument();
     expect(screen.getByText('音乐渐入')).toBeInTheDocument();
@@ -66,7 +66,7 @@ describe('BriefPanel', () => {
         },
         {
           id: 'cue-2',
-          department: 'music',
+          department: 'musicSound',
           sceneNumber: 2,
           content: '音乐渐入',
           trigger: { type: 'free', quote: '' },
@@ -111,7 +111,7 @@ describe('BriefPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: '拆分' }));
 
     expect(screen.getByTestId('brief-group-lighting')).toBeInTheDocument();
-    expect(screen.getByTestId('brief-group-music')).toBeInTheDocument();
+    expect(screen.getByTestId('brief-group-musicSound')).toBeInTheDocument();
 
     const lightTab = screen
       .getAllByRole('tab')
@@ -119,11 +119,11 @@ describe('BriefPanel', () => {
     fireEvent.click(lightTab);
 
     expect(screen.getByTestId('brief-group-lighting')).toBeInTheDocument();
-    expect(screen.queryByTestId('brief-group-music')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('brief-group-musicSound')).not.toBeInTheDocument();
 
     fireEvent.click(
       screen.getAllByRole('tab').find((button) => button.textContent.includes('全部'))
     );
-    expect(screen.getByTestId('brief-group-music')).toBeInTheDocument();
+    expect(screen.getByTestId('brief-group-musicSound')).toBeInTheDocument();
   });
 });
