@@ -24,6 +24,7 @@ import DiscussionPanel from './components/DiscussionPanel.jsx';
 import AssistantModal from './components/AssistantModal.jsx';
 import TodoMenu from './components/TodoMenu.jsx';
 import AssetLibrary from './components/AssetLibrary.jsx';
+import CoreDesk from './components/CoreDesk.jsx';
 import { User, ChevronDown, LogOut, ArrowLeft, MessageSquare, Sparkles } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
   { id: 'rehearsal', mark: '06', label: '排练与影响', phase: '排演', tab: 'rehearsal' },
   { id: 'visuals', mark: '07', label: '视觉制作', phase: '交付', tab: 'visuals' },
   { id: 'library', mark: '10', label: '图片库', phase: '交付' },
+  { id: 'core', mark: '12', label: '核心档', phase: '核心档' },
   { id: 'export', mark: '08', label: '导出与归档', phase: '交付', tab: 'export' },
   { id: 'props', mark: '09', label: '道具清单', phase: '拆解', tab: 'props' },
 ];
@@ -705,6 +707,8 @@ export default function App() {
                 />
               ) : activeNav === 'library' ? (
                 <AssetLibrary plan={plan} />
+              ) : activeNav === 'core' ? (
+                <CoreDesk scriptData={scriptData} plan={plan} dispatch={dispatch} />
               ) : (
                 <ResultTabs
                   scriptData={scriptData}
@@ -780,7 +784,7 @@ export default function App() {
   );
 
   function navGroupsMarkup() {
-    return ['作品', '拆解', '排演', '交付'].map((phase) => (
+    return ['作品', '核心档', '拆解', '排演', '交付'].map((phase) => (
       <div className="phase-group" key={phase}>
         <span className="phase-label">{phase}</span>
         {NAV_ITEMS.filter((item) => item.phase === phase).map((item) => {

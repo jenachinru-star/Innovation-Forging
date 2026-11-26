@@ -498,6 +498,81 @@ export function planReducer(state, action) {
         ),
       };
 
+    case 'setShots':
+      return { ...current, shots: asArray(action.shots) };
+
+    case 'addShot': {
+      const shots = asArray(current.shots);
+      const shot = asObject(action.shot);
+      return {
+        ...current,
+        shots: [...shots, { ...shot, id: shot.id || nextId('shot', shots) }],
+      };
+    }
+
+    case 'updateShot':
+      return { ...current, shots: patchById(current.shots, action.id, action.patch) };
+
+    case 'removeShot':
+      return {
+        ...current,
+        shots: asArray(current.shots).filter((shot) => shot.id !== action.id),
+      };
+
+    case 'setCharacterArcs':
+      return { ...current, characterArcs: asArray(action.arcs) };
+
+    case 'updateArcBeat': {
+      const characterArcs = asArray(current.characterArcs).map((arc) => {
+        if (arc.id !== action.arcId) return arc;
+        return {
+          ...arc,
+          beats: asArray(arc.beats).map((beat) =>
+            beat.id === action.beatId ? { ...beat, ...asObject(action.patch) } : beat
+          ),
+        };
+      });
+      return { ...current, characterArcs };
+    }
+
+    case 'setConflicts':
+      return { ...current, conflicts: asArray(action.conflicts) };
+
+    case 'addConflict': {
+      const conflicts = asArray(current.conflicts);
+      const conflict = asObject(action.conflict);
+      return {
+        ...current,
+        conflicts: [
+          ...conflicts,
+          { ...conflict, id: conflict.id || nextId('conflict', conflicts) },
+        ],
+      };
+    }
+
+    case 'updateConflict':
+      return {
+        ...current,
+        conflicts: patchById(current.conflicts, action.id, action.patch),
+      };
+
+    case 'removeConflict':
+      return {
+        ...current,
+        conflicts: asArray(current.conflicts).filter(
+          (conflict) => conflict.id !== action.id
+        ),
+      };
+
+    case 'setCallSheetNote':
+      return {
+        ...current,
+        callSheetNotes: {
+          ...asObject(current.callSheetNotes),
+          [action.sceneNumber]: asObject(action.note),
+        },
+      };
+
     case 'setAssistantMessages':
       return {
         ...current,

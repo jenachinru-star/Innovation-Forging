@@ -14,6 +14,7 @@
     "./rules/statusFlow.js": "./rules/statusFlow.js",
     "./rules/todos.js": "./rules/todos.js",
     "./rules/assets.js": "./rules/assets.js",
+    "./rules/coreDesk.js": "./rules/coreDesk.js",
     "./samples/oneAct.js": "./samples/oneAct.js",
     "./export/index.js": "./export/index.js",
     "./constants/status.js": "./constants/status.js",
